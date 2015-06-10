@@ -4,6 +4,26 @@ Be warned. This project is still immature and in development.
 The API may change at any time.
 It may not find all problems. It may find lots of false positives.
 
+## Quickstart - add missinglink to your Maven build
+
+Add the following plugin to pom.xml:
+
+```xml
+<plugin>
+  <groupId>com.spotify</groupId>
+  <artifactId>missinglink-maven-plugin</artifactId>
+  <version>0.1.0</version>
+  <executions>
+    <execution>
+      <goals><goal>check-conflicts</goal></goals>
+      <phase>process-classes</phase>
+    </execution>
+  </executions>
+</plugin>
+```
+
+See [how to configure the plugin below](#Configuration of the plugin).
+
 ## Problem definition
 
 When using Java and Maven, it's easy to get into a state of pulling in a lot of
