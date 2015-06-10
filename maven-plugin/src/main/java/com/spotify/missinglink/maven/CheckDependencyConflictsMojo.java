@@ -170,7 +170,7 @@ public class CheckDependencyConflictsMojo extends AbstractMojo {
    * When not set, the bootclasspath is determined by examining the "sun.boot.class.path" system
    * property.</p>
    */
-  @Parameter(property="misslink.bootClasspath")
+  @Parameter(property = "misslink.bootClasspath")
   protected String bootClasspath;
 
 
