@@ -1,0 +1,35 @@
+How to release:
+
+Add this to ~/.m2/settings.xml
+
+Needed:
+<settings>
+  <servers>
+    <server>
+      <id>ossrh</id>
+      <username>your-sonatype-jira-username</username>
+      <password>your-sonatype-jira-pwd</password>
+    </server>
+  </servers>
+</settings>
+
+
+Optional:
+  <profiles>
+    <profile>
+      <id>ossrh</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <gpg.executable>gpg</gpg.executable>
+        <gpg.passphrase>PASSPHRASE</gpg.passphrase>
+      </properties>
+    </profile>
+  </profiles>
+
+Activate the 'release' profile when releasing:
+
+$ mvn -Prelease release:clean release:prepare
+$ mvn -Prelease release:perform
+
