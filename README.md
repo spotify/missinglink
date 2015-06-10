@@ -66,6 +66,17 @@ dependencies (from the Maven model), and the bootstrap JDK classes (i.e.
 out, grouped by category of the conflict, the artifact (jar file) it was found
 it, and the problematic class.
 
+## Requirements
+
+This plugin is using Java 8 language features. While the JVM used to execute
+Maven must be at version 1.8 or greater, the Maven projects being analyzed can
+be using any Java source version.
+
+Note that when using a higher JVM version to execute Maven than what the
+project is being compiled with (the `source` argument to
+`maven-compiler-plugin`), some care should be taken to make sure that the
+higher-versioned bootclasspath is not accidentally used with javac.
+
 ## Configuration of the plugin
 
 Once projects get to be of a certain size, some level of conflicts - mostly
