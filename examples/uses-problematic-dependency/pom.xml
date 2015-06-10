@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.spotify.missinglink.examples</groupId>
+    <artifactId>examples-parent</artifactId>
+    <version>0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>uses-problematic-dependency</artifactId>
+
+  <description>
+    Example project that calls a class in
+    com.spotify.missinglink.examples:has-problematic-dependency
+    which relies on a method from Guava which has been removed in v18. By overridding the guava
+    dependency to version 18 in this project, we cause a problem which would normally result in a
+    NoSuchMethodError.
+  </description>
+
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>18.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify.missinglink.examples</groupId>
+      <artifactId>has-problematic-dependency</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>missinglink-maven-plugin</artifactId>
+        <version>${project.version}</version>
+        <configuration>
+          <failOnConflicts>true</failOnConflicts>
+        </configuration>
+        <executions>
+          <execution>
+            <goals><goal>check-conflicts</goal></goals>
+            <phase>process-classes</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

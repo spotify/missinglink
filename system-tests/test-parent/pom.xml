@@ -1,0 +1,20 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.spotify.missinglink.tests</groupId>
+  <artifactId>parent</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.2</version>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
