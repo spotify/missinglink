@@ -5,7 +5,7 @@ First of all, thanks for the interest in missinglink! :clap:
 As mentioned in the README, this project is very young and not mature yet.
 
 It was built during a Hack Week at Spotify to attempt to catch a certain type
-of depenency conflict with Maven projects that the authors had bad experiences
+of dependency conflict with Maven projects that the authors had bad experiences
 with.
 
 ## Submitting issues
