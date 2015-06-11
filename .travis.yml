@@ -1,4 +1,15 @@
+# Generated with these instructions: http://docs.travis-ci.com/user/encryption-keys/
+# gem install travis
+# travis encrypt COVERALLS_TOKEN=<the token from coveralls>
+secure: "EUIDJg0jZPH19pqrqwVOfsSsHWlJbc9GJdtSaYKFNtVtcmG4CxunU08NCwcPt4aEN1A70r8DigwzAD0bDKuq9GVqTYHYIFvHEODYvkXB4oyUfhqx0CIsAhJjKsW+uGIFGFnoVhX2FSwaujNSkORqy9zJNqMV3moDpllo4EvyCD+zR0P76SYSv4EfxLXOnvjbnm+xZOdGw2MJ2eIRZGIOfyqI9+uFYpFhHVYjpuO/5bsS4xuoqu3hLW6DLyvVojOqkb3KmpKiMlN+LC9ttbGey9tXiVYo8I4VQelZkS9Desc2A5tWlnE4bYVqS4ksN/2O0Cgg0AA5oD3j+BkVGkgnv5kKirR7sxEN7eA23gRqdpg9ZK7/M6aMCF5QPJf56XFyjHNTGRpFkVb50EyFTnxvj5Wa0Mf07cXGO9XenwD+GQrCsfprUAZ+2+MozPXD4GvRmDl2tFVHNp3Mj+fnXZOA7KTKVVxBmVr5hLMjK+AQDkg9vY1YwxLdyB7Wj1LdB88+LB9I3HMFpBk6BVKAz3UznjhK2cvCDfuCX0akx2KQDx0jTD7q4rIF1w1TNxzoVVWTQsBC2Yce/1Rc2um4k41aJhM9pfC6uLBaNOq1qha8BeeFWOEheaPKg9GYFUbNwBmtatQ5kcO2FJeCuN1s4OclVyDupdCr1FoPg5oe/hD82T4="
+
 language: java
 
 jdk:
   - oraclejdk8
+
+after_success:
+  - mvn clean cobertura:cobertura coveralls:report -Dcoveralls.token=${COVERALLS_TOKEN}
+
+sudo: false
+
