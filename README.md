@@ -1,5 +1,8 @@
 # missing-link - a maven dependency problem finder
 
+[![Build Status](https://travis-ci.org/spotify/missinglink.svg?branch=master)](https://travis-ci.org/spotify/missinglink)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.spotify/missinglink-maven-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.spotify/missinglink-maven-plugin)
+
 Be warned. This project is still immature and in development.
 The API may change at any time.
 It may not find all problems. It may find lots of false positives.
