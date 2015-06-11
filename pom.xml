@@ -58,6 +58,7 @@
     <module>benchmarks</module>
     <module>core</module>
     <module>maven-plugin</module>
+    <module>system-tests</module>
   </modules>
 
   <properties>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.spotify</groupId>
+  <artifactId>missinglink-systemtests</artifactId>
+  <version>0.1.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>missinglink-systemtests</name>
+
+  <modules>
+    <module>dependencies/a-class-duplicate</module>
+    <module>dependencies/a-v1</module>
+    <module>dependencies/a-v2</module>
+    <module>dependencies/b</module>
+
+    <module>tests/class-missing</module>
+    <module>tests/field-removed</module>
+    <module>tests/instantiate-with-method-missing</module>
+    <module>tests/library-invokes-removed-method</module>
+    <module>tests/method-became-inaccessible</module>
+    <module>tests/method-removed</module>
+    <module>tests/return-type-change</module>
+    <module>tests/same-class-different-artifact</module>
+  </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>exec-maven-plugin</artifactId>
+        <groupId>org.codehaus.mojo</groupId>
+        <executions>
+          <execution>
+            <id>System-test-runner</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${basedir}/run.sh</executable>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

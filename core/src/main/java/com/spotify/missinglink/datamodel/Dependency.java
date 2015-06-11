@@ -26,6 +26,4 @@ public interface Dependency {
   int fromLineNumber();
 
   ClassTypeDescriptor targetClass();
-
-  String describe();
 }

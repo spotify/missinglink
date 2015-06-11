@@ -1,0 +1,85 @@
+{
+  "categories" : [ {
+    "name" : "Class being called not found",
+    "artifacts" : [ {
+      "artifactName" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+      "classes" : [ {
+        "className" : "B",
+        "missingMethods" : [ {
+          "fromClass" : "B",
+          "fromMethod" : {
+            "name" : "classShouldBeMissing",
+            "returnType" : "void",
+            "parameterTypes" : [ ]
+          },
+          "fromLineNumber" : 12,
+          "description" : "Call to: WillGoAway.<init>()",
+          "targetClass" : "WillGoAway",
+          "reason" : "Class not found: WillGoAway"
+        } ]
+      } ]
+    } ]
+  }, {
+    "name" : "Method being called not found",
+    "artifacts" : [ {
+      "artifactName" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+      "classes" : [ {
+        "className" : "B",
+        "missingMethods" : [ {
+          "fromClass" : "B",
+          "fromMethod" : {
+            "name" : "methodShouldBeMissing",
+            "returnType" : "void",
+            "parameterTypes" : [ ]
+          },
+          "fromLineNumber" : 8,
+          "description" : "Call to: A.methodTwo(java.lang.Integer)",
+          "targetClass" : "A",
+          "reason" : "Method not found: A.methodTwo(java.lang.Integer)"
+        }, {
+          "fromClass" : "B",
+          "fromMethod" : {
+            "name" : "doThings",
+            "returnType" : "void",
+            "parameterTypes" : [ "MethodWillBeRemoved" ]
+          },
+          "fromLineNumber" : 26,
+          "description" : "Call to: MethodWillBeRemoved.imGoingAway()",
+          "targetClass" : "MethodWillBeRemoved",
+          "reason" : "Method not found: MethodWillBeRemoved.imGoingAway()"
+        }, {
+          "fromClass" : "B",
+          "fromMethod" : {
+            "name" : "specificReturnTypeBroken",
+            "returnType" : "void",
+            "parameterTypes" : [ "SpecificReturnType" ]
+          },
+          "fromLineNumber" : 16,
+          "description" : "Call to: SpecificReturnType.aMethod(java.lang.String)",
+          "targetClass" : "SpecificReturnType",
+          "reason" : "Method not found: SpecificReturnType.aMethod(java.lang.String)"
+        } ]
+      } ]
+    } ]
+  }, {
+    "name" : "FIELD NOT FOUND",
+    "artifacts" : [ {
+      "artifactName" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+      "classes" : [ {
+        "className" : "B",
+        "missingMethods" : [ {
+          "fromClass" : "B",
+          "fromMethod" : {
+            "name" : "fieldShouldBeMissing",
+            "returnType" : "void",
+            "parameterTypes" : [ ]
+          },
+          "fromLineNumber" : 39,
+          "description" : "Access to: A.publicFieldOne",
+          "targetClass" : "A",
+          "reason" : "Field not found: publicFieldOne"
+        } ]
+      } ]
+    } ]
+  } ]
+}

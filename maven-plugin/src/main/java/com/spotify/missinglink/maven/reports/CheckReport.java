@@ -13,21 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.maven.reports;
 
-import io.norberg.automatter.AutoMatter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Lists;
 
-/**
- * Represents a dependency between a method and the method that it calls, used in Conflict when
- * reporting problems
- */
-@AutoMatter
-public interface MethodDependency extends Dependency {
+import java.util.List;
 
-  ClassTypeDescriptor fromClass();
-  MethodDescriptor fromMethod();
-  int fromLineNumber();
+public class CheckReport {
+  @JsonProperty
+  private final List<ConflictItem> conflicts;
 
-  ClassTypeDescriptor targetClass();
-  MethodDescriptor targetMethod();
+  public CheckReport() {
+    this.conflicts = Lists.newArrayList();
+  }
+
+  public void addAll(List<ConflictItem> reports) {
+    conflicts.addAll(reports);
+  }
 }

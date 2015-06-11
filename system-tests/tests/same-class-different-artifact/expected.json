@@ -1,0 +1,51 @@
+{
+  "conflicts" : [ {
+    "fromArtifact" : "com.spotify.missinglink.tests:a:0.1-SNAPSHOT",
+    "fromClass" : "A",
+    "fromMethod" : "internalStaticFieldAccess()",
+    "fromLineNumber" : 11,
+    "toClass" : "A",
+    "reason" : "Field not found: staticFieldOne",
+    "category" : "FIELD_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:a:0.1-SNAPSHOT",
+    "fromClass" : "A",
+    "fromMethod" : "internalFieldAccess()",
+    "fromLineNumber" : 12,
+    "toClass" : "A",
+    "reason" : "Field not found: publicFieldOne",
+    "category" : "FIELD_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "fieldShouldBeMissing()",
+    "fromLineNumber" : 39,
+    "toClass" : "A",
+    "reason" : "Field not found: publicFieldOne",
+    "category" : "FIELD_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "methodShouldBeMissing()",
+    "fromLineNumber" : 8,
+    "toClass" : "A",
+    "reason" : "Method not found: A.methodTwo(java.lang.Integer)",
+    "category" : "METHOD_SIGNATURE_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "methodBecameInaccessible()",
+    "fromLineNumber" : 30,
+    "toClass" : "A",
+    "reason" : "Method not found: A.accessLevelToChange()",
+    "category" : "METHOD_SIGNATURE_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "methodNoLongerStatic()",
+    "fromLineNumber" : 34,
+    "toClass" : "A",
+    "reason" : "Method not found: A.staticIsNoise(java.lang.String, int)",
+    "category" : "METHOD_SIGNATURE_NOT_FOUND"
+  } ]
+}

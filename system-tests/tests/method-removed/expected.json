@@ -1,0 +1,43 @@
+{
+  "conflicts" : [ {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "classShouldBeMissing()",
+    "fromLineNumber" : 12,
+    "toClass" : "WillGoAway",
+    "reason" : "Class not found: WillGoAway",
+    "category" : "CLASS_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "fieldShouldBeMissing()",
+    "fromLineNumber" : 39,
+    "toClass" : "A",
+    "reason" : "Field not found: publicFieldOne",
+    "category" : "FIELD_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "methodShouldBeMissing()",
+    "fromLineNumber" : 8,
+    "toClass" : "A",
+    "reason" : "Method not found: A.methodTwo(java.lang.Integer)",
+    "category" : "METHOD_SIGNATURE_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "specificReturnTypeBroken(SpecificReturnType)",
+    "fromLineNumber" : 16,
+    "toClass" : "SpecificReturnType",
+    "reason" : "Method not found: SpecificReturnType.aMethod(java.lang.String)",
+    "category" : "METHOD_SIGNATURE_NOT_FOUND"
+  }, {
+    "fromArtifact" : "com.spotify.missinglink.tests:b:0.1-SNAPSHOT",
+    "fromClass" : "B",
+    "fromMethod" : "doThings(MethodWillBeRemoved)",
+    "fromLineNumber" : 26,
+    "toClass" : "MethodWillBeRemoved",
+    "reason" : "Method not found: MethodWillBeRemoved.imGoingAway()",
+    "category" : "METHOD_SIGNATURE_NOT_FOUND"
+  } ]
+}
