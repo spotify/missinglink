@@ -26,7 +26,7 @@ $ mvn test
 [INFO]
 ...
 [INFO]
-[INFO] --- missinglink-maven-plugin:0.1.0:check (default) @ uses-problematic-dependency ---
+[INFO] --- missinglink-maven-plugin:0.1.0:check-conflicts (default) @ uses-problematic-dependency ---
 [INFO] 1 conflicts found
 [WARNING] - Problem in class com.spotify.missinglink.examples.ProblematicDependency
   method:  java.lang.Object reliesOnRemovedMethod()
