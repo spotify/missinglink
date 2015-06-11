@@ -78,9 +78,9 @@ import static org.mockito.Mockito.when;
  * are set based on the POM XML file.
  * </p>
  */
-public class CheckDependencyConflictsMojoTest {
+public class CheckMojoTest {
 
-  private static final Logger log = LoggerFactory.getLogger(CheckDependencyConflictsMojoTest.class);
+  private static final Logger log = LoggerFactory.getLogger(CheckMojoTest.class);
 
   @Rule
   public MojoRule rule = new MojoRule();
@@ -119,11 +119,11 @@ public class CheckDependencyConflictsMojoTest {
     ).thenReturn(results);
   }
 
-  private CheckDependencyConflictsMojo getMojo(String dirName) throws Exception {
+  private CheckMojo getMojo(String dirName) throws Exception {
     final File basedir = resources.getBasedir(dirName);
     log.debug("Constructing Mojo against test basedir {}", basedir);
-    final CheckDependencyConflictsMojo mojo =
-        (CheckDependencyConflictsMojo) rule.lookupConfiguredMojo(basedir, "check-conflicts");
+    final CheckMojo mojo =
+        (CheckMojo) rule.lookupConfiguredMojo(basedir, "check");
     mojo.artifactLoader = artifactLoader;
     mojo.conflictChecker = conflictChecker;
     return mojo;
@@ -196,7 +196,7 @@ public class CheckDependencyConflictsMojoTest {
 
   @Test
   public void doesNotFailOnConflictByDefault() throws Exception {
-    final CheckDependencyConflictsMojo mojo = getMojo("simple-test");
+    final CheckMojo mojo = getMojo("simple-test");
 
     setMockConflictResults(mockConflicts(ConflictCategory.CLASS_NOT_FOUND));
 
@@ -204,7 +204,7 @@ public class CheckDependencyConflictsMojoTest {
   }
 
   /**
-   * Tests that when {@link CheckDependencyConflictsMojo#failOnConflicts} is set to true, then the
+   * Tests that when {@link CheckMojo#failOnConflicts} is set to true, then the
    * build is failed if ConflictChecker returns conflicts.
    */
   @Test
@@ -251,7 +251,7 @@ public class CheckDependencyConflictsMojoTest {
   @Test
   public void testExcludeArtifacts() throws Exception {
 
-    final CheckDependencyConflictsMojo mojo = getMojo("exclude-dependencies");
+    final CheckMojo mojo = getMojo("exclude-dependencies");
 
     // inject some dependencies to exclude later
     mojo.project.setArtifacts(ImmutableSet.of(
@@ -277,7 +277,7 @@ public class CheckDependencyConflictsMojoTest {
    */
   @Test
   public void testIgnoreSourcePackages() throws Exception {
-    final CheckDependencyConflictsMojo mojo = getMojo("ignore-source-packages");
+    final CheckMojo mojo = getMojo("ignore-source-packages");
 
     // make sure that the XML config is deserializing into the Mojo as expected - will catch
     // errors in an easier fashion than build failures from .execute() below
@@ -323,7 +323,7 @@ public class CheckDependencyConflictsMojoTest {
             caller, callee, "class com/foo/Bar not found")
     ));
 
-    final CheckDependencyConflictsMojo mojo = getMojo("ignore-destination-packages");
+    final CheckMojo mojo = getMojo("ignore-destination-packages");
 
     // make sure that the XML config is deserializing into the Mojo as expected - will catch
     // errors in an easier fashion than build failures from .execute() below
@@ -339,7 +339,7 @@ public class CheckDependencyConflictsMojoTest {
     // need to use an existing path as the Mojo tests if the path is valid
     final String testPath = File.createTempFile("boot", ".jar").getAbsolutePath();
 
-    final CheckDependencyConflictsMojo mojo = getMojo("simple-test");
+    final CheckMojo mojo = getMojo("simple-test");
     mojo.bootClasspath = testPath;
 
     mojo.execute();
