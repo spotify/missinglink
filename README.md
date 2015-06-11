@@ -57,7 +57,7 @@ This problem finder can be executed against your Maven project from the
 command-line like:
 
 ```
-$ mvn com.spotify:missinglink-maven-plugin:0.1-SNAPSHOT:check-conflicts
+$ mvn com.spotify:missinglink-maven-plugin:0.1.0:check-conflicts
 ```
 
 The plugin will scan the source code of the current project, the runtime

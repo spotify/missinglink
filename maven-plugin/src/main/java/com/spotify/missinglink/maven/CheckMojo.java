@@ -79,8 +79,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-@Mojo(name = "check-conflicts", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
-public class CheckDependencyConflictsMojo extends AbstractMojo {
+@Mojo(name = "check", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+public class CheckMojo extends AbstractMojo {
 
   public static final DefaultArtifactHandler ARTIFACT_HANDLER = new DefaultArtifactHandler();
 

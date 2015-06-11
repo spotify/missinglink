@@ -45,7 +45,7 @@
         </configuration>
         <executions>
           <execution>
-            <goals><goal>check-conflicts</goal></goals>
+            <goals><goal>check</goal></goals>
             <phase>process-classes</phase>
           </execution>
         </executions>
