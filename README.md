@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/spotify/missinglink.svg?branch=master)](https://travis-ci.org/spotify/missinglink)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.spotify/missinglink-maven-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.spotify/missinglink-maven-plugin)
+[![Coverage Status](https://coveralls.io/repos/spotify/missinglink/badge.svg)](https://coveralls.io/r/spotify/missinglink)
 
 Be warned. This project is still immature and in development.
 The API may change at any time.
