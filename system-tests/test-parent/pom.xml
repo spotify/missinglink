@@ -1,12 +1,22 @@
 <project>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.spotify.missinglink.tests</groupId>
-  <artifactId>parent</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+
+  <parent>
+    <groupId>com.spotify.missinglink.tests</groupId>
+    <artifactId>missinglink-systemtests</artifactId>
+    <version>0.1.1-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>test-parent</artifactId>
   <packaging>pom</packaging>
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+      </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.2</version>
