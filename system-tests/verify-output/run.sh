@@ -3,6 +3,8 @@
 total=0
 failures=0
 
+cd ..
+
 for dir in $(ls tests); do
   pushd tests/$dir
 

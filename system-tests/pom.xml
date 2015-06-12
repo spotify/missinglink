@@ -23,27 +23,13 @@
     <module>tests/method-removed</module>
     <module>tests/return-type-change</module>
     <module>tests/same-class-different-artifact</module>
+
+    <!-- This one must be last, to make sure everything it needs is built -->
+    <module>verify-output</module>
   </modules>
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>exec-maven-plugin</artifactId>
-        <groupId>org.codehaus.mojo</groupId>
-        <executions>
-          <execution>
-            <id>System-test-runner</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <executable>${basedir}/run.sh</executable>
-            </configuration>
-          </execution>
-        </executions>
-        <inherited>false</inherited>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
