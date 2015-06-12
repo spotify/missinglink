@@ -73,11 +73,10 @@ public class FeatureTest {
         .reason("Class not found: com.d.Foo")
         .category(ConflictCategory.CLASS_NOT_FOUND)
         .usedBy(root.name())
-        .existsIn(d1.name())
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, ImmutableList.of(root, d1, d2), classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
@@ -112,11 +111,10 @@ public class FeatureTest {
         .reason("Method not found: com.d.Foo.foo()")
         .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
         .usedBy(root.name())
-        .existsIn(d2.name())
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, ImmutableList.of(root, d1, d2), classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
@@ -154,11 +152,10 @@ public class FeatureTest {
         .reason("Field not found: foo")
         .category(ConflictCategory.FIELD_NOT_FOUND)
         .usedBy(root.name())
-        .existsIn(d2.name())
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, ImmutableList.of(root, d1, d2), classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
@@ -183,8 +180,8 @@ public class FeatureTest {
 
     assertThat(conflictChecker.check(artifact,
         ImmutableList.of(artifact),
-        ImmutableList.of(artifact),
-        ImmutableList.of())).isEmpty();
+        ImmutableList.of(artifact)
+    )).isEmpty();
   }
 
   @org.junit.Test
@@ -209,8 +206,8 @@ public class FeatureTest {
     assertThat(conflictChecker
         .check(artifact,
             ImmutableList.of(artifact),
-            ImmutableList.of(artifact),
-            ImmutableList.of())).isEmpty();
+            ImmutableList.of(artifact)
+        )).isEmpty();
   }
 
   private static Dependency dependency(ClassTypeDescriptor className,
