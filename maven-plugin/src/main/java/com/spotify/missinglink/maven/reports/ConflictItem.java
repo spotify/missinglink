@@ -58,31 +58,31 @@ public class ConflictItem {
     category = conflict.category().name();
   }
 
-  public String getFromArtifact() {
+  private String getFromArtifact() {
     return fromArtifact;
   }
 
-  public String getFromClass() {
+  private String getFromClass() {
     return fromClass;
   }
 
-  public String getFromMethod() {
+  private String getFromMethod() {
     return fromMethod;
   }
 
-  public Integer getFromLineNumber() {
-    return fromLineNumber;
+  private Integer comparatorGetLineNumber() {
+    return fromLineNumber == null ? 0 : fromLineNumber;
   }
 
-  public String getToClass() {
+  private String getToClass() {
     return toClass;
   }
 
-  public String getReason() {
+  private String getReason() {
     return reason;
   }
 
-  public String getCategory() {
+  private String getCategory() {
     return category;
   }
 
@@ -93,7 +93,7 @@ public class ConflictItem {
     comparators.add(Comparator.comparing(ConflictItem::getCategory));
     comparators.add(Comparator.comparing(ConflictItem::getFromArtifact));
     comparators.add(Comparator.comparing(ConflictItem::getFromClass));
-    comparators.add(Comparator.comparing(ConflictItem::getFromLineNumber));
+    comparators.add(Comparator.comparing(ConflictItem::comparatorGetLineNumber));
     comparators.add(Comparator.comparing(ConflictItem::getFromMethod));
     comparators.add(Comparator.comparing(ConflictItem::getToClass));
     comparators.add(Comparator.comparing(ConflictItem::getReason));
