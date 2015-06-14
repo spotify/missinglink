@@ -23,6 +23,7 @@
     <module>tests/method-removed</module>
     <module>tests/return-type-change</module>
     <module>tests/same-class-different-artifact</module>
+    <module>tests/static-method-became-instance</module>
 
     <!-- This one must be last, to make sure everything it needs is built -->
     <module>verify-output</module>
