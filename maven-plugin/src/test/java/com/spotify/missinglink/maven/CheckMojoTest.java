@@ -58,6 +58,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -345,5 +346,12 @@ public class CheckMojoTest {
     mojo.execute();
 
     verify(artifactLoader).load(new File(testPath));
+  }
+
+  @Test
+  public void testSkip() throws Exception {
+    getMojo("skip").execute();
+
+    verifyNoMoreInteractions(conflictChecker, artifactLoader);
   }
 }
