@@ -60,6 +60,10 @@
   </modules>
 
   <properties>
+    <!-- cobertura format needs to be xml for coveralls integration, but allow it to be specified
+    as a property so it can be overridden to use html for anyone who wants to generate cobertura
+    themselves from command-line -->
+    <cobertura.format>xml</cobertura.format>
     <java.version>1.8</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -146,7 +150,7 @@
         <artifactId>cobertura-maven-plugin</artifactId>
         <version>2.7</version>
         <configuration>
-          <format>xml</format>
+          <format>${cobertura.format}</format>
           <!-- aggregated reports for multi-module projects -->
           <aggregate>true</aggregate>
           <instrumentation>
