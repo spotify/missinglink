@@ -25,6 +25,11 @@ public class PrettyPrinterTest {
   public void testPrimitives() throws Exception {
     assertEquals("int", PrettyPrinter.typeDescriptor("I"));
     assertEquals("short", PrettyPrinter.typeDescriptor("S"));
+    assertEquals("long", PrettyPrinter.typeDescriptor("Z"));
+    assertEquals("double", PrettyPrinter.typeDescriptor("D"));
+    assertEquals("float", PrettyPrinter.typeDescriptor("F"));
+    assertEquals("boolean", PrettyPrinter.typeDescriptor("B"));
+    assertEquals("void", PrettyPrinter.typeDescriptor("V"));
   }
 
   @Test
