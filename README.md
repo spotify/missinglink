@@ -263,7 +263,7 @@ Javadeps will detect these calls to the optional classes and flag them as
 conflicts, even though not having the class available will not cause any
 runtime errors. Configure the plugin to ignore these classes/dependencies.
 
-## History
+# History
 
 This started as a [Spotify](<https://github.com/spotify) hackweek project
 in June 2015 by
@@ -277,3 +277,7 @@ transitive dependencies for a rarely used code path that wasn't detected until r
 
 We thought that should be detectable in build time instead - so we built this to see if it was feasible.
 
+# License
+
+This software is released under the Apache License 2.0. More information in
+the file LICENSE distributed with this project.
