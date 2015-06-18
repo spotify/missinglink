@@ -55,6 +55,7 @@
   </developers>
 
   <modules>
+    <module>benchmarks</module>
     <module>core</module>
     <module>maven-plugin</module>
   </modules>
@@ -85,6 +86,10 @@
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
+
+  <prerequisites>
+    <maven>3.0</maven>
+  </prerequisites>
 
   <build>
     <pluginManagement>
