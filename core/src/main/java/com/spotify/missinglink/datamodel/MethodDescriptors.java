@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 
 import org.objectweb.asm.Type;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -31,7 +32,7 @@ public final class MethodDescriptors {
   public static MethodDescriptor fromDesc(String desc, String name) {
     Type type = Type.getMethodType(desc);
 
-    List<TypeDescriptor> params = ImmutableList.copyOf(type.getArgumentTypes()).stream()
+    List<TypeDescriptor> params = Arrays.stream(type.getArgumentTypes())
         .map(Type::getDescriptor)
         .map(TypeDescriptors::fromRaw)
         .collect(toList());
