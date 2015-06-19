@@ -14,4 +14,9 @@ if [[ ! -e $POM_PATH ]]; then
 fi
 
 PLUGIN=com.spotify:missinglink-maven-plugin:0.1.1-SNAPSHOT
-MAVEN_OPTS="-XX:+UnlockCommercialFeatures -XX:+FlightRecorder -XX:StartFlightRecording=duration=60s,filename=$RECORDING_FILENAME" mvn $PLUGIN:check -f "$POM_PATH"
+# use the default "profile" template for flight recorder, the default won't have some stuff enabled
+JFR_SETTINGS=$JAVA_HOME/jre/lib/jfr/profile.jfc
+
+# launch maven
+JFR_OPTS="-XX:+UnlockCommercialFeatures -XX:+FlightRecorder -XX:StartFlightRecording=duration=60s,filename=$RECORDING_FILENAME,settings=$JFR_SETTINGS"
+MAVEN_OPTS=$JFR_OPTS mvn $PLUGIN:check -f "$POM_PATH"
