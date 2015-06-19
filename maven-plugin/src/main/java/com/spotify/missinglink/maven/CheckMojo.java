@@ -96,6 +96,9 @@ public class CheckMojo extends AbstractMojo {
   @Parameter(defaultValue = "${project}", readonly = true, required = true)
   protected MavenProject project;
 
+  @Parameter(property = "missinglink.skip")
+  protected boolean skip = false;
+
   /**
    * Controls whether the Maven build should be failed if any dependency conflicts are found.
    * Defaults to false.
@@ -179,6 +182,11 @@ public class CheckMojo extends AbstractMojo {
   protected ConflictChecker conflictChecker = new ConflictChecker();
 
   public void execute() throws MojoExecutionException, MojoFailureException {
+
+    if (skip) {
+      getLog().info("skipping plugin execution since missinglink.skip=true");
+      return;
+    }
 
     // when verbose flag is set, log detailed messages to info log. otherwise log to debug. This is
     // so that verbose output from this plugin can be seen easily without having to specify mvn -X.
