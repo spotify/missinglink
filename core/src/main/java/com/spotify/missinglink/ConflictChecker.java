@@ -243,10 +243,10 @@ public class ConflictChecker {
 
   public static ImmutableSet<TypeDescriptor> reachableFrom(
       ImmutableCollection<DeclaredClass> values,
-      Map<TypeDescriptor, DeclaredClass> knownClasses) {
+      Map<ClassTypeDescriptor, DeclaredClass> knownClasses) {
     Queue<DeclaredClass> toCheck = new LinkedList<>(values);
 
-    Set<TypeDescriptor> reachable = Sets.newHashSet();
+    Set<ClassTypeDescriptor> reachable = Sets.newHashSet();
 
     while (!toCheck.isEmpty()) {
       DeclaredClass current = toCheck.remove();
@@ -322,7 +322,7 @@ public class ConflictChecker {
   }
 
   private boolean missingMethod(MethodDescriptor descriptor, DeclaredClass calledClass,
-                                Map<TypeDescriptor, DeclaredClass> classMap) {
+                                Map<ClassTypeDescriptor, DeclaredClass> classMap) {
     final DeclaredMethod method = calledClass.methods().get(descriptor);
     if (method != null) {
       // TODO: also validate return type
@@ -348,7 +348,7 @@ public class ConflictChecker {
   }
 
   private boolean missingField(DeclaredField field, DeclaredClass calledClass,
-                               Map<TypeDescriptor, DeclaredClass> classMap) {
+                               Map<ClassTypeDescriptor, DeclaredClass> classMap) {
 
     if (calledClass.fields().contains(field)) {
       // TODO: also validate return type

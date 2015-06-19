@@ -92,8 +92,9 @@ public class Simple {
         .build();
   }
 
-  public static ImmutableMap<TypeDescriptor, DeclaredClass> classMap(DeclaredClass... classes) {
-    ImmutableMap.Builder<TypeDescriptor, DeclaredClass> builder = ImmutableMap.builder();
+  public static ImmutableMap<ClassTypeDescriptor, DeclaredClass> classMap(
+      DeclaredClass... classes) {
+    ImmutableMap.Builder<ClassTypeDescriptor, DeclaredClass> builder = ImmutableMap.builder();
     for (DeclaredClass clazz : classes) {
       builder.put(clazz.className(), clazz);
     }

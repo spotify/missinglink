@@ -45,7 +45,8 @@ public class ReachableTest {
   public void testUnreachable() {
     DeclaredClass root = newClass("my/Root").build();
     ImmutableSet< DeclaredClass > myClasses = ImmutableSet.of(root);
-    Map<TypeDescriptor, DeclaredClass> world = classMap(root, newClass("other/Unknown").build());
+    Map<ClassTypeDescriptor, DeclaredClass> world =
+        classMap(root, newClass("other/Unknown").build());
     Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
     assertEquals(ImmutableSet.of(root.className()), reachable);
   }
@@ -63,7 +64,7 @@ public class ReachableTest {
                     ImmutableSet.of(newCall(remote, remoteMethod))).build()))
         .build();
     ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
-    ImmutableMap<TypeDescriptor, DeclaredClass> world = classMap(root, remote);
+    ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
     ImmutableSet<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
     assertEquals(ImmutableSet.of(root.className(), remote.className()), reachable);
   }
@@ -76,7 +77,7 @@ public class ReachableTest {
         .parents(ImmutableSet.of(new ClassTypeDescriptor("other/Unknown")))
         .build();
     ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
-    ImmutableMap<TypeDescriptor, DeclaredClass> world = classMap(root, remote);
+    ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
     ImmutableSet<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
     assertEquals(ImmutableSet.of(root.className(), remote.className()), reachable);
   }
@@ -95,7 +96,7 @@ public class ReachableTest {
         .methods(methods)
         .build();
     ImmutableSet< DeclaredClass > myClasses = ImmutableSet.of(root);
-    ImmutableMap<TypeDescriptor, DeclaredClass> world = classMap(root, remote);
+    ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
     ImmutableSet<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
     assertEquals(ImmutableSet.of(root.className(), remote.className()), reachable);
   }
