@@ -115,21 +115,21 @@ public class ArtifactLoaderTest {
   @Test
   public void testLoadClass() throws Exception {
     assertNotNull("Artifact must contain class 'A'",
-        artifact.classes().get(new ClassTypeDescriptor("A")));
+        artifact.classes().get(TypeDescriptors.fromClassName("A")));
   }
 
   @Test
   public void testLoadMethod() throws Exception {
     assertTrue("Class must contain method with hairy signature", artifact.classes().get(
-        new ClassTypeDescriptor("A")).methods().containsKey(methodOneDescriptor));
+        TypeDescriptors.fromClassName("A")).methods().containsKey(methodOneDescriptor));
   }
 
   @Test
   public void testLoadCall() throws Exception {
-    DeclaredMethod method =
-        artifact.classes().get(new ClassTypeDescriptor("A")).methods().get(methodOneDescriptor);
+    final DeclaredClass declaredClass = artifact.classes().get(TypeDescriptors.fromClassName("A"));
+    DeclaredMethod method = declaredClass.methods().get(methodOneDescriptor);
     CalledMethod call = new CalledMethodBuilder()
-        .owner(new ClassTypeDescriptor("java/io/PrintStream"))
+        .owner(TypeDescriptors.fromClassName("java/io/PrintStream"))
         .lineNumber(15)
         .descriptor(printlnDescriptor).build();
     assertTrue("Method must contain call to other method with hairy signature",
@@ -138,7 +138,7 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadField() throws Exception {
-    DeclaredClass loadedClass = artifact.classes().get(new ClassTypeDescriptor("A"));
+    DeclaredClass loadedClass = artifact.classes().get(TypeDescriptors.fromClassName("A"));
     DeclaredField myField = new DeclaredFieldBuilder().name("publicFieldOne")
         .descriptor(TypeDescriptors.fromRaw("Ljava/lang/Object;")).build();
     assertTrue("Class must contain field with hairy signature",
@@ -147,7 +147,7 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadStaticFieldAccess() throws Exception {
-    DeclaredMethod method = artifact.classes().get(new ClassTypeDescriptor("A")).methods()
+    DeclaredMethod method = artifact.classes().get(TypeDescriptors.fromClassName("A")).methods()
         .get(internalStaticFieldAccessDescriptor);
     AccessedField access = Simple.newAccess("Ljava/lang/Object;", "staticFieldOne", "A", 11);
     assertTrue("Method must contain access to staticFieldOne: " + method.fieldAccesses()
@@ -156,7 +156,7 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadFieldAccess() throws Exception {
-    DeclaredMethod method = artifact.classes().get(new ClassTypeDescriptor("A")).methods()
+    DeclaredMethod method = artifact.classes().get(TypeDescriptors.fromClassName("A")).methods()
         .get(internalFieldAccessDescriptor);
     AccessedField access = Simple.newAccess("Ljava/lang/Object;", "publicFieldOne", "A", 12);
     assertTrue("Method must contain access to staticFieldOne: " + method.fieldAccesses()
@@ -165,9 +165,8 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadParent() throws Exception {
-    assertEquals(artifact.classes().get(new ClassTypeDescriptor("A")).parents(), ImmutableSet
-        .of(new ClassTypeDescriptor(
-            "java/lang/Object")));
+    assertEquals(artifact.classes().get(TypeDescriptors.fromClassName("A")).parents(), ImmutableSet
+        .of(TypeDescriptors.fromClassName("java/lang/Object")));
   }
 
   /**
@@ -225,7 +224,7 @@ public class ArtifactLoaderTest {
         .overridingErrorMessage("Loading classes from a directory should be supported")
         .isNotEmpty()
             // test that a class known to be in this directory exists in the map
-        .containsKey(new ClassTypeDescriptor(MethodDescriptor.class.getName()));
+        .containsKey(TypeDescriptors.fromClassName(MethodDescriptor.class.getName()));
   }
 
   @Test
@@ -250,12 +249,11 @@ public class ArtifactLoaderTest {
         .orElseThrow(() -> new RuntimeException("call to NestedClass.bar missing?"));
 
     //make sure that the classMap contains an entry for the nestedClassName
-    assertThat(artifact.classes()).containsKey(new ClassTypeDescriptor(nestedClassName));
+    assertThat(artifact.classes()).containsKey(TypeDescriptors.fromClassName(nestedClassName));
   }
 
   private DeclaredClass getDeclaredClass(Artifact artifact, String className) {
-    final ClassTypeDescriptor key = new ClassTypeDescriptor(
-        className);
+    final ClassTypeDescriptor key = TypeDescriptors.fromClassName(className);
     assertThat(artifact.classes()).containsKey(key);
 
     return artifact.classes().get(key);

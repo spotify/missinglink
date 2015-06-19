@@ -29,6 +29,7 @@ import com.spotify.missinglink.datamodel.DeclaredField;
 import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
+import com.spotify.missinglink.datamodel.TypeDescriptors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -47,14 +48,14 @@ public class ConflictCheckerTest {
     cloneDescriptor = new MethodDescriptorBuilder()
         .name("clone")
         .parameterTypes(ImmutableList.of())
-        .returnType(new ClassTypeDescriptor("java/lang/Object"))
+        .returnType(TypeDescriptors.fromClassName("java/lang/Object"))
         .build();
 
     rt = new ArtifactBuilder()
         .name(new ArtifactName("rt"))
         .classes(ImmutableMap.of(
-            new ClassTypeDescriptor("java/lang/Object"), new DeclaredClassBuilder()
-                .className(new ClassTypeDescriptor("java/lang/Object"))
+            TypeDescriptors.fromClassName("java/lang/Object"), new DeclaredClassBuilder()
+                .className(TypeDescriptors.fromClassName("java/lang/Object"))
                 .parents(ImmutableSet.of())
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(ImmutableMap.of(
@@ -71,24 +72,24 @@ public class ConflictCheckerTest {
     projectArtifact = new ArtifactBuilder()
         .name(new ArtifactName("foo"))
         .classes(ImmutableMap.of(
-            new ClassTypeDescriptor("com/spotify/ClassName"),
+            TypeDescriptors.fromClassName("com/spotify/ClassName"),
               Simple.newClass("com/spotify/ClassName")
-                .parents(ImmutableSet.of(new ClassTypeDescriptor("java/lang/Object")))
+                .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
                 .methods(Simple.methodMap(
                    Simple.newMethod(Simple.OBJECT, "something")
                        .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
-                           .owner(new ClassTypeDescriptor("java/lang/Object"))
+                           .owner(TypeDescriptors.fromClassName("java/lang/Object"))
                            .descriptor(cloneDescriptor)
                            .build()))
                        .build()))
                 .build()))
         .build();
 
-    ClassTypeDescriptor libClass1 = new ClassTypeDescriptor("org/library/ClassName");
+    ClassTypeDescriptor libClass1 = TypeDescriptors.fromClassName("org/library/ClassName");
     MethodDescriptor brokenMethodDescriptor = new MethodDescriptorBuilder()
         .name("broken")
         .parameterTypes(ImmutableList.of())
-        .returnType(new ClassTypeDescriptor("java/lang/Object"))
+        .returnType(TypeDescriptors.fromClassName("java/lang/Object"))
         .build();
 
     libraryArtifact = new ArtifactBuilder()
@@ -96,12 +97,12 @@ public class ConflictCheckerTest {
         .classes(ImmutableMap.of(
             libClass1, new DeclaredClassBuilder()
                 .className(libClass1)
-                .parents(ImmutableSet.of(new ClassTypeDescriptor("java/lang/Object")))
+                .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(Simple.methodMap(
                     Simple.newMethod(Simple.OBJECT, "broken")
                         .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
-                            .owner(new ClassTypeDescriptor("java/lang/Object"))
+                            .owner(TypeDescriptors.fromClassName("java/lang/Object"))
                             .descriptor(brokenMethodDescriptor)
                             .build()))
                         .build()))

@@ -63,7 +63,7 @@ public class Simple {
    */
   public static DeclaredClassBuilder newClass(String className) {
     return new DeclaredClassBuilder()
-        .className(new ClassTypeDescriptor(className))
+        .className(TypeDescriptors.fromClassName(className))
         .parents(ImmutableSet.of())
         .methods(ImmutableMap.of())
         .fields(ImmutableSet.<DeclaredField>of());
@@ -121,7 +121,7 @@ public class Simple {
     return new AccessedFieldBuilder()
         .name(name)
         .descriptor(TypeDescriptors.fromRaw(desc))
-        .owner(new ClassTypeDescriptor(owner))
+        .owner(TypeDescriptors.fromClassName(owner))
         .lineNumber(lineNumber)
         .build();
   }
@@ -137,6 +137,5 @@ public class Simple {
         .classes(builder.build())
         .build();
   }
-
 
 }

@@ -69,7 +69,7 @@ public class ClassLoader {
     DeclaredClassBuilder builder = new DeclaredClassBuilder();
 
     final String className = reader.getClassName();
-    builder.className(new ClassTypeDescriptor(className));
+    builder.className(TypeDescriptors.fromClassName(className));
     final ClassNode classNode = new ClassNode();
     reader.accept(classNode, 0);
 
@@ -108,7 +108,7 @@ public class ClassLoader {
 
           } else {
             thisCalls.add(new CalledMethodBuilder()
-                .owner(new ClassTypeDescriptor(minsn.owner))
+                .owner(TypeDescriptors.fromClassName(minsn.owner))
                 .descriptor(MethodDescriptors.fromDesc(minsn.desc, minsn.name))
                 .lineNumber(lineNumber)
                 .build());
@@ -122,7 +122,7 @@ public class ClassLoader {
                 new AccessedFieldBuilder()
                     .name(finsn.name)
                     .descriptor(TypeDescriptors.fromRaw(finsn.desc))
-                    .owner(new ClassTypeDescriptor(finsn.owner))
+                    .owner(TypeDescriptors.fromClassName(finsn.owner))
                     .lineNumber(lineNumber)
                     .build());
           }
@@ -144,11 +144,11 @@ public class ClassLoader {
     final Set<ClassTypeDescriptor> parents = new HashSet<>();
     parents.addAll(ClassLoader.<String>uncheckedCast(classNode.interfaces)
         .stream()
-        .map(ClassTypeDescriptor::new)
+        .map(TypeDescriptors::fromClassName)
         .collect(toList()));
     // java/lang/Object has no superclass
     if (classNode.superName != null) {
-      parents.add(new ClassTypeDescriptor(classNode.superName));
+      parents.add(TypeDescriptors.fromClassName(classNode.superName));
     }
 
     builder.methods(ImmutableMap.copyOf(declaredMethods))

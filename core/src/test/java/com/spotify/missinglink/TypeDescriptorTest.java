@@ -111,7 +111,7 @@ public class TypeDescriptorTest {
 
   @Test(expected = InputMismatchException.class)
   public void testMoastInvalid() {
-    new ClassTypeDescriptor("LFoo;");
+    TypeDescriptors.fromClassName("LFoo;");
   }
 
   @Test(expected = InputMismatchException.class)
@@ -128,6 +128,8 @@ public class TypeDescriptorTest {
 
   @Test
   public void testNewClassTypeDescriptor() throws Exception {
-    assertEquals(new ClassTypeDescriptor("foo.Bar"), TypeDescriptors.fromClassName("foo/Bar"));
+    final ClassTypeDescriptor a = TypeDescriptors.fromClassName("foo.Bar");
+    final ClassTypeDescriptor b = TypeDescriptors.fromClassName("foo/Bar");
+    assertEquals(a, b);
   }
 }

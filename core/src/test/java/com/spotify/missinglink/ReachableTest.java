@@ -23,6 +23,7 @@ import com.spotify.missinglink.datamodel.DeclaredClass;
 import com.spotify.missinglink.datamodel.DeclaredMethod;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
+import com.spotify.missinglink.datamodel.TypeDescriptors;
 
 import org.junit.Test;
 
@@ -74,7 +75,7 @@ public class ReachableTest {
     DeclaredClass remote = newClass("other/Unknown")
         .build();
     DeclaredClass root = newClass("my/Root")
-        .parents(ImmutableSet.of(new ClassTypeDescriptor("other/Unknown")))
+        .parents(ImmutableSet.of(TypeDescriptors.fromClassName("other/Unknown")))
         .build();
     ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
     ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
