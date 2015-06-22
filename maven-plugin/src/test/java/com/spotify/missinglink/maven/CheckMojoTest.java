@@ -152,7 +152,7 @@ public class CheckMojoTest {
 
   private ImmutableList<Conflict> mockConflicts(ConflictCategory category,
                                                 ConflictCategory... additionalCategories) {
-    final ClassTypeDescriptor ctd = new ClassTypeDescriptor("com/foo/Whatever");
+    final ClassTypeDescriptor ctd = TypeDescriptors.fromClassName("com/foo/Whatever");
     return mockConflicts(ctd, category, additionalCategories);
 
   }
@@ -162,7 +162,7 @@ public class CheckMojoTest {
                                                 ConflictCategory... additionalCategories) {
 
     final CalledMethod callee = new CalledMethodBuilder()
-        .owner(new ClassTypeDescriptor("com/foo/Bar"))
+        .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
         .descriptor(new MethodDescriptorBuilder()
             .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
             .name("bat")
@@ -290,7 +290,7 @@ public class CheckMojoTest {
         );
 
     setMockConflictResults(
-        mockConflicts(new ClassTypeDescriptor("groovy.lang.foo.Bar"),
+        mockConflicts(TypeDescriptors.fromClassName("groovy.lang.foo.Bar"),
             ConflictCategory.CLASS_NOT_FOUND)
     );
 
@@ -300,7 +300,7 @@ public class CheckMojoTest {
   @Test
   public void testIgnoreDestinationPackages() throws Exception {
     final CalledMethod callee = new CalledMethodBuilder()
-        .owner(new ClassTypeDescriptor("com/foo/Bar"))
+        .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
         .descriptor(new MethodDescriptorBuilder()
             .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
             .name("bat")
@@ -320,7 +320,7 @@ public class CheckMojoTest {
 
     // a conflict from com/Whatever => com/foo/Bar.bat where the latter class cannot be found
     setMockConflictResults(ImmutableList.of(
-        conflict(ConflictCategory.CLASS_NOT_FOUND, new ClassTypeDescriptor("com/Whatever"),
+        conflict(ConflictCategory.CLASS_NOT_FOUND, TypeDescriptors.fromClassName("com/Whatever"),
             caller, callee, "class com/foo/Bar not found")
     ));
 

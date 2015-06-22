@@ -15,14 +15,24 @@
  */
 package com.spotify.missinglink.datamodel;
 
+import java.util.HashMap;
 import java.util.InputMismatchException;
+import java.util.Map;
 
 public class TypeDescriptors {
+
   private TypeDescriptors() {
   }
 
-  public static TypeDescriptor fromClassName(String className) {
-    return new ClassTypeDescriptor(className);
+  // Keep a cache of all the created ClassTypeDescriptor instances to prevent unnecessary
+  // duplication of instances. ClassTypeDescriptor is immutable once constructed.
+  // Since the CTD constructor involves string replacement, and there are several places where we
+  // want to turn a String into a ClassTypeDescriptor, we can optimize how many strings are
+  // created/replaced with this map.
+  private static Map<String, ClassTypeDescriptor> classTypeDescriptorCache = new HashMap<>();
+
+  public static ClassTypeDescriptor fromClassName(String className) {
+    return classTypeDescriptorCache.computeIfAbsent(className, ClassTypeDescriptor::new);
   }
 
   public static TypeDescriptor fromRaw(String raw) {

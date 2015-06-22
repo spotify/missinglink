@@ -25,7 +25,7 @@ public enum PrimitiveTypeDescriptor implements TypeDescriptor {
   private final char raw;
   private final String pretty;
 
-  private PrimitiveTypeDescriptor(char raw, String pretty) {
+  PrimitiveTypeDescriptor(char raw, String pretty) {
     this.raw = raw;
     this.pretty = pretty;
   }
@@ -35,6 +35,9 @@ public enum PrimitiveTypeDescriptor implements TypeDescriptor {
     return pretty;
   }
 
+  public String getRaw() {
+    return Character.toString(raw);
+  }
 
   private static final ImmutableMap<String, PrimitiveTypeDescriptor> mapping = createMapping();
 

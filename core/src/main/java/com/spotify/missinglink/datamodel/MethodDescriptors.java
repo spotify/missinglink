@@ -15,11 +15,15 @@
  */
 package com.spotify.missinglink.datamodel;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import org.objectweb.asm.Type;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 
@@ -29,17 +33,59 @@ public final class MethodDescriptors {
   }
 
   public static MethodDescriptor fromDesc(String desc, String name) {
-    Type type = Type.getMethodType(desc);
+    final MethodKey key = new MethodKey(name, desc);
+    return methodDescriptorCache.computeIfAbsent(key, MethodDescriptors::newDescriptor);
+  }
 
-    List<TypeDescriptor> params = ImmutableList.copyOf(type.getArgumentTypes()).stream()
+  private static MethodDescriptor newDescriptor(MethodKey key) {
+    Type type = Type.getMethodType(key.desc);
+
+    List<TypeDescriptor> params = Arrays.stream(type.getArgumentTypes())
         .map(Type::getDescriptor)
         .map(TypeDescriptors::fromRaw)
         .collect(toList());
 
     return new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw(type.getReturnType().getDescriptor()))
-        .name(name)
+        .name(key.name)
         .parameterTypes(ImmutableList.copyOf(params))
         .build();
+  }
+
+  private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache = new HashMap<>();
+
+  private static class MethodKey {
+    private final String name;
+    private final String desc;
+
+    public MethodKey(String name, String desc) {
+      this.name = Preconditions.checkNotNull(name);
+      this.desc = Preconditions.checkNotNull(desc);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      MethodKey key = (MethodKey) o;
+
+      if (!name.equals(key.name)) {
+        return false;
+      }
+      return desc.equals(key.desc);
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = name.hashCode();
+      result = 31 * result + desc.hashCode();
+      return result;
+    }
   }
 }
