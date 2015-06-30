@@ -16,10 +16,10 @@ Add the following plugin to pom.xml:
 <plugin>
   <groupId>com.spotify</groupId>
   <artifactId>missinglink-maven-plugin</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <executions>
     <execution>
-      <goals><goal>check-conflicts</goal></goals>
+      <goals><goal>check</goal></goals>
       <phase>process-classes</phase>
     </execution>
   </executions>
@@ -81,7 +81,7 @@ This problem finder can be executed against your Maven project from the
 command-line like:
 
 ```
-$ mvn com.spotify:missinglink-maven-plugin:0.1.0:check-conflicts
+$ mvn com.spotify:missinglink-maven-plugin:0.1.1:check
 ```
 
 The plugin will scan the source code of the current project, the runtime
@@ -141,7 +141,7 @@ like:
 </configuration>
 <executions>
   <execution>
-    <goals><goal>check-conflicts</goal></goals>
+    <goals><goal>check</goal></goals>
     <phase>process-classes</phase>
   </execution>
 </executions>
