@@ -17,14 +17,11 @@ package com.spotify.missinglink;
 
 import com.spotify.missinglink.datamodel.ArtifactName;
 import com.spotify.missinglink.datamodel.Dependency;
-
 import io.norberg.automatter.AutoMatter;
 
 @AutoMatter
 public interface Conflict {
   Dependency dependency();
-
-  ArtifactName existsIn();
 
   ArtifactName usedBy();
 

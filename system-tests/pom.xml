@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.spotify.missinglink.tests</groupId>
+  <artifactId>missinglink-systemtests</artifactId>
+  <version>0.1.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>missinglink-systemtests</name>
+
+  <modules>
+    <module>dependencies/a-class-duplicate</module>
+    <module>dependencies/a-v1</module>
+    <module>dependencies/a-v2</module>
+    <module>dependencies/b</module>
+
+    <module>tests/class-missing</module>
+    <module>tests/field-removed</module>
+    <module>tests/instantiate-with-method-missing</module>
+    <module>tests/library-invokes-removed-method</module>
+    <module>tests/method-became-inaccessible</module>
+    <module>tests/method-removed</module>
+    <module>tests/return-type-change</module>
+    <module>tests/same-class-different-artifact</module>
+    <module>tests/static-method-became-instance</module>
+
+    <!-- This one must be last, to make sure everything it needs is built -->
+    <module>verify-output</module>
+  </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.7</version>
+          <configuration>
+            <skip>true</skip>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+</project>

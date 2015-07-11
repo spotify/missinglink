@@ -15,15 +15,17 @@
  */
 package com.spotify.missinglink.maven;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-
 import com.spotify.missinglink.ArtifactLoader;
 import com.spotify.missinglink.Conflict;
 import com.spotify.missinglink.Conflict.ConflictCategory;
@@ -33,14 +35,10 @@ import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.Dependency;
-
-import org.apache.maven.artifact.DefaultArtifact;
-import org.apache.maven.artifact.InvalidRepositoryException;
+import com.spotify.missinglink.maven.reports.CheckReport;
+import com.spotify.missinglink.maven.reports.ConflictItem;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.model.Exclusion;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -51,24 +49,17 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
-import org.apache.maven.repository.legacy.metadata.ArtifactMetadataRetrievalException;
-import org.apache.maven.repository.legacy.metadata.ArtifactMetadataSource;
-import org.apache.maven.repository.legacy.metadata.DefaultMetadataResolutionRequest;
-import org.apache.maven.repository.legacy.metadata.MetadataResolutionRequest;
-import org.apache.maven.repository.legacy.metadata.ResolutionGroup;
-import org.apache.maven.shared.dependency.tree.DefaultDependencyTreeBuilder;
 import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -105,13 +96,6 @@ public class CheckMojo extends AbstractMojo {
    */
   @Parameter(defaultValue = "false", property = "failOnConflicts")
   protected boolean failOnConflicts;
-
-  /**
-   * Should we compute the set of omitted artifacts in the dependency graph and filter on those?
-   * Defaults to false.
-   */
-  @Parameter(defaultValue = "false", property = "filterOnOmittedSet")
-  protected boolean filterOnOmittedSet;
 
   /**
    * Log verbose output. Defaults to false. When false, logs at debug instead, so use `mvn -X` to
@@ -211,6 +195,24 @@ public class CheckMojo extends AbstractMojo {
 
     conflicts = filterConflicts(conflicts, categoriesToInclude);
 
+    final CheckReport checkReport = new CheckReport();
+    outputConflicts(conflicts, checkReport);
+
+    final File targetDirectory = new File(project.getBasedir(), "target");
+    final File directory = new File(targetDirectory, "missinglink-reports");
+    directory.mkdirs();
+    final File reportFile = new File(directory, "report.json");
+    try {
+      final ObjectMapper mapper = new ObjectMapper();
+      mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+      mapper.enable(SerializationFeature.INDENT_OUTPUT);
+      final FileOutputStream fileOutputStream = new FileOutputStream(reportFile);
+      mapper.writeValue(fileOutputStream, checkReport);
+      fileOutputStream.close();
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+
     if (conflicts.isEmpty()) {
       getLog().info("No conflicts found");
     } else {
@@ -220,12 +222,12 @@ public class CheckMojo extends AbstractMojo {
       }
       getLog().warn(warning);
 
-      outputConflicts(conflicts);
-
       if (failOnConflicts) {
         final String message = conflicts.size() + " class/method conflicts found between source "
                                + "code in this project and the runtime dependencies from the Maven"
-                               + " project. Look above for specific descriptions of each conflict";
+                               + " project. Look in "
+                               + reportFile
+                               + " for specific descriptions of each conflict";
         throw new MojoFailureException(message);
       }
     }
@@ -241,108 +243,6 @@ public class CheckMojo extends AbstractMojo {
     mavenDependencies.stream()
         .map(art -> "Dependency: " + art.toString())
         .forEach(log);
-  }
-
-  private ImmutableList<org.apache.maven.artifact.Artifact> resolveOmitted(
-      List<org.apache.maven.artifact.Artifact> liveArtifacts) {
-    try {
-      if (localRepository == null) {
-        localRepository = repositorySystem.createDefaultLocalRepository();
-      }
-
-      final Set<org.apache.maven.artifact.Artifact> omitted = findOmmitedArtifacts(liveArtifacts);
-
-      List<org.apache.maven.artifact.Artifact> artifacts = Lists.newArrayList();
-
-      final ArtifactResolutionRequest artifactResolutionRequest = new ArtifactResolutionRequest();
-      artifactResolutionRequest.setRemoteRepositories(this.project.getRemoteArtifactRepositories());
-      artifactResolutionRequest.setLocalRepository(localRepository);
-      artifactResolutionRequest.setResolveTransitively(true);
-
-      for (org.apache.maven.artifact.Artifact artifact : omitted) {
-        artifactResolutionRequest.setArtifact(artifact);
-        final ArtifactResolutionResult resolve =
-            repositorySystem.resolve(artifactResolutionRequest);
-        if (resolve.isSuccess()) {
-          artifacts.addAll(resolve.getArtifacts());
-        } else {
-          // TODO: add some sort of strict mode where we fail instead
-          getLog().warn("Could not resolve " + artifact);
-          //throw new RuntimeException("Could not resolve " + artifact);
-        }
-      }
-      Collections.sort(artifacts, Ordering.usingToString());
-      return ImmutableList.copyOf(artifacts);
-    } catch (InvalidRepositoryException e) {
-      throw Throwables.propagate(e);
-    }
-  }
-
-  private Set<org.apache.maven.artifact.Artifact> findOmmitedArtifacts(
-      List<org.apache.maven.artifact.Artifact> liveArtifacts) {
-    Set<org.apache.maven.artifact.Artifact> result;
-    final ArtifactMetadataSource artifactMetadataSource = getArtifactMetadataSource();
-
-    MetadataResolutionRequest request = new DefaultMetadataResolutionRequest();
-    request.setLocalRepository(localRepository);
-    request.setRemoteRepositories(project.getRemoteArtifactRepositories());
-
-    //System.out.println("Dep tree:");
-    final HashSet<org.apache.maven.artifact.Artifact> collector = Sets.newHashSet();
-    recurse(artifactMetadataSource, project.getArtifact(), "  ", request, collector);
-    //System.out.println("---");
-    result = collector;
-
-    result.removeAll(liveArtifacts);
-    return result;
-  }
-
-  private ArtifactMetadataSource getArtifactMetadataSource() {
-    // TODO: how can I get this cleanly?
-    try {
-      final Field field = DefaultDependencyTreeBuilder.class.getDeclaredField("metadataSource");
-      field.setAccessible(true);
-      return (ArtifactMetadataSource) field.get(dependencyTreeBuilder);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw Throwables.propagate(e);
-    }
-  }
-
-  private void recurse(ArtifactMetadataSource artifactMetadataSource,
-                       org.apache.maven.artifact.Artifact artifact, String indent,
-                       MetadataResolutionRequest request,
-                       Set<org.apache.maven.artifact.Artifact> collector) {
-    try {
-      if (collector.add(artifact)) {
-        request.setArtifact(artifact);
-        final ResolutionGroup group = artifactMetadataSource.retrieve(request);
-        //System.out.println(indent + artifact);
-        final Set<org.apache.maven.artifact.Artifact> dependencies = group.getArtifacts();
-        if (dependencies != null) {
-          for (org.apache.maven.artifact.Artifact dependency : dependencies) {
-            if (isValidScope(dependency.getScope())) {
-              final org.apache.maven.artifact.Artifact clone = new DefaultArtifact(
-                  dependency.getGroupId(),
-                  dependency.getArtifactId(),
-                  dependency.getVersionRange(),
-                  dependency.getScope(),
-                  dependency.getType(),
-                  dependency.getClassifier(),
-                  ARTIFACT_HANDLER);
-              recurse(artifactMetadataSource, clone, indent + "  ", request, collector);
-            }
-          }
-        }
-      } else {
-        //System.out.println(indent + artifact + "   (*)");
-      }
-    } catch (ArtifactMetadataRetrievalException e) {
-      getLog().warn("Could not resolve " + artifact);
-    }
-  }
-
-  private boolean isValidScope(String scope) {
-    return scope == null || "compile".equals(scope);
   }
 
   private Collection<Conflict> filterConflicts(Collection<Conflict> conflicts,
@@ -458,13 +358,6 @@ public class CheckMojo extends AbstractMojo {
     stopwatch.stop();
     getLog().debug("constructing runtime artifacts took: " + asMillis(stopwatch) + " ms");
 
-    final ImmutableList<Artifact> omittedProjectArtifacts;
-    if (filterOnOmittedSet) {
-      omittedProjectArtifacts = getOmittedArtifacts(projectDeps, log);
-    } else {
-      omittedProjectArtifacts = null;
-    }
-
     // also need to load JDK classes from the bootstrap classpath
     final String bootstrapClasspath = bootClassPathToUse();
 
@@ -492,7 +385,7 @@ public class CheckMojo extends AbstractMojo {
     stopwatch.reset().start();
 
     final Collection<Conflict> conflicts = conflictChecker.check(
-        projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts, omittedProjectArtifacts);
+        projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts);
 
     stopwatch.stop();
     getLog().debug("conflict checking took: " + asMillis(stopwatch) + " ms");
@@ -521,22 +414,6 @@ public class CheckMojo extends AbstractMojo {
     return bootClasspath;
   }
 
-  private ImmutableList<Artifact> getOmittedArtifacts(
-      List<org.apache.maven.artifact.Artifact> projectDeps, Consumer<String> log) {
-    final ImmutableList<org.apache.maven.artifact.Artifact> omittedArtifacts = resolveOmitted(
-        projectDeps);
-    log.accept("Project has " + omittedArtifacts.size() + " omitted dependencies");
-    omittedArtifacts.stream()
-        .map(art -> "Omitted: " + art.toString())
-        .forEach(log);
-
-    Stopwatch stopWatch = Stopwatch.createStarted();
-    final ImmutableList<Artifact> omittedProjectArtifacts = constructArtifacts(omittedArtifacts);
-    stopWatch.stop();
-    getLog().debug("constructing omitted artifacts took: " + asMillis(stopWatch) + " ms");
-    return omittedProjectArtifacts;
-  }
-
   private String mavenCoordinates(org.apache.maven.artifact.Artifact dep) {
     return
         dep.getGroupId() + ":" + dep.getArtifactId() + ":" + dep.getVersion() + ":" + dep
@@ -558,56 +435,16 @@ public class CheckMojo extends AbstractMojo {
     return stopwatch.elapsed(TimeUnit.MILLISECONDS);
   }
 
-  private void outputConflicts(Collection<Conflict> conflicts) {
+  private void outputConflicts(Collection<Conflict> conflicts, CheckReport checkReport) {
     Map<ConflictCategory, String> descriptions = new EnumMap<>(ConflictCategory.class);
     descriptions.put(ConflictCategory.CLASS_NOT_FOUND, "Class being called not found");
     descriptions.put(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND, "Method being called not found");
 
-    // group conflict by category
-    final Map<ConflictCategory, List<Conflict>> byCategory = conflicts.stream()
-        .collect(Collectors.groupingBy(Conflict::category));
-
-    for (ConflictCategory category : byCategory.keySet()) {
-      final String desc = descriptions.getOrDefault(category, category.name().replace('_', ' '));
-      getLog().warn("");
-      getLog().warn("Category: " + desc);
-
-      // next group by artifact containing the conflict
-      final Map<ArtifactName, List<Conflict>> byArtifact = byCategory.get(category).stream()
-          .collect(Collectors.groupingBy(Conflict::usedBy));
-
-      for (ArtifactName artifactName : byArtifact.keySet()) {
-        getLog().warn("  In artifact: " + artifactName.name());
-
-        // next group by class containing the conflict
-        final Map<ClassTypeDescriptor, List<Conflict>> byClassName =
-            byArtifact.get(artifactName).stream()
-                .collect(Collectors.groupingBy(c -> c.dependency().fromClass()));
-
-        for (ClassTypeDescriptor ctd : byClassName.keySet()) {
-          getLog().warn("    In class: " + ctd.toString());
-
-          byClassName.get(ctd).stream()
-              .forEach(c -> {
-                final Dependency dep = c.dependency();
-                getLog().warn("      In method:  " + dep.fromMethod().prettyWithoutReturnType()
-                              + optionalLineNumber(dep.fromLineNumber()));
-                getLog().warn("      " + dep.describe());
-                getLog().warn("      Problem: " + c.reason());
-                if (c.existsIn() != ConflictChecker.UNKNOWN_ARTIFACT_NAME) {
-                  getLog().warn("      Found in: " + c.existsIn().name());
-                }
-                // this could be smarter about separating each blob of warnings by method, but for
-                // now just output a bunch of dashes always
-                getLog().warn("      --------");
-              });
-        }
-      }
-    }
-  }
-
-  private String optionalLineNumber(int lineNumber) {
-    return lineNumber != 0 ? ":" + lineNumber : "";
+    final List<ConflictItem> reports = conflicts.stream()
+            .map(conflict1 -> new ConflictItem(conflict1))
+            .sorted(ConflictItem.COMPARATOR)
+            .collect(Collectors.toList());
+    checkReport.addAll(reports);
   }
 
   private Artifact toArtifact(String outputDirectory) {

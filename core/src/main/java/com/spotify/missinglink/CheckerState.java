@@ -20,16 +20,12 @@ import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
 
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 import io.norberg.automatter.AutoMatter;
 
 @AutoMatter
 interface CheckerState {
   Map<ClassTypeDescriptor, ArtifactName> sourceMappings();
-
-  Optional<Set<ClassTypeDescriptor>> potentialConflictClasses();
 
   Map<ClassTypeDescriptor, DeclaredClass> knownClasses();
 }

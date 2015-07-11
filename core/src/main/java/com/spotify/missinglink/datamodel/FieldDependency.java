@@ -31,9 +31,4 @@ public interface FieldDependency extends Dependency {
   ClassTypeDescriptor targetClass();
   TypeDescriptor fieldType();
   String fieldName();
-
-  @Override
-  default String describe() {
-    return "Access to: " + targetClass().toString() + "." + fieldName();
-  }
 }

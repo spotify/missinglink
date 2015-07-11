@@ -12,7 +12,7 @@
       <plugin>
         <groupId>com.spotify</groupId>
         <artifactId>missinglink-maven-plugin</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1.1-SNAPSHOT</version>
         <configuration>
           <failOnConflicts>true</failOnConflicts>
           <includeCategories>
