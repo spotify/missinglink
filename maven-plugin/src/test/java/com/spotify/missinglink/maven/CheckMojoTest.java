@@ -43,6 +43,9 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.plugin.testing.resources.TestResources;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,11 +55,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -164,10 +170,10 @@ public class CheckMojoTest {
     final CalledMethod callee = new CalledMethodBuilder()
         .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
         .descriptor(new MethodDescriptorBuilder()
-            .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
-            .name("bat")
-            .parameterTypes(ImmutableList.of())
-            .build())
+                        .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+                        .name("bat")
+                        .parameterTypes(ImmutableList.of())
+                        .build())
         .build();
 
     final DeclaredMethod caller = new DeclaredMethodBuilder()
@@ -291,7 +297,7 @@ public class CheckMojoTest {
 
     setMockConflictResults(
         mockConflicts(TypeDescriptors.fromClassName("groovy.lang.foo.Bar"),
-            ConflictCategory.CLASS_NOT_FOUND)
+                      ConflictCategory.CLASS_NOT_FOUND)
     );
 
     mojo.execute();
@@ -321,7 +327,7 @@ public class CheckMojoTest {
     // a conflict from com/Whatever => com/foo/Bar.bat where the latter class cannot be found
     setMockConflictResults(ImmutableList.of(
         conflict(ConflictCategory.CLASS_NOT_FOUND, TypeDescriptors.fromClassName("com/Whatever"),
-            caller, callee, "class com/foo/Bar not found")
+                 caller, callee, "class com/foo/Bar not found")
     ));
 
     final CheckMojo mojo = getMojo("ignore-destination-packages");
@@ -353,5 +359,72 @@ public class CheckMojoTest {
     getMojo("skip").execute();
 
     verifyNoMoreInteractions(conflictChecker, artifactLoader);
+  }
+
+  @Test
+  public void shouldIgnoreProvidedByDefault() throws Exception {
+    CheckMojo mojo = getMojo("simple-test");
+
+    setupProvidedArtifact(mojo);
+
+    mojo.execute();
+
+    verify(artifactLoader, never()).load(argThat(hasId("boobaz")), any(File.class));
+  }
+
+  @Test
+  public void shouldCheckProvidedIfConfigured() throws Exception {
+    CheckMojo mojo = getMojo("simple-test");
+
+    setupProvidedArtifact(mojo);
+
+    mojo.includeScopes.add("provided");
+
+    mojo.execute();
+
+    verify(artifactLoader).load(argThat(hasId("boobaz")), any(File.class));
+  }
+
+  private void setupProvidedArtifact(CheckMojo mojo) {
+    ImmutableSet<org.apache.maven.artifact.Artifact> artifacts = ImmutableSet.of(
+        new DefaultArtifact("com.foobar", "bizbat", "1.2.3", "compile", "jar", "", null),
+        new DefaultArtifact("com.foobar", "boobaz", "1.2.3", "provided", "jar", "", null)
+    );
+
+    // use '.' as the file so as to pretend that the artifacts are class file dependencies
+    artifacts.stream().forEach(artifact -> artifact.setFile(new File(".")));
+
+    mojo.project.setArtifacts(artifacts);
+
+  }
+
+  private Matcher<ArtifactName> hasId(String artifactId) {
+    return new TypeSafeMatcher<ArtifactName>() {
+      @Override
+      protected boolean matchesSafely(ArtifactName item) {
+        return item.name().contains(artifactId);
+      }
+
+      @Override
+      public void describeTo(Description description) {
+        description.appendText("artifact with id '" + artifactId + "'");
+      }
+    };
+  }
+
+  private Matcher<List<Artifact>> listWithProvidedArtifact() {
+    return new TypeSafeMatcher<List<Artifact>>() {
+      @Override
+      protected boolean matchesSafely(List<Artifact> item) {
+        return item.stream()
+            .filter(artifact -> "boobaz".equals(artifact.name().name()))
+            .findFirst().isPresent();
+      }
+
+      @Override
+      public void describeTo(Description description) {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 }

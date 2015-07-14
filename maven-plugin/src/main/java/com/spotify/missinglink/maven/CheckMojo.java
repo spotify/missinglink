@@ -83,6 +83,7 @@ import java.util.stream.StreamSupport;
 public class CheckMojo extends AbstractMojo {
 
   public static final DefaultArtifactHandler ARTIFACT_HANDLER = new DefaultArtifactHandler();
+  private static final List<String> DEFAULT_SCOPES = ImmutableList.of("compile", "test");
 
   @Component
   protected DependencyTreeBuilder dependencyTreeBuilder;
@@ -126,6 +127,14 @@ public class CheckMojo extends AbstractMojo {
    */
   @Parameter(property = "missinglink.includeCategories")
   protected List<String> includeCategories = new ArrayList<>();
+
+  /**
+   * Include dependencies with the following scopes in conflict checks. Default is "compile, test".
+   */
+  // NOTE: couldn't find a way to explicitly specify a default set of strings to include, so
+  // managing that explicitly in the execute() method below.
+  @Parameter(property = "missinglink.includeScopes", defaultValue = "compile, test")
+  protected List<String> includeScopes = new ArrayList<>();
 
   /**
    * Dependencies of the project to exclude from analysis. Defaults to an empty list. The
@@ -204,6 +213,10 @@ public class CheckMojo extends AbstractMojo {
       throw new MojoExecutionException(
           "Invalid value(s) for 'includeCategories': " + includeCategories + ". "
           + "Valid choices are: " + Joiner.on(", ").join(ConflictCategory.values()));
+    }
+
+    if (includeScopes.isEmpty()) {
+      includeScopes.addAll(DEFAULT_SCOPES);
     }
 
     Collection<Conflict> conflicts = loadArtifactsAndCheckConflicts();
@@ -437,11 +450,11 @@ public class CheckMojo extends AbstractMojo {
   }
 
   private Collection<Conflict> loadArtifactsAndCheckConflicts() {
-    // includes declared and transitive dependencies, and also provided scope
+    // includes declared and transitive dependencies, anything in the scopes configured to be
+    // included
     final List<org.apache.maven.artifact.Artifact> projectDeps =
         this.project.getArtifacts().stream()
-            // should we exclude provided?
-            //.filter(artifact -> !artifact.getScope().equals("provided"))
+            .filter(artifact -> includeScopes.contains(artifact.getScope()))
             .collect(Collectors.toList());
 
     getLog().debug("project dependencies: " + projectDeps.stream()
