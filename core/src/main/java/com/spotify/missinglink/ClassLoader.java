@@ -36,10 +36,12 @@ import com.spotify.missinglink.datamodel.TypeDescriptors;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -86,6 +88,9 @@ public class ClassLoader {
     }
 
     final Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
+
+    final Set<ClassTypeDescriptor> parents = new HashSet<>();
+    final Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
 
     for (MethodNode method : ClassLoader.<MethodNode>uncheckedCast(classNode.methods)) {
       // ... and the InsnList type looks like a java.util.List but is not one because why not?
@@ -144,6 +149,14 @@ public class ClassLoader {
                     .build());
           }
         }
+        if (insn instanceof LdcInsnNode) {
+          final LdcInsnNode ldcInsn = (LdcInsnNode) insn;
+
+          if (ldcInsn.cst instanceof Type) {
+            Type type = (Type) ldcInsn.cst;
+            loadedClasses.add(TypeDescriptors.fromClassName(type.getInternalName()));
+          }
+        }
       }
 
       final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
@@ -159,11 +172,10 @@ public class ClassLoader {
       }
     }
 
-    final Set<ClassTypeDescriptor> parents = new HashSet<>();
     parents.addAll(ClassLoader.<String>uncheckedCast(classNode.interfaces)
-        .stream()
-        .map(TypeDescriptors::fromClassName)
-        .collect(toList()));
+                       .stream()
+                       .map(TypeDescriptors::fromClassName)
+                       .collect(toList()));
     // java/lang/Object has no superclass
     if (classNode.superName != null) {
       parents.add(TypeDescriptors.fromClassName(classNode.superName));
@@ -171,6 +183,7 @@ public class ClassLoader {
 
     builder.methods(ImmutableMap.copyOf(declaredMethods))
         .parents(ImmutableSet.copyOf(parents))
+        .loadedClasses(ImmutableSet.copyOf(loadedClasses))
         .fields(fields.build());
 
     return builder.build();

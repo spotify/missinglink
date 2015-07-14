@@ -57,6 +57,7 @@ public class ConflictCheckerTest {
             TypeDescriptors.fromClassName("java/lang/Object"), new DeclaredClassBuilder()
                 .className(TypeDescriptors.fromClassName("java/lang/Object"))
                 .parents(ImmutableSet.of())
+                .loadedClasses(ImmutableSet.of())
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(ImmutableMap.of(
                     cloneDescriptor,
@@ -73,15 +74,17 @@ public class ConflictCheckerTest {
         .name(new ArtifactName("foo"))
         .classes(ImmutableMap.of(
             TypeDescriptors.fromClassName("com/spotify/ClassName"),
-              Simple.newClass("com/spotify/ClassName")
+            Simple.newClass("com/spotify/ClassName")
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
+                .loadedClasses(ImmutableSet.<ClassTypeDescriptor>of())
                 .methods(Simple.methodMap(
-                   Simple.newMethod(false, Simple.OBJECT, "something")
-                       .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
-                           .owner(TypeDescriptors.fromClassName("java/lang/Object"))
-                           .descriptor(cloneDescriptor)
-                           .build()))
-                       .build()))
+                    Simple.newMethod(false, Simple.OBJECT, "something")
+                        .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
+                                                         .owner(TypeDescriptors.fromClassName(
+                                                             "java/lang/Object"))
+                                                         .descriptor(cloneDescriptor)
+                                                         .build()))
+                        .build()))
                 .build()))
         .build();
 
@@ -98,6 +101,7 @@ public class ConflictCheckerTest {
             libClass1, new DeclaredClassBuilder()
                 .className(libClass1)
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
+                .loadedClasses(ImmutableSet.of())
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(Simple.methodMap(
                     Simple.newMethod(false, Simple.OBJECT, "broken")

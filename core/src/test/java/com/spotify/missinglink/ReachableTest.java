@@ -75,7 +75,7 @@ public class ReachableTest {
     DeclaredClass remote = newClass("other/Unknown")
         .build();
     DeclaredClass root = newClass("my/Root")
-        .parents(ImmutableSet.of(TypeDescriptors.fromClassName("other/Unknown")))
+        .loadedClasses(ImmutableSet.of(TypeDescriptors.fromClassName("other/Unknown")))
         .build();
     ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
     ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
