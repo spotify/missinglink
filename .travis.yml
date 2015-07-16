@@ -9,7 +9,10 @@ jdk:
   - oraclejdk8
 
 after_success:
-  - mvn clean cobertura:cobertura coveralls:report -Dcoveralls.token=${COVERALLS_TOKEN}
+  # Generate test coverage data with Cobertura and send the results to Coveralls.
+  # Only build the core and maven-plugin modules in this step - coverage for
+  # the benchmarks module is irrelevant.
+  - mvn -am -pl core,maven-plugin clean cobertura:cobertura coveralls:report -Dcoveralls.token=${COVERALLS_TOKEN}
 
 sudo: false
 
