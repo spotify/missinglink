@@ -177,7 +177,7 @@ public class ConflictChecker {
                                          DeclaredMethod method,
                                          ImmutableList.Builder<Conflict> builder) {
     for (CalledMethod calledMethod : method.methodCalls()) {
-      final TypeDescriptor owningClass = calledMethod.owner();
+      final ClassTypeDescriptor owningClass = calledMethod.owner();
       final DeclaredClass calledClass = state.knownClasses().get(owningClass);
 
       if (!state.potentialConflictClasses().isPresent() || state.potentialConflictClasses().get()
@@ -196,9 +196,6 @@ public class ConflictChecker {
               artifact.name(),
               state.sourceMappings().get(owningClass)
           ));
-        } else {
-          // Everything is ok!
-
         }
       }
     }
@@ -208,7 +205,7 @@ public class ConflictChecker {
                                          DeclaredMethod method,
                                          ImmutableList.Builder<Conflict> builder) {
     for (AccessedField field : method.fieldAccesses()) {
-      final TypeDescriptor owningClass = field.owner();
+      final ClassTypeDescriptor owningClass = field.owner();
       final DeclaredClass calledClass = state.knownClasses().get(owningClass);
 
       if (!state.potentialConflictClasses().isPresent() || state.potentialConflictClasses().get()
@@ -233,9 +230,6 @@ public class ConflictChecker {
               artifact.name(),
               state.sourceMappings().get(owningClass)
           ));
-        } else {
-          // Everything is ok!
-
         }
       }
     }
