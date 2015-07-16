@@ -333,8 +333,6 @@ public class CheckMojo extends AbstractMojo {
             }
           }
         }
-      } else {
-        //System.out.println(indent + artifact + "   (*)");
       }
     } catch (ArtifactMetadataRetrievalException e) {
       getLog().warn("Could not resolve " + artifact);

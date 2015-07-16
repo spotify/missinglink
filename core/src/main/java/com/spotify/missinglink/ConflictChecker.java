@@ -196,9 +196,6 @@ public class ConflictChecker {
               artifact.name(),
               state.sourceMappings().get(owningClass)
           ));
-        } else {
-          // Everything is ok!
-
         }
       }
     }
@@ -233,9 +230,6 @@ public class ConflictChecker {
               artifact.name(),
               state.sourceMappings().get(owningClass)
           ));
-        } else {
-          // Everything is ok!
-
         }
       }
     }

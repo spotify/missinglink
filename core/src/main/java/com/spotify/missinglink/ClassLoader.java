@@ -101,12 +101,7 @@ public class ClassLoader {
         }
         if (insn instanceof MethodInsnNode) {
           final MethodInsnNode minsn = (MethodInsnNode) insn;
-
-          if (minsn.owner.charAt(0) == '[') {
-            // TODO: add this as some other type of analysis instead of method call (class reference?)
-            //ArrayTypeDescriptor arrayDescriptor = (ArrayTypeDescriptor) TypeDescriptors.fromRaw(minsn.owner);
-
-          } else {
+          if (minsn.owner.charAt(0) != '[') {
             thisCalls.add(new CalledMethodBuilder()
                 .owner(TypeDescriptors.fromClassName(minsn.owner))
                 .descriptor(MethodDescriptors.fromDesc(minsn.desc, minsn.name))
