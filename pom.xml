@@ -166,6 +166,9 @@
           <instrumentation>
             <excludes>
               <exclude>com/spotify/missinglink/**/*Builder*.class</exclude>
+              <!-- JMH benchmarks -->
+              <exclude>com/spotify/missinglink/benchmarks/**/*</exclude>
+              <exclude>org/openjdk/jmh/**/*</exclude>
             </excludes>
           </instrumentation>
         </configuration>
