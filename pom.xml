@@ -52,6 +52,14 @@
       <name>Petter Måhlén</name>
       <email>petter@spotify.com</email>
     </developer>
+    <developer>
+      <id>dflemstr</id>
+      <name>David Flemström</name>
+      <email>dflemstr@spotify.com</email>
+      <roles>
+        <role>contributor</role>
+      </roles>
+    </developer>
   </developers>
 
   <modules>
