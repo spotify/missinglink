@@ -487,6 +487,11 @@ public class CheckMojo extends AbstractMojo {
 
     final Artifact projectArtifact = toArtifact(project.getBuild().getOutputDirectory());
 
+    if (projectArtifact.classes().isEmpty()) {
+      getLog().warn("No classes found in project build directory"
+                    + " - did you run 'mvn compile' first?");
+    }
+
     stopwatch.reset().start();
 
     final Collection<Conflict> conflicts = conflictChecker.check(
