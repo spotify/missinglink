@@ -338,7 +338,7 @@ public class ConflictChecker {
       final DeclaredClass declaredClass = classMap.get(parentClass);
       // TODO 6/2/15 mbrown -- treat properly, by flagging as a different type of Conflict
       if (declaredClass == null) {
-        System.out.printf("Warning: Cannot find parent %s of class %s\n",
+        System.out.printf("Warning: Cannot find parent %s of class %s%n",
             parentClass,
             calledClass.className());
       } else if (!missingField(field, declaredClass, classMap)) {
