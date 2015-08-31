@@ -54,15 +54,15 @@ public class ReachableTest {
 
   @Test
   public void testReachableViaCall() {
-    DeclaredMethod remoteMethod = newMethod(VOID, "called").build();
+    DeclaredMethod remoteMethod = newMethod(false, VOID, "called").build();
     DeclaredClass remote = newClass("other/Unknown")
         .methods(methodMap(remoteMethod))
         .build();
     DeclaredClass root = newClass("my/Root")
         .methods(methodMap(
-            newMethod(VOID, "foo")
+            newMethod(false, VOID, "foo")
                 .methodCalls(
-                    ImmutableSet.of(newCall(remote, remoteMethod))).build()))
+                    ImmutableSet.of(newCall(remote, remoteMethod, false, true))).build()))
         .build();
     ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
     ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
@@ -89,7 +89,7 @@ public class ReachableTest {
         .fields(ImmutableSet.of(newField(INT, "remoteField")))
         .build();
     ImmutableMap<MethodDescriptor, DeclaredMethod> methods = methodMap(
-        newMethod(VOID, "foo")
+        newMethod(false, VOID, "foo")
             .fieldAccesses(
                 ImmutableSet.of(Simple.newAccess(INT, "remoteField", "other/Unknown", 12)))
             .build());

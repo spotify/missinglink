@@ -167,7 +167,7 @@ public class ConflictChecker {
             artifact.name(),
             state.sourceMappings().get(owningClass)
         ));
-      } else if (missingMethod(calledMethod.descriptor(), calledClass, state.knownClasses())) {
+      } else if (missingMethod(calledMethod, calledClass, state.knownClasses())) {
         builder.add(conflict(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND,
             "Method not found: " + calledMethod.pretty(),
             dependency(clazz, method, calledMethod),
@@ -187,8 +187,8 @@ public class ConflictChecker {
 
       DeclaredField declaredField = new DeclaredFieldBuilder()
           .descriptor(field.descriptor())
-          .name(field.name())
-          .build();
+              .name(field.name())
+              .build();
 
       if (calledClass == null) {
         builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
@@ -291,12 +291,22 @@ public class ConflictChecker {
         .build();
   }
 
-  private boolean missingMethod(MethodDescriptor descriptor, DeclaredClass calledClass,
+  private boolean missingMethod(CalledMethod calledMethod, DeclaredClass calledClass,
                                 Map<ClassTypeDescriptor, DeclaredClass> classMap) {
+    final MethodDescriptor descriptor = calledMethod.descriptor();
     final DeclaredMethod method = calledClass.methods().get(descriptor);
+
     if (method != null) {
+      if (calledMethod.isStatic() != method.isStatic()) {
+        return true;
+      }
+
       // TODO: also validate return type
       return false;
+    }
+
+    if (!calledMethod.isVirtual()) {
+      return true;
     }
 
     // Might be defined in a super class
@@ -309,7 +319,7 @@ public class ConflictChecker {
         System.out.printf("Warning: Cannot find parent %s of class %s\n",
             parentClass,
             calledClass.className());
-      } else if (!missingMethod(descriptor, declaredClass, classMap)) {
+      } else if (!missingMethod(calledMethod, declaredClass, classMap)) {
         return false;
       }
     }
