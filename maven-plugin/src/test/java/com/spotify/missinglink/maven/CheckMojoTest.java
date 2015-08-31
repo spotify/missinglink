@@ -116,7 +116,7 @@ public class CheckMojoTest {
   private void setMockConflictResults(ImmutableList<Conflict> results) {
     when(conflictChecker.check(any(Artifact.class),
             anyListOf(Artifact.class),
-            anyListOf(Artifact.class), anyListOf(Artifact.class))
+            anyListOf(Artifact.class))
     ).thenReturn(results);
   }
 
@@ -146,7 +146,7 @@ public class CheckMojoTest {
         .dependency(dep)
         .reason(reason)
         .usedBy(new ArtifactName("source"))
-        .existsIn(new ArtifactName("dest"))
+        .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
         .build();
   }
 
@@ -227,7 +227,7 @@ public class CheckMojoTest {
   public void testBadValuesForIncludeCategories() throws Exception {
     when(conflictChecker.check(any(Artifact.class),
             anyListOf(Artifact.class),
-            anyListOf(Artifact.class), anyListOf(Artifact.class))
+            anyListOf(Artifact.class))
     ).thenThrow(new RuntimeException("Mojo should not get as far as checking conflicts if the "
                                      + "configuration is bad!"));
 
@@ -266,8 +266,8 @@ public class CheckMojoTest {
     verify(conflictChecker).check(
         any(Artifact.class),
         toCheck.capture(),
-        anyListOf(Artifact.class),
-        anyListOf(Artifact.class));
+        anyListOf(Artifact.class)
+    );
 
     assertThat(toCheck.getValue()).isEmpty();
   }

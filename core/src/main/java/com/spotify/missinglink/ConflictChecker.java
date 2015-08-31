@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
@@ -103,22 +102,15 @@ public class ConflictChecker {
    * @param artifactsToCheck all artifacts that are on the runtime classpath
    * @param allArtifacts     all artifacts, including implicit artifacts (runtime provided
    *                         artifacts)
-   * @param omitted          list of artifacts  If it is null, all classes are considered suspect,
-   *                         not classes from classes in an omitted artifact
    * @return a list of conflicts
    */
   public ImmutableList<Conflict> check(Artifact projectArtifact,
                                        List<Artifact> artifactsToCheck,
-                                       List<Artifact> allArtifacts,
-                                       List<Artifact> omitted) {
+                                       List<Artifact> allArtifacts) {
 
     final CheckerStateBuilder stateBuilder = new CheckerStateBuilder();
 
-    if (omitted != null) {
-      stateBuilder.potentialConflictClasses(Sets.newHashSet());
-    }
-
-    createCanonicalClassMapping(stateBuilder, allArtifacts, omitted);
+    createCanonicalClassMapping(stateBuilder, allArtifacts);
     CheckerState state = stateBuilder.build();
 
     // brute-force reachability analysis
@@ -151,26 +143,14 @@ public class ConflictChecker {
    * @param allArtifacts maven artifacts to populate checker state with
    */
   private void createCanonicalClassMapping(CheckerStateBuilder stateBuilder,
-                                           List<Artifact> allArtifacts, List<Artifact> omitted) {
+                                           List<Artifact> allArtifacts) {
     for (Artifact artifact : allArtifacts) {
       for (DeclaredClass clazz : artifact.classes().values()) {
-        if (stateBuilder.knownClasses().putIfAbsent(clazz.className(), clazz) != null) {
-          stateBuilder.potentialConflictClasses().map(p -> p.add(clazz.className()));
-        } else {
+        if (stateBuilder.knownClasses().putIfAbsent(clazz.className(), clazz) == null) {
           stateBuilder.putSourceMapping(clazz.className(), artifact.name());
         }
       }
     }
-
-    if (omitted != null) {
-      for (Artifact artifact : omitted) {
-        for (ClassTypeDescriptor classTypeDescriptor : artifact.classes().keySet()) {
-          stateBuilder.potentialConflictClasses().get().add(classTypeDescriptor);
-          stateBuilder.sourceMappings().putIfAbsent(classTypeDescriptor, artifact.name());
-        }
-      }
-    }
-
   }
 
   private void checkForBrokenMethodCalls(CheckerState state, Artifact artifact, DeclaredClass clazz,
@@ -180,23 +160,20 @@ public class ConflictChecker {
       final ClassTypeDescriptor owningClass = calledMethod.owner();
       final DeclaredClass calledClass = state.knownClasses().get(owningClass);
 
-      if (!state.potentialConflictClasses().isPresent() || state.potentialConflictClasses().get()
-          .contains(owningClass)) {
-        if (calledClass == null) {
-          builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
-              "Class not found: " + owningClass,
-              dependency(clazz, method, calledMethod),
-              artifact.name(),
-              state.sourceMappings().get(owningClass)
-          ));
-        } else if (missingMethod(calledMethod.descriptor(), calledClass, state.knownClasses())) {
-          builder.add(conflict(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND,
-              "Method not found: " + calledMethod.pretty(),
-              dependency(clazz, method, calledMethod),
-              artifact.name(),
-              state.sourceMappings().get(owningClass)
-          ));
-        }
+      if (calledClass == null) {
+        builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
+            "Class not found: " + owningClass,
+            dependency(clazz, method, calledMethod),
+            artifact.name(),
+            state.sourceMappings().get(owningClass)
+        ));
+      } else if (missingMethod(calledMethod.descriptor(), calledClass, state.knownClasses())) {
+        builder.add(conflict(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND,
+            "Method not found: " + calledMethod.pretty(),
+            dependency(clazz, method, calledMethod),
+            artifact.name(),
+            state.sourceMappings().get(owningClass)
+        ));
       }
     }
   }
@@ -208,29 +185,28 @@ public class ConflictChecker {
       final ClassTypeDescriptor owningClass = field.owner();
       final DeclaredClass calledClass = state.knownClasses().get(owningClass);
 
-      if (!state.potentialConflictClasses().isPresent() || state.potentialConflictClasses().get()
-          .contains(owningClass)) {
+      DeclaredField declaredField = new DeclaredFieldBuilder()
+          .descriptor(field.descriptor())
+          .name(field.name())
+          .build();
 
-        DeclaredField declaredField = new DeclaredFieldBuilder()
-            .descriptor(field.descriptor())
-            .name(field.name())
-            .build();
+      if (calledClass == null) {
+        builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
+            "Class not found: " + owningClass,
+            dependency(clazz, method, field),
+            artifact.name(),
+            state.sourceMappings().get(owningClass)
+        ));
+      } else if (missingField(declaredField, calledClass, state.knownClasses())) {
+        builder.add(conflict(ConflictCategory.FIELD_NOT_FOUND,
+            "Field not found: " + field.name(),
+            dependency(clazz, method, field),
+            artifact.name(),
+            state.sourceMappings().get(owningClass)
+        ));
+      } else {
+        // Everything is ok!
 
-        if (calledClass == null) {
-          builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
-              "Class not found: " + owningClass,
-              dependency(clazz, method, field),
-              artifact.name(),
-              state.sourceMappings().get(owningClass)
-          ));
-        } else if (missingField(declaredField, calledClass, state.knownClasses())) {
-          builder.add(conflict(ConflictCategory.FIELD_NOT_FOUND,
-              "Field not found: " + field.name(),
-              dependency(clazz, method, field),
-              artifact.name(),
-              state.sourceMappings().get(owningClass)
-          ));
-        }
       }
     }
   }

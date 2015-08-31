@@ -116,8 +116,8 @@ public class ConflictCheckerTest {
 
     final ImmutableList<Conflict> conflicts = checker.check(projectArtifact,
         ImmutableList.of(projectArtifact, rt),
-        ImmutableList.of(projectArtifact, rt),
-        ImmutableList.of());
+        ImmutableList.of(projectArtifact, rt)
+    );
     assertThat(conflicts).isEmpty();
   }
 
@@ -127,6 +127,6 @@ public class ConflictCheckerTest {
 
     ConflictChecker checker = new ConflictChecker();
 
-    assertThat(checker.check(projectArtifact, artifacts, artifacts, ImmutableList.of())).isEmpty();
+    assertThat(checker.check(projectArtifact, artifacts, artifacts)).isEmpty();
   }
 }

@@ -21,7 +21,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 import com.spotify.missinglink.ArtifactLoader;
@@ -35,40 +34,23 @@ import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
 import com.spotify.missinglink.datamodel.Dependency;
 
-import org.apache.maven.artifact.DefaultArtifact;
-import org.apache.maven.artifact.InvalidRepositoryException;
-import org.apache.maven.artifact.handler.DefaultArtifactHandler;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.model.Exclusion;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.repository.RepositorySystem;
-import org.apache.maven.repository.legacy.metadata.ArtifactMetadataRetrievalException;
-import org.apache.maven.repository.legacy.metadata.ArtifactMetadataSource;
-import org.apache.maven.repository.legacy.metadata.DefaultMetadataResolutionRequest;
-import org.apache.maven.repository.legacy.metadata.MetadataResolutionRequest;
-import org.apache.maven.repository.legacy.metadata.ResolutionGroup;
-import org.apache.maven.shared.dependency.tree.DefaultDependencyTreeBuilder;
-import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,17 +64,6 @@ import java.util.stream.StreamSupport;
 @Mojo(name = "check", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class CheckMojo extends AbstractMojo {
 
-  public static final DefaultArtifactHandler ARTIFACT_HANDLER = new DefaultArtifactHandler();
-
-  @Component
-  protected DependencyTreeBuilder dependencyTreeBuilder;
-
-  @Component
-  protected RepositorySystem repositorySystem;
-
-  @Parameter(defaultValue = "${localRepository}", readonly = true)
-  private ArtifactRepository localRepository;
-
   @Parameter(defaultValue = "${project}", readonly = true, required = true)
   protected MavenProject project;
 
@@ -105,13 +76,6 @@ public class CheckMojo extends AbstractMojo {
    */
   @Parameter(defaultValue = "false", property = "failOnConflicts")
   protected boolean failOnConflicts;
-
-  /**
-   * Should we compute the set of omitted artifacts in the dependency graph and filter on those?
-   * Defaults to false.
-   */
-  @Parameter(defaultValue = "false", property = "filterOnOmittedSet")
-  protected boolean filterOnOmittedSet;
 
   /**
    * Log verbose output. Defaults to false. When false, logs at debug instead, so use `mvn -X` to
@@ -243,106 +207,6 @@ public class CheckMojo extends AbstractMojo {
         .forEach(log);
   }
 
-  private ImmutableList<org.apache.maven.artifact.Artifact> resolveOmitted(
-      List<org.apache.maven.artifact.Artifact> liveArtifacts) {
-    try {
-      if (localRepository == null) {
-        localRepository = repositorySystem.createDefaultLocalRepository();
-      }
-
-      final Set<org.apache.maven.artifact.Artifact> omitted = findOmmitedArtifacts(liveArtifacts);
-
-      List<org.apache.maven.artifact.Artifact> artifacts = Lists.newArrayList();
-
-      final ArtifactResolutionRequest artifactResolutionRequest = new ArtifactResolutionRequest();
-      artifactResolutionRequest.setRemoteRepositories(this.project.getRemoteArtifactRepositories());
-      artifactResolutionRequest.setLocalRepository(localRepository);
-      artifactResolutionRequest.setResolveTransitively(true);
-
-      for (org.apache.maven.artifact.Artifact artifact : omitted) {
-        artifactResolutionRequest.setArtifact(artifact);
-        final ArtifactResolutionResult resolve =
-            repositorySystem.resolve(artifactResolutionRequest);
-        if (resolve.isSuccess()) {
-          artifacts.addAll(resolve.getArtifacts());
-        } else {
-          // TODO: add some sort of strict mode where we fail instead
-          getLog().warn("Could not resolve " + artifact);
-          //throw new RuntimeException("Could not resolve " + artifact);
-        }
-      }
-      Collections.sort(artifacts, Ordering.usingToString());
-      return ImmutableList.copyOf(artifacts);
-    } catch (InvalidRepositoryException e) {
-      throw Throwables.propagate(e);
-    }
-  }
-
-  private Set<org.apache.maven.artifact.Artifact> findOmmitedArtifacts(
-      List<org.apache.maven.artifact.Artifact> liveArtifacts) {
-    Set<org.apache.maven.artifact.Artifact> result;
-    final ArtifactMetadataSource artifactMetadataSource = getArtifactMetadataSource();
-
-    MetadataResolutionRequest request = new DefaultMetadataResolutionRequest();
-    request.setLocalRepository(localRepository);
-    request.setRemoteRepositories(project.getRemoteArtifactRepositories());
-
-    //System.out.println("Dep tree:");
-    final HashSet<org.apache.maven.artifact.Artifact> collector = Sets.newHashSet();
-    recurse(artifactMetadataSource, project.getArtifact(), "  ", request, collector);
-    //System.out.println("---");
-    result = collector;
-
-    result.removeAll(liveArtifacts);
-    return result;
-  }
-
-  private ArtifactMetadataSource getArtifactMetadataSource() {
-    // TODO: how can I get this cleanly?
-    try {
-      final Field field = DefaultDependencyTreeBuilder.class.getDeclaredField("metadataSource");
-      field.setAccessible(true);
-      return (ArtifactMetadataSource) field.get(dependencyTreeBuilder);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw Throwables.propagate(e);
-    }
-  }
-
-  private void recurse(ArtifactMetadataSource artifactMetadataSource,
-                       org.apache.maven.artifact.Artifact artifact, String indent,
-                       MetadataResolutionRequest request,
-                       Set<org.apache.maven.artifact.Artifact> collector) {
-    try {
-      if (collector.add(artifact)) {
-        request.setArtifact(artifact);
-        final ResolutionGroup group = artifactMetadataSource.retrieve(request);
-        //System.out.println(indent + artifact);
-        final Set<org.apache.maven.artifact.Artifact> dependencies = group.getArtifacts();
-        if (dependencies != null) {
-          for (org.apache.maven.artifact.Artifact dependency : dependencies) {
-            if (isValidScope(dependency.getScope())) {
-              final org.apache.maven.artifact.Artifact clone = new DefaultArtifact(
-                  dependency.getGroupId(),
-                  dependency.getArtifactId(),
-                  dependency.getVersionRange(),
-                  dependency.getScope(),
-                  dependency.getType(),
-                  dependency.getClassifier(),
-                  ARTIFACT_HANDLER);
-              recurse(artifactMetadataSource, clone, indent + "  ", request, collector);
-            }
-          }
-        }
-      }
-    } catch (ArtifactMetadataRetrievalException e) {
-      getLog().warn("Could not resolve " + artifact);
-    }
-  }
-
-  private boolean isValidScope(String scope) {
-    return scope == null || "compile".equals(scope);
-  }
-
   private Collection<Conflict> filterConflicts(Collection<Conflict> conflicts,
                                                Set<ConflictCategory> categoriesToInclude) {
 
@@ -456,19 +320,12 @@ public class CheckMojo extends AbstractMojo {
     stopwatch.stop();
     getLog().debug("constructing runtime artifacts took: " + asMillis(stopwatch) + " ms");
 
-    final ImmutableList<Artifact> omittedProjectArtifacts;
-    if (filterOnOmittedSet) {
-      omittedProjectArtifacts = getOmittedArtifacts(projectDeps, log);
-    } else {
-      omittedProjectArtifacts = null;
-    }
-
     // also need to load JDK classes from the bootstrap classpath
     final String bootstrapClasspath = bootClassPathToUse();
 
     stopwatch.reset().start();
 
-    final List<Artifact> bootstrapArtifacts = constructArtifacts(Arrays.asList(
+    final List<Artifact> bootstrapArtifacts = constructArtifacts(Arrays.<String>asList(
         bootstrapClasspath.split(System.getProperty("path.separator"))));
 
     stopwatch.stop();
@@ -495,7 +352,7 @@ public class CheckMojo extends AbstractMojo {
     stopwatch.reset().start();
 
     final Collection<Conflict> conflicts = conflictChecker.check(
-        projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts, omittedProjectArtifacts);
+        projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts);
 
     stopwatch.stop();
     getLog().debug("conflict checking took: " + asMillis(stopwatch) + " ms");
@@ -522,22 +379,6 @@ public class CheckMojo extends AbstractMojo {
     final String bootClasspath = System.getProperty("sun.boot.class.path");
     getLog().debug("derived bootclasspath: " + bootClasspath);
     return bootClasspath;
-  }
-
-  private ImmutableList<Artifact> getOmittedArtifacts(
-      List<org.apache.maven.artifact.Artifact> projectDeps, Consumer<String> log) {
-    final ImmutableList<org.apache.maven.artifact.Artifact> omittedArtifacts = resolveOmitted(
-        projectDeps);
-    log.accept("Project has " + omittedArtifacts.size() + " omitted dependencies");
-    omittedArtifacts.stream()
-        .map(art -> "Omitted: " + art.toString())
-        .forEach(log);
-
-    Stopwatch stopWatch = Stopwatch.createStarted();
-    final ImmutableList<Artifact> omittedProjectArtifacts = constructArtifacts(omittedArtifacts);
-    stopWatch.stop();
-    getLog().debug("constructing omitted artifacts took: " + asMillis(stopWatch) + " ms");
-    return omittedProjectArtifacts;
   }
 
   private String mavenCoordinates(org.apache.maven.artifact.Artifact dep) {
