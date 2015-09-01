@@ -76,7 +76,7 @@ public class ConflictCheckerTest {
               Simple.newClass("com/spotify/ClassName")
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
                 .methods(Simple.methodMap(
-                   Simple.newMethod(Simple.OBJECT, "something")
+                   Simple.newMethod(false, Simple.OBJECT, "something")
                        .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
                            .owner(TypeDescriptors.fromClassName("java/lang/Object"))
                            .descriptor(cloneDescriptor)
@@ -100,7 +100,7 @@ public class ConflictCheckerTest {
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(Simple.methodMap(
-                    Simple.newMethod(Simple.OBJECT, "broken")
+                    Simple.newMethod(false, Simple.OBJECT, "broken")
                         .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
                             .owner(TypeDescriptors.fromClassName("java/lang/Object"))
                             .descriptor(brokenMethodDescriptor)

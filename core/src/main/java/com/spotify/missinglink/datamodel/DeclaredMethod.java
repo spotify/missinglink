@@ -25,6 +25,8 @@ import io.norberg.automatter.AutoMatter;
 public interface DeclaredMethod {
   MethodDescriptor descriptor();
 
+  boolean isStatic();
+
   /** Calls that this method makes to other methods */
   ImmutableSet<CalledMethod> methodCalls();
 

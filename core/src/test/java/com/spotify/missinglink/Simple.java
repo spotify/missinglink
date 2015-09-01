@@ -70,13 +70,14 @@ public class Simple {
   }
 
 
-  public static DeclaredMethodBuilder newMethod(String returnDesc, String name,
+  public static DeclaredMethodBuilder newMethod(boolean isStatic, String returnDesc, String name,
                                                 String... parameterDesc) {
     List<TypeDescriptor> param = ImmutableList.copyOf(parameterDesc).stream()
         .map(TypeDescriptors::fromRaw)
         .collect(Collectors.toList());
 
     return new DeclaredMethodBuilder()
+        .isStatic(isStatic)
         .fieldAccesses(ImmutableSet.<AccessedField>of())
         .methodCalls(ImmutableSet.<CalledMethod>of())
         .descriptor(new MethodDescriptorBuilder()
@@ -85,10 +86,14 @@ public class Simple {
         .returnType(TypeDescriptors.fromRaw(returnDesc)).build());
   }
 
-  public static CalledMethod newCall(DeclaredClass owner, DeclaredMethod method) {
+  public static CalledMethod newCall(
+          DeclaredClass owner, DeclaredMethod method,
+          boolean isStatic, boolean isVirtual) {
     return new CalledMethodBuilder()
         .owner(owner.className())
         .descriptor(method.descriptor())
+        .isStatic(isStatic)
+        .isVirtual(isVirtual)
         .build();
   }
 
