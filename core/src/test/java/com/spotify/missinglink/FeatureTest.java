@@ -24,7 +24,6 @@ import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.CalledMethod;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredField;
 import com.spotify.missinglink.datamodel.DeclaredMethod;
 import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
@@ -39,7 +38,6 @@ import static com.spotify.missinglink.Simple.newAccess;
 import static com.spotify.missinglink.Simple.newArtifact;
 import static com.spotify.missinglink.Simple.newCall;
 import static com.spotify.missinglink.Simple.newClass;
-import static com.spotify.missinglink.Simple.newField;
 import static com.spotify.missinglink.Simple.newMethod;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,7 +51,6 @@ public class FeatureTest {
     final DeclaredMethod methodOnlyInD1 = newMethod(INT, "foo").build();
     final DeclaredClass fooClass = newClass("com/d/Foo").methods(methodMap(methodOnlyInD1)).build();
 
-    final Artifact d1 = newArtifact("D1", fooClass);
     final Artifact d2 = newArtifact("empty");
 
     final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1);
@@ -73,11 +70,11 @@ public class FeatureTest {
         .reason("Class not found: com.d.Foo")
         .category(ConflictCategory.CLASS_NOT_FOUND)
         .usedBy(root.name())
-        .existsIn(d1.name())
+        .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
@@ -88,8 +85,6 @@ public class FeatureTest {
     final DeclaredClass fooClass = newClass("com/d/Foo")
         .methods(methodMap(methodOnlyInD1))
         .build();
-
-    final Artifact d1 = newArtifact("D1", fooClass);
 
     final DeclaredClass d2Class = newClass("com/d/Foo").build();
     final Artifact d2 = newArtifact("D2", d2Class);
@@ -116,18 +111,12 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
   @org.junit.Test
   public void testMissingField() throws Exception {
-
-    final DeclaredField methodOnlyInD1 = newField("I", "foo");
-    final DeclaredClass fooClass =
-        newClass("com/d/Foo").fields(ImmutableSet.of(methodOnlyInD1)).build();
-
-    final Artifact d1 = newArtifact("D1", fooClass);
 
     final DeclaredClass d2Class = newClass("com/d/Foo").build();
     final Artifact d2 = newArtifact("D2", d2Class);
@@ -152,13 +141,13 @@ public class FeatureTest {
     final Conflict expectedConflict = new ConflictBuilder()
         .dependency(dependency(rootClass.className(), mainMethod, accessed))
         .reason("Field not found: foo")
-        .category(ConflictCategory.FIELD_NOT_FOUND)
-        .usedBy(root.name())
-        .existsIn(d2.name())
+            .category(ConflictCategory.FIELD_NOT_FOUND)
+            .usedBy(root.name())
+            .existsIn(d2.name())
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
@@ -183,8 +172,8 @@ public class FeatureTest {
 
     assertThat(conflictChecker.check(artifact,
         ImmutableList.of(artifact),
-        ImmutableList.of(artifact),
-        ImmutableList.of())).isEmpty();
+        ImmutableList.of(artifact)
+    )).isEmpty();
   }
 
   @org.junit.Test
@@ -209,8 +198,8 @@ public class FeatureTest {
     assertThat(conflictChecker
         .check(artifact,
             ImmutableList.of(artifact),
-            ImmutableList.of(artifact),
-            ImmutableList.of())).isEmpty();
+            ImmutableList.of(artifact)
+        )).isEmpty();
   }
 
   private static Dependency dependency(ClassTypeDescriptor className,
