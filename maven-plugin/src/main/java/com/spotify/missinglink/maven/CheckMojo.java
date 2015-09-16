@@ -92,6 +92,12 @@ public class CheckMojo extends AbstractMojo {
   protected List<String> includeCategories = new ArrayList<>();
 
   /**
+   * Include dependencies with the following scopes in conflict checks. Default is "compile, test".
+   */
+  @Parameter(property = "missinglink.includeScopes", defaultValue = "compile,test")
+  protected List<Scope> includeScopes = new ArrayList<>();
+
+  /**
    * Dependencies of the project to exclude from analysis. Defaults to an empty list. The
    * dependency should be specified as an {@link Exclusion} containing a groupId and artifactId.
    * Classes in these artifacts will not be checked for conflicts.
@@ -169,6 +175,8 @@ public class CheckMojo extends AbstractMojo {
           "Invalid value(s) for 'includeCategories': " + includeCategories + ". "
           + "Valid choices are: " + Joiner.on(", ").join(ConflictCategory.values()));
     }
+
+    getLog().info("Including scopes: " + includeScopes);
 
     Collection<Conflict> conflicts = loadArtifactsAndCheckConflicts();
     final int initialCount = conflicts.size();
@@ -299,11 +307,11 @@ public class CheckMojo extends AbstractMojo {
   }
 
   private Collection<Conflict> loadArtifactsAndCheckConflicts() {
-    // includes declared and transitive dependencies, and also provided scope
+    // includes declared and transitive dependencies, anything in the scopes configured to be
+    // included
     final List<org.apache.maven.artifact.Artifact> projectDeps =
         this.project.getArtifacts().stream()
-            // should we exclude provided?
-            //.filter(artifact -> !artifact.getScope().equals("provided"))
+            .filter(artifact -> includeScopes.contains(Scope.valueOf(artifact.getScope())))
             .collect(Collectors.toList());
 
     getLog().debug("project dependencies: " + projectDeps.stream()
