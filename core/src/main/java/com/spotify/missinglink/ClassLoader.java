@@ -57,126 +57,45 @@ import java.util.Set;
 import static java.util.stream.Collectors.toList;
 
 /**
- * TODO: document!
+ * Loads a single class from an input stream.
  */
-public class ClassLoader {
+public final class ClassLoader {
 
-  private final InputStream in;
-
-  public ClassLoader(InputStream in) {
-    this.in = in;
+  private ClassLoader() {
+    // prevent instantiation
   }
 
-  public DeclaredClass load() throws IOException {
-    ClassReader reader = new ClassReader(in);
-    DeclaredClassBuilder builder = new DeclaredClassBuilder();
+  public static DeclaredClass load(InputStream in) throws IOException {
+    ClassNode classNode = readClassNode(in);
 
-    final String className = reader.getClassName();
-    builder.className(TypeDescriptors.fromClassName(className));
-    final ClassNode classNode = new ClassNode();
-    reader.accept(classNode, 0);
+    Set<ClassTypeDescriptor> parents = readParents(classNode);
+    ImmutableSet<DeclaredField> declaredFields = readDeclaredFields(classNode);
 
-    ImmutableSet.Builder<DeclaredField> fields = new ImmutableSet.Builder<>();
-
-    @SuppressWarnings("unchecked")
-    final Iterable<FieldNode> classFields = (Iterable<FieldNode>) classNode.fields;
-    for (FieldNode field : classFields) {
-      fields.add(new DeclaredFieldBuilder()
-          .name(field.name)
-          .descriptor(TypeDescriptors.fromRaw(field.desc))
-          .build());
-    }
-
-    final Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
-
-    final Set<ClassTypeDescriptor> parents = new HashSet<>();
-    final Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
+    Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
+    Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
 
     for (MethodNode method : ClassLoader.<MethodNode>uncheckedCast(classNode.methods)) {
-      // ... and the InsnList type looks like a java.util.List but is not one because why not?
-      final Set<CalledMethod> thisCalls = new HashSet<>();
-      final Set<AccessedField> thisFields = new HashSet<>();
-
-      int lineNumber = 0;
-      for (Iterator<AbstractInsnNode> it2 =
-           ClassLoader.<AbstractInsnNode>uncheckedCast(method.instructions.iterator());
-           it2.hasNext();) {
-        final AbstractInsnNode insn = it2.next();
-        if (insn instanceof LineNumberNode) {
-          lineNumber = ((LineNumberNode) insn).line;
-        }
-        if (insn instanceof MethodInsnNode) {
-          final MethodInsnNode minsn = (MethodInsnNode) insn;
-          boolean isStatic;
-          boolean isVirtual;
-          switch (minsn.getOpcode()) {
-            case Opcodes.INVOKEVIRTUAL:
-            case Opcodes.INVOKEINTERFACE:
-              isVirtual = true;
-              isStatic = false;
-              break;
-            case Opcodes.INVOKESPECIAL:
-              isVirtual = false;
-              isStatic = false;
-              break;
-            case Opcodes.INVOKESTATIC:
-              isVirtual = false;
-              isStatic = true;
-              break;
-            default:
-              throw new RuntimeException("Unexpected method call opcode: " + minsn.getOpcode());
-          }
-          if (minsn.owner.charAt(0) != '[') {
-            thisCalls.add(new CalledMethodBuilder()
-                .owner(TypeDescriptors.fromClassName(minsn.owner))
-                .descriptor(MethodDescriptors.fromDesc(minsn.desc, minsn.name))
-                .isStatic(isStatic)
-                .isVirtual(isVirtual)
-                .lineNumber(lineNumber)
-                .build());
-
-          }
-        }
-        if (insn instanceof FieldInsnNode) {
-          final FieldInsnNode finsn = (FieldInsnNode) insn;
-          if (finsn.owner.charAt(0) != '[') {
-            thisFields.add(
-                new AccessedFieldBuilder()
-                    .name(finsn.name)
-                    .descriptor(TypeDescriptors.fromRaw(finsn.desc))
-                    .owner(TypeDescriptors.fromClassName(finsn.owner))
-                    .lineNumber(lineNumber)
-                    .build());
-          }
-        }
-        if (insn instanceof LdcInsnNode) {
-          // See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.ldc
-          // if an LDC instruction is emitted with a symbolic reference to a class, that class is
-          // loaded. This means we need to at least check for presence of that class, and also
-          // validate its static initialisation code, if any. It would probably be safe for some
-          // future to ignore other methods defined by the class.
-          final LdcInsnNode ldcInsn = (LdcInsnNode) insn;
-
-          if (ldcInsn.cst instanceof Type) {
-            Type type = (Type) ldcInsn.cst;
-            loadedClasses.add(TypeDescriptors.fromClassName(type.getInternalName()));
-          }
-        }
-      }
-
-      final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
-          .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
-          .methodCalls(ImmutableSet.copyOf(thisCalls))
-          .fieldAccesses(ImmutableSet.copyOf(thisFields))
-          .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
-          .build();
-
-      if (declaredMethods.put(declaredMethod.descriptor(), declaredMethod) != null) {
-        throw new RuntimeException(
-            "Multiple definitions of " + declaredMethod.descriptor() + " in class " + className);
-      }
+      analyseMethod(classNode.name, method, declaredMethods, loadedClasses);
     }
 
+    return new DeclaredClassBuilder()
+        .className(TypeDescriptors.fromClassName(classNode.name))
+        .methods(ImmutableMap.copyOf(declaredMethods))
+        .parents(ImmutableSet.copyOf(parents))
+        .loadedClasses(ImmutableSet.copyOf(loadedClasses))
+        .fields(declaredFields)
+        .build();
+  }
+
+  private static ClassNode readClassNode(InputStream in) throws IOException {
+    final ClassNode classNode = new ClassNode();
+    ClassReader reader = new ClassReader(in);
+    reader.accept(classNode, 0);
+    return classNode;
+  }
+
+  private static Set<ClassTypeDescriptor> readParents(ClassNode classNode) {
+    final Set<ClassTypeDescriptor> parents = new HashSet<>();
     parents.addAll(ClassLoader.<String>uncheckedCast(classNode.interfaces)
                        .stream()
                        .map(TypeDescriptors::fromClassName)
@@ -185,13 +104,118 @@ public class ClassLoader {
     if (classNode.superName != null) {
       parents.add(TypeDescriptors.fromClassName(classNode.superName));
     }
+    return parents;
+  }
 
-    builder.methods(ImmutableMap.copyOf(declaredMethods))
-        .parents(ImmutableSet.copyOf(parents))
-        .loadedClasses(ImmutableSet.copyOf(loadedClasses))
-        .fields(fields.build());
+  private static ImmutableSet<DeclaredField> readDeclaredFields(ClassNode classNode) {
+    ImmutableSet.Builder<DeclaredField> fields = new ImmutableSet.Builder<>();
 
-    return builder.build();
+    @SuppressWarnings("unchecked")
+    final Iterable<FieldNode> classFields = (Iterable<FieldNode>) classNode.fields;
+    for (FieldNode field : classFields) {
+      fields.add(new DeclaredFieldBuilder()
+                     .name(field.name)
+                     .descriptor(TypeDescriptors.fromRaw(field.desc))
+                     .build());
+    }
+    return fields.build();
+  }
+
+  private static void analyseMethod(String className,
+                                    MethodNode method,
+                                    Map<MethodDescriptor, DeclaredMethod> declaredMethods,
+                                    Set<ClassTypeDescriptor> loadedClasses) {
+    final Set<CalledMethod> thisCalls = new HashSet<>();
+    final Set<AccessedField> thisFields = new HashSet<>();
+
+    int lineNumber = 0;
+    for (Iterator<AbstractInsnNode> instructions =
+         ClassLoader.<AbstractInsnNode>uncheckedCast(method.instructions.iterator());
+         instructions.hasNext();) {
+      final AbstractInsnNode insn = instructions.next();
+      if (insn instanceof LineNumberNode) {
+        lineNumber = ((LineNumberNode) insn).line;
+      }
+      if (insn instanceof MethodInsnNode) {
+        handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
+      }
+      if (insn instanceof FieldInsnNode) {
+        handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
+      }
+      if (insn instanceof LdcInsnNode) {
+        handleLdc(loadedClasses, (LdcInsnNode) insn);
+      }
+    }
+
+    final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
+        .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
+        .methodCalls(ImmutableSet.copyOf(thisCalls))
+        .fieldAccesses(ImmutableSet.copyOf(thisFields))
+        .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
+        .build();
+
+    if (declaredMethods.put(declaredMethod.descriptor(), declaredMethod) != null) {
+      throw new RuntimeException(
+          "Multiple definitions of " + declaredMethod.descriptor() + " in class " + className);
+    }
+  }
+
+  private static void handleMethodCall(Set<CalledMethod> thisCalls,
+                                       int lineNumber,
+                                       MethodInsnNode insn) {
+    boolean isStatic;
+    boolean isVirtual;
+    switch (insn.getOpcode()) {
+      case Opcodes.INVOKEVIRTUAL:
+      case Opcodes.INVOKEINTERFACE:
+        isVirtual = true;
+        isStatic = false;
+        break;
+      case Opcodes.INVOKESPECIAL:
+        isVirtual = false;
+        isStatic = false;
+        break;
+      case Opcodes.INVOKESTATIC:
+        isVirtual = false;
+        isStatic = true;
+        break;
+      default:
+        throw new RuntimeException("Unexpected method call opcode: " + insn.getOpcode());
+    }
+    if (insn.owner.charAt(0) != '[') {
+      thisCalls.add(new CalledMethodBuilder()
+                        .owner(TypeDescriptors.fromClassName(insn.owner))
+                        .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
+                        .isStatic(isStatic)
+                        .isVirtual(isVirtual)
+                        .lineNumber(lineNumber)
+                        .build());
+    }
+  }
+
+  private static void handleFieldAccess(Set<AccessedField> thisFields, int lineNumber,
+                                        FieldInsnNode insn) {
+    if (insn.owner.charAt(0) != '[') {
+      thisFields.add(
+          new AccessedFieldBuilder()
+              .name(insn.name)
+              .descriptor(TypeDescriptors.fromRaw(insn.desc))
+              .owner(TypeDescriptors.fromClassName(insn.owner))
+              .lineNumber(lineNumber)
+              .build());
+    }
+  }
+
+  private static void handleLdc(Set<ClassTypeDescriptor> loadedClasses, LdcInsnNode insn) {
+    // See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.ldc
+    // if an LDC instruction is emitted with a symbolic reference to a class, that class is
+    // loaded. This means we need to at least check for presence of that class, and also
+    // validate its static initialisation code, if any. It would probably be safe for some
+    // future to ignore other methods defined by the class.
+    if (insn.cst instanceof Type) {
+      Type type = (Type) insn.cst;
+      loadedClasses.add(TypeDescriptors.fromClassName(type.getInternalName()));
+    }
   }
 
   // asm seems to compile it's code with a very low source version, so all collections from it

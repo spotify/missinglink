@@ -474,7 +474,7 @@ public class CheckMojo extends AbstractMojo {
 
   private DeclaredClass loadClass(File f) {
     try {
-      return new com.spotify.missinglink.ClassLoader(new FileInputStream(f)).load();
+      return com.spotify.missinglink.ClassLoader.load(new FileInputStream(f));
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
