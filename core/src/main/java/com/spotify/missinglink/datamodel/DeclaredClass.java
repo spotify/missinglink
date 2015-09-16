@@ -27,6 +27,9 @@ public interface DeclaredClass {
 
   // parent are class names: com/foo/bar/Baz
   ImmutableSet<ClassTypeDescriptor> parents();
+  // also includes other classes that are loaded by this class, even though
+  // no methods on those classes are explicitly called
+  ImmutableSet<ClassTypeDescriptor> loadedClasses();
 
   ImmutableMap<MethodDescriptor, DeclaredMethod> methods();
 

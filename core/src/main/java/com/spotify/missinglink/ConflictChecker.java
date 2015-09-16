@@ -230,6 +230,11 @@ public class ConflictChecker {
           .filter(declaredClass -> declaredClass != null)
           .collect(toList()));
 
+      toCheck.addAll(current.loadedClasses().stream()
+          .map(knownClasses::get)
+          .filter(declaredClass -> declaredClass != null)
+          .collect(toList()));
+
       toCheck.addAll(current.methods().values()
           .stream()
           .flatMap(declaredMethod -> declaredMethod.methodCalls().stream())

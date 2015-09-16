@@ -84,6 +84,19 @@ public class ReachableTest {
   }
 
   @Test
+  public void testReachableViaLdcLoad() {
+    DeclaredClass remote = newClass("other/Unknown")
+        .build();
+    DeclaredClass root = newClass("my/Root")
+        .loadedClasses(ImmutableSet.of(TypeDescriptors.fromClassName("other/Unknown")))
+        .build();
+    ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
+    ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
+    ImmutableSet<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    assertEquals(ImmutableSet.of(root.className(), remote.className()), reachable);
+  }
+
+  @Test
   public void testReachableViaField() {
     DeclaredClass remote = newClass("other/Unknown")
         .fields(ImmutableSet.of(newField(INT, "remoteField")))

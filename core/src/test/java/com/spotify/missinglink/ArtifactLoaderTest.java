@@ -90,8 +90,8 @@ public class ArtifactLoaderTest {
   }
 
   /**
-   * verify that the DeclaredClass.parents() set is actually populated with ClassTypeDescriptor
-   * instances - other types might leak through due to asm's use of raw lists.
+   * verify that the DeclaredClass.parents() set is actually populated with
+   * ClassTypeDescriptor instances - other types might leak through due to asm's use of raw lists.
    */
   @Test
   @SuppressWarnings("rawtypes")
@@ -167,8 +167,8 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadParent() throws Exception {
-    assertEquals(artifact.classes().get(TypeDescriptors.fromClassName("A")).parents(), ImmutableSet
-        .of(TypeDescriptors.fromClassName("java/lang/Object")));
+    assertEquals(artifact.classes().get(TypeDescriptors.fromClassName("A")).parents(),
+                 ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")));
   }
 
   /**

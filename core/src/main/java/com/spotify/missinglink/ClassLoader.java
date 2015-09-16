@@ -36,10 +36,12 @@ import com.spotify.missinglink.datamodel.TypeDescriptors;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -86,6 +88,9 @@ public class ClassLoader {
     }
 
     final Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
+
+    final Set<ClassTypeDescriptor> parents = new HashSet<>();
+    final Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
 
     for (MethodNode method : ClassLoader.<MethodNode>uncheckedCast(classNode.methods)) {
       // ... and the InsnList type looks like a java.util.List but is not one because why not?
@@ -144,6 +149,19 @@ public class ClassLoader {
                     .build());
           }
         }
+        if (insn instanceof LdcInsnNode) {
+          // See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.ldc
+          // if an LDC instruction is emitted with a symbolic reference to a class, that class is
+          // loaded. This means we need to at least check for presence of that class, and also
+          // validate its static initialisation code, if any. It would probably be safe for some
+          // future to ignore other methods defined by the class.
+          final LdcInsnNode ldcInsn = (LdcInsnNode) insn;
+
+          if (ldcInsn.cst instanceof Type) {
+            Type type = (Type) ldcInsn.cst;
+            loadedClasses.add(TypeDescriptors.fromClassName(type.getInternalName()));
+          }
+        }
       }
 
       final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
@@ -159,11 +177,10 @@ public class ClassLoader {
       }
     }
 
-    final Set<ClassTypeDescriptor> parents = new HashSet<>();
     parents.addAll(ClassLoader.<String>uncheckedCast(classNode.interfaces)
-        .stream()
-        .map(TypeDescriptors::fromClassName)
-        .collect(toList()));
+                       .stream()
+                       .map(TypeDescriptors::fromClassName)
+                       .collect(toList()));
     // java/lang/Object has no superclass
     if (classNode.superName != null) {
       parents.add(TypeDescriptors.fromClassName(classNode.superName));
@@ -171,6 +188,7 @@ public class ClassLoader {
 
     builder.methods(ImmutableMap.copyOf(declaredMethods))
         .parents(ImmutableSet.copyOf(parents))
+        .loadedClasses(ImmutableSet.copyOf(loadedClasses))
         .fields(fields.build());
 
     return builder.build();

@@ -65,6 +65,7 @@ public class Simple {
     return new DeclaredClassBuilder()
         .className(TypeDescriptors.fromClassName(className))
         .parents(ImmutableSet.of())
+        .loadedClasses(ImmutableSet.of())
         .methods(ImmutableMap.of())
         .fields(ImmutableSet.<DeclaredField>of());
   }
