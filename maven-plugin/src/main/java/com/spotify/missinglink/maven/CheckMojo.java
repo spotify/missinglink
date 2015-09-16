@@ -176,8 +176,6 @@ public class CheckMojo extends AbstractMojo {
           + "Valid choices are: " + Joiner.on(", ").join(ConflictCategory.values()));
     }
 
-    getLog().info("Including scopes: " + includeScopes);
-
     Collection<Conflict> conflicts = loadArtifactsAndCheckConflicts();
     final int initialCount = conflicts.size();
 

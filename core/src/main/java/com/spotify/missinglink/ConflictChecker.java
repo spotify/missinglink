@@ -310,7 +310,7 @@ public class ConflictChecker {
       return false;
     }
 
-    if (!calledMethod.isVirtual()) {
+    if (!calledMethod.isVirtual() && !calledMethod.isStatic()) {
       return true;
     }
 

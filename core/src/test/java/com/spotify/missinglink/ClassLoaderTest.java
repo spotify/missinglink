@@ -16,6 +16,7 @@
 package com.spotify.missinglink;
 
 import com.spotify.missinglink.datamodel.DeclaredClass;
+import com.spotify.missinglink.datamodel.TypeDescriptors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -55,5 +56,65 @@ public class ClassLoaderTest {
     final DeclaredClass declaredClass = ClassLoader.load(inputStream);
     assertThat(declaredClass).isNotNull();
     assertThat(declaredClass.methods()).isNotEmpty();
+  }
+
+  @Test
+  public void shouldHandleLoadingOfType() throws Exception {
+    try (FileInputStream inputStream = findClass(LdcLoadType.class)) {
+      DeclaredClass loaded = ClassLoader.load(inputStream);
+
+      assertThat(loaded.className().getClassName()).contains("LdcLoadType");
+    }
+  }
+
+  @Test
+  public void shouldHandleLoadingOfArrayOfType() throws Exception {
+    try (FileInputStream inputStream = findClass(LdcLoadArrayOfType.class)) {
+      DeclaredClass loaded = ClassLoader.load(inputStream);
+
+      assertThat(loaded.className().getClassName()).contains("LdcLoadArrayOfType");
+      assertThat(loaded.loadedClasses())
+          .containsExactly(TypeDescriptors.fromClassName(Object.class.getName()));
+    }
+  }
+
+  @Test
+  public void shouldHandleLoadingOfArrayOfPrimitive() throws Exception {
+    try (FileInputStream inputStream = findClass(LdcLoadArrayOfPrimitive.class)) {
+      DeclaredClass loaded = ClassLoader.load(inputStream);
+
+      assertThat(loaded.className().getClassName()).contains("LdcLoadArrayOfPrimitive");
+      assertThat(loaded.loadedClasses()).isEmpty();
+    }
+  }
+
+  private FileInputStream findClass(Class<?> aClass) throws Exception {
+    final File outputDir = FilePathHelper.getPath("target/test-classes");
+    File someClass = Files.walk(outputDir.toPath())
+        .map(Path::toFile)
+        .filter(file -> file.isFile() && file.getName().endsWith(aClass.getSimpleName() + ".class"))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("no file matching " + aClass + " found in " +
+                                                     outputDir + " ?"));
+
+    return new FileInputStream(someClass);
+  }
+
+  static class LdcLoadType {
+    static void test() {
+      System.out.println(FileInputStream.class.toString());
+    }
+  }
+
+  static class LdcLoadArrayOfType {
+    static void test() {
+      System.out.println(Object[].class);
+    }
+  }
+
+  static class LdcLoadArrayOfPrimitive {
+    static void test() {
+      System.out.println(long[].class);
+    }
   }
 }

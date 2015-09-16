@@ -17,6 +17,7 @@ package com.spotify.missinglink;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
@@ -27,8 +28,10 @@ import com.spotify.missinglink.datamodel.DeclaredMethod;
 import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
+import com.spotify.missinglink.datamodel.TypeDescriptors;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static com.spotify.missinglink.Simple.INT;
 import static com.spotify.missinglink.Simple.STRING;
@@ -173,8 +176,8 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
 
     assertThat(conflictChecker.check(artifact,
-        ImmutableList.of(artifact),
-        ImmutableList.of(artifact)
+                                     ImmutableList.of(artifact),
+                                     ImmutableList.of(artifact)
     )).isEmpty();
   }
 
@@ -206,9 +209,9 @@ public class FeatureTest {
             .build();
 
     assertEquals(Arrays.asList(expectedConflict),
-            conflictChecker.check(artifact,
-            ImmutableList.of(artifact),
-            ImmutableList.of(artifact)));
+                 conflictChecker.check(artifact,
+                                       ImmutableList.of(artifact),
+                                       ImmutableList.of(artifact)));
   }
 
   @org.junit.Test
@@ -254,8 +257,8 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
     assertThat(conflictChecker.check(artifact,
-            ImmutableList.of(artifact),
-            ImmutableList.of(artifact)
+                                     ImmutableList.of(artifact),
+                                     ImmutableList.of(artifact)
     )).isEmpty();
   }
 
@@ -284,10 +287,10 @@ public class FeatureTest {
             .build();
 
     assertEquals(Arrays.asList(expectedConflict),
-            conflictChecker.check(artifact,
-                    ImmutableList.of(artifact),
-                    ImmutableList.of(artifact)
-            ));
+                 conflictChecker.check(artifact,
+                                       ImmutableList.of(artifact),
+                                       ImmutableList.of(artifact)
+                 ));
   }
 
   @org.junit.Test
@@ -302,7 +305,9 @@ public class FeatureTest {
             .fieldAccesses(ImmutableSet.of())
             .build();
 
-    final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
+    final DeclaredClass mainClass = newClass("com/Main")
+        .parents(ImmutableSet.of(superClass.className()))
+        .methods(methodMap(mainMethod)).build();
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
@@ -319,6 +324,32 @@ public class FeatureTest {
                     ImmutableList.of(artifact),
                     ImmutableList.of(artifact)
             ));
+  }
+
+  @org.junit.Test
+  public void testNoConflictWithStaticCallInSuper() throws Exception {
+    final DeclaredMethod methodOnlyInSuper = newMethod(true, INT, "foo").build();
+    final DeclaredClass superClass =
+            newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
+
+    ClassTypeDescriptor mainClassName = TypeDescriptors.fromClassName("com/Main");
+    final CalledMethod methodCall = newCall(mainClassName, methodOnlyInSuper, true, false);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(ImmutableSet.of(methodCall))
+            .fieldAccesses(ImmutableSet.of())
+            .build();
+
+    final DeclaredClass mainClass = newClass("com/Main")
+        .parents(ImmutableSet.of(superClass.className()))
+        .methods(methodMap(mainMethod)).build();
+
+    final Artifact artifact = newArtifact("art", superClass, mainClass);
+
+    assertEquals(Collections.emptyList(),
+                 conflictChecker.check(artifact,
+                                       ImmutableList.of(artifact),
+                                       ImmutableList.of(artifact)
+                 ));
   }
 
   private static Dependency dependency(ClassTypeDescriptor className,

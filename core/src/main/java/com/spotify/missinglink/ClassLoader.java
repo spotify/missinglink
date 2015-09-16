@@ -132,18 +132,23 @@ public final class ClassLoader {
     for (Iterator<AbstractInsnNode> instructions =
          ClassLoader.<AbstractInsnNode>uncheckedCast(method.instructions.iterator());
          instructions.hasNext();) {
-      final AbstractInsnNode insn = instructions.next();
-      if (insn instanceof LineNumberNode) {
-        lineNumber = ((LineNumberNode) insn).line;
-      }
-      if (insn instanceof MethodInsnNode) {
-        handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
-      }
-      if (insn instanceof FieldInsnNode) {
-        handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
-      }
-      if (insn instanceof LdcInsnNode) {
-        handleLdc(loadedClasses, (LdcInsnNode) insn);
+      try {
+        final AbstractInsnNode insn = instructions.next();
+        if (insn instanceof LineNumberNode) {
+          lineNumber = ((LineNumberNode) insn).line;
+        }
+        if (insn instanceof MethodInsnNode) {
+          handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
+        }
+        if (insn instanceof FieldInsnNode) {
+          handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
+        }
+        if (insn instanceof LdcInsnNode) {
+          handleLdc(loadedClasses, (LdcInsnNode) insn);
+        }
+      } catch (Exception e) {
+        throw new MissingLinkException("Error analysing " + className + "." + method.name +
+                                       ", line: " + lineNumber, e);
       }
     }
 
@@ -214,7 +219,16 @@ public final class ClassLoader {
     // future to ignore other methods defined by the class.
     if (insn.cst instanceof Type) {
       Type type = (Type) insn.cst;
-      loadedClasses.add(TypeDescriptors.fromClassName(type.getInternalName()));
+
+      Type loadedType = type;
+
+      if (type.getSort() == Type.ARRAY) {
+        loadedType = type.getElementType();
+      }
+
+      if (loadedType.getSort() == Type.OBJECT) {
+        loadedClasses.add(TypeDescriptors.fromClassName(loadedType.getInternalName()));
+      }
     }
   }
 
