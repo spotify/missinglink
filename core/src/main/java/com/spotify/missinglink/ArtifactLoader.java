@@ -65,7 +65,7 @@ public class ArtifactLoader {
         JarEntry entry = entries.nextElement();
         if (entry.getName().endsWith(".class")) {
           try {
-            DeclaredClass cl = new ClassLoader(jarFile.getInputStream(entry)).load();
+            DeclaredClass cl = ClassLoader.load(jarFile.getInputStream(entry));
             classes.put(cl.className(), cl);
           } catch (Exception e) {
             System.err.println("Could not load " + entry.getName() + " from " + path);
@@ -84,7 +84,7 @@ public class ArtifactLoader {
 
       for (File file : classFilesInDir) {
         try (FileInputStream fis = new FileInputStream(file)) {
-          DeclaredClass cl = new ClassLoader(fis).load();
+          DeclaredClass cl = ClassLoader.load(fis);
           classes.put(cl.className(), cl);
         }
       }

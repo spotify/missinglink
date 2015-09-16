@@ -30,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ClassLoaderTest {
 
-  private ClassLoader loader;
   private FileInputStream inputStream;
 
   @Before
@@ -43,7 +42,6 @@ public class ClassLoaderTest {
         .orElseThrow(() -> new IllegalStateException("no classfiles in " + outputDir + " ?"));
 
     inputStream = new FileInputStream(someClass);
-    loader = new ClassLoader(inputStream);
   }
 
   @After
@@ -54,7 +52,7 @@ public class ClassLoaderTest {
   /** Simple test that load() doesn't blow up */
   @Test
   public void testLoad() throws Exception {
-    final DeclaredClass declaredClass = loader.load();
+    final DeclaredClass declaredClass = ClassLoader.load(inputStream);
     assertThat(declaredClass).isNotNull();
     assertThat(declaredClass.methods()).isNotEmpty();
   }
