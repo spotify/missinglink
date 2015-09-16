@@ -76,7 +76,7 @@ public class ConflictCheckerTest {
               Simple.newClass("com/spotify/ClassName")
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
                 .methods(Simple.methodMap(
-                   Simple.newMethod(Simple.OBJECT, "something")
+                   Simple.newMethod(false, Simple.OBJECT, "something")
                        .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
                            .owner(TypeDescriptors.fromClassName("java/lang/Object"))
                            .descriptor(cloneDescriptor)
@@ -100,7 +100,7 @@ public class ConflictCheckerTest {
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(Simple.methodMap(
-                    Simple.newMethod(Simple.OBJECT, "broken")
+                    Simple.newMethod(false, Simple.OBJECT, "broken")
                         .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
                             .owner(TypeDescriptors.fromClassName("java/lang/Object"))
                             .descriptor(brokenMethodDescriptor)
@@ -116,8 +116,8 @@ public class ConflictCheckerTest {
 
     final ImmutableList<Conflict> conflicts = checker.check(projectArtifact,
         ImmutableList.of(projectArtifact, rt),
-        ImmutableList.of(projectArtifact, rt),
-        ImmutableList.of());
+        ImmutableList.of(projectArtifact, rt)
+    );
     assertThat(conflicts).isEmpty();
   }
 
@@ -127,6 +127,6 @@ public class ConflictCheckerTest {
 
     ConflictChecker checker = new ConflictChecker();
 
-    assertThat(checker.check(projectArtifact, artifacts, artifacts, ImmutableList.of())).isEmpty();
+    assertThat(checker.check(projectArtifact, artifacts, artifacts)).isEmpty();
   }
 }

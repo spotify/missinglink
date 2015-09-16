@@ -35,6 +35,7 @@ import com.spotify.missinglink.datamodel.MethodDescriptors;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
 
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -101,15 +102,31 @@ public class ClassLoader {
         }
         if (insn instanceof MethodInsnNode) {
           final MethodInsnNode minsn = (MethodInsnNode) insn;
-
-          if (minsn.owner.charAt(0) == '[') {
-            // TODO: add this as some other type of analysis instead of method call (class reference?)
-            //ArrayTypeDescriptor arrayDescriptor = (ArrayTypeDescriptor) TypeDescriptors.fromRaw(minsn.owner);
-
-          } else {
+          boolean isStatic;
+          boolean isVirtual;
+          switch (minsn.getOpcode()) {
+            case Opcodes.INVOKEVIRTUAL:
+            case Opcodes.INVOKEINTERFACE:
+              isVirtual = true;
+              isStatic = false;
+              break;
+            case Opcodes.INVOKESPECIAL:
+              isVirtual = false;
+              isStatic = false;
+              break;
+            case Opcodes.INVOKESTATIC:
+              isVirtual = false;
+              isStatic = true;
+              break;
+            default:
+              throw new RuntimeException("Unexpected method call opcode: " + minsn.getOpcode());
+          }
+          if (minsn.owner.charAt(0) != '[') {
             thisCalls.add(new CalledMethodBuilder()
                 .owner(TypeDescriptors.fromClassName(minsn.owner))
                 .descriptor(MethodDescriptors.fromDesc(minsn.desc, minsn.name))
+                .isStatic(isStatic)
+                .isVirtual(isVirtual)
                 .lineNumber(lineNumber)
                 .build());
 
@@ -133,6 +150,7 @@ public class ClassLoader {
           .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
           .methodCalls(ImmutableSet.copyOf(thisCalls))
           .fieldAccesses(ImmutableSet.copyOf(thisFields))
+          .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
           .build();
 
       if (declaredMethods.put(declaredMethod.descriptor(), declaredMethod) != null) {

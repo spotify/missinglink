@@ -4,7 +4,6 @@
 
   <groupId>com.spotify.missinglink.tests</groupId>
   <artifactId>a-class-duplicate</artifactId>
-  <version>0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
+  <version>1-SNAPSHOT</version>
 
 </project>

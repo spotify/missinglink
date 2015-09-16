@@ -4,11 +4,9 @@
   <parent>
     <groupId>com.spotify.missinglink.tests</groupId>
     <artifactId>parent</artifactId>
-    <version>0.1-SNAPSHOT</version>
-    <relativePath>../test-parent</relativePath>
+    <version>1-SNAPSHOT</version>
   </parent>
 
   <artifactId>a</artifactId>
-  <version>0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
+  <version>1-SNAPSHOT</version>
 </project>

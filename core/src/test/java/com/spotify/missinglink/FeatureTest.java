@@ -17,18 +17,18 @@ package com.spotify.missinglink;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.CalledMethod;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredField;
 import com.spotify.missinglink.datamodel.DeclaredMethod;
 import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
+
+import java.util.Arrays;
 
 import static com.spotify.missinglink.Simple.INT;
 import static com.spotify.missinglink.Simple.STRING;
@@ -39,9 +39,9 @@ import static com.spotify.missinglink.Simple.newAccess;
 import static com.spotify.missinglink.Simple.newArtifact;
 import static com.spotify.missinglink.Simple.newCall;
 import static com.spotify.missinglink.Simple.newClass;
-import static com.spotify.missinglink.Simple.newField;
 import static com.spotify.missinglink.Simple.newMethod;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 public class FeatureTest {
 
@@ -50,14 +50,13 @@ public class FeatureTest {
   @org.junit.Test
   public void testSimpleConflict() throws Exception {
 
-    final DeclaredMethod methodOnlyInD1 = newMethod(INT, "foo").build();
+    final DeclaredMethod methodOnlyInD1 = newMethod(false, INT, "foo").build();
     final DeclaredClass fooClass = newClass("com/d/Foo").methods(methodMap(methodOnlyInD1)).build();
 
-    final Artifact d1 = newArtifact("D1", fooClass);
     final Artifact d2 = newArtifact("empty");
 
-    final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1);
-    final DeclaredMethod mainMethod = newMethod(VOID, "main")
+    final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1, false, true);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main")
         .methodCalls(ImmutableSet.of(methodCall)).build();
 
     final DeclaredClass rootClass = newClass("com/Root")
@@ -73,29 +72,27 @@ public class FeatureTest {
         .reason("Class not found: com.d.Foo")
         .category(ConflictCategory.CLASS_NOT_FOUND)
         .usedBy(root.name())
-        .existsIn(d1.name())
+        .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
   @org.junit.Test
   public void testSimpleConflict2() throws Exception {
 
-    final DeclaredMethod methodOnlyInD1 = newMethod(INT, "foo").build();
+    final DeclaredMethod methodOnlyInD1 = newMethod(false, INT, "foo").build();
     final DeclaredClass fooClass = newClass("com/d/Foo")
         .methods(methodMap(methodOnlyInD1))
         .build();
 
-    final Artifact d1 = newArtifact("D1", fooClass);
-
     final DeclaredClass d2Class = newClass("com/d/Foo").build();
     final Artifact d2 = newArtifact("D2", d2Class);
 
-    final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1);
-    final DeclaredMethod mainMethod = newMethod(VOID, "main", array(STRING))
+    final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1, false, true);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
         .methodCalls(ImmutableSet.of(methodCall))
         .build();
 
@@ -116,23 +113,17 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
   @org.junit.Test
   public void testMissingField() throws Exception {
 
-    final DeclaredField methodOnlyInD1 = newField("I", "foo");
-    final DeclaredClass fooClass =
-        newClass("com/d/Foo").fields(ImmutableSet.of(methodOnlyInD1)).build();
-
-    final Artifact d1 = newArtifact("D1", fooClass);
-
     final DeclaredClass d2Class = newClass("com/d/Foo").build();
     final Artifact d2 = newArtifact("D2", d2Class);
 
-    final DeclaredMethod mainMethod = newMethod(VOID, "main", array(STRING))
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
         .methodCalls(ImmutableSet.of())
         .fieldAccesses(ImmutableSet.of(
             newAccess("I", "foo", "com/d/Foo", 12)
@@ -158,21 +149,21 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-        .check(root, ImmutableList.of(root, d1, d2), classpath, ImmutableList.of(d1)))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
   @org.junit.Test
   public void testNoConflictWithInheritedMethodCall() throws Exception {
-    final DeclaredMethod methodOnlyInSuper = newMethod(INT, "foo").build();
+    final DeclaredMethod methodOnlyInSuper = newMethod(false, INT, "foo").build();
     final DeclaredClass superClass =
         newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
     final DeclaredClass subClass = newClass("com/Sub")
         .parents(ImmutableSet.of(superClass.className()))
         .build();
 
-    final CalledMethod methodCall = newCall(subClass, methodOnlyInSuper);
-    final DeclaredMethod mainMethod = newMethod(VOID, "main", array(STRING))
+    final CalledMethod methodCall = newCall(subClass, methodOnlyInSuper, false, true);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
         .methodCalls(ImmutableSet.of(methodCall))
         .fieldAccesses(ImmutableSet.of())
         .build();
@@ -183,22 +174,55 @@ public class FeatureTest {
 
     assertThat(conflictChecker.check(artifact,
         ImmutableList.of(artifact),
-        ImmutableList.of(artifact),
-        ImmutableList.of())).isEmpty();
+        ImmutableList.of(artifact)
+    )).isEmpty();
+  }
+
+  @org.junit.Test
+  public void testConflictWithInheritedMethodCallIfNonVirtual() throws Exception {
+    final DeclaredMethod methodOnlyInSuper = newMethod(false, INT, "foo").build();
+    final DeclaredClass superClass =
+        newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
+    final DeclaredClass subClass = newClass("com/Sub")
+        .parents(ImmutableSet.of(superClass.className()))
+        .build();
+
+    final CalledMethod methodCall = newCall(subClass, methodOnlyInSuper, false, false);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
+        .methodCalls(ImmutableSet.of(methodCall))
+        .fieldAccesses(ImmutableSet.of())
+        .build();
+
+    final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
+
+    final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
+
+    final Conflict expectedConflict = new ConflictBuilder()
+            .dependency(dependency(mainClass.className(), mainMethod, methodCall))
+            .reason("Method not found: com.Sub.foo()")
+            .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
+            .usedBy(artifact.name())
+            .existsIn(artifact.name())
+            .build();
+
+    assertEquals(Arrays.asList(expectedConflict),
+            conflictChecker.check(artifact,
+            ImmutableList.of(artifact),
+            ImmutableList.of(artifact)));
   }
 
   @org.junit.Test
   public void testNoConflictWithCovariantReturnType() throws Exception {
-    final DeclaredMethod superMethod = newMethod("Ljava/lang/CharSequence;", "foo").build();
+    final DeclaredMethod superMethod = newMethod(false, "Ljava/lang/CharSequence;", "foo").build();
     final DeclaredClass superClass = newClass("com/Super").methods(methodMap(superMethod)).build();
 
-    final DeclaredMethod subMethod = newMethod("Ljava/lang/String;", "foo").build();
+    final DeclaredMethod subMethod = newMethod(false, "Ljava/lang/String;", "foo").build();
     final DeclaredClass subClass = newClass("com/Sub").methods(methodMap(subMethod))
         .parents(ImmutableSet.of(superClass.className()))
         .build();
 
-    final CalledMethod methodCall = newCall(subClass, superMethod);
-    final DeclaredMethod mainMethod = newMethod(VOID, "main", array(STRING))
+    final CalledMethod methodCall = newCall(subClass, superMethod, false, true);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
         .methodCalls(ImmutableSet.of(methodCall))
         .build();
 
@@ -209,8 +233,92 @@ public class FeatureTest {
     assertThat(conflictChecker
         .check(artifact,
             ImmutableList.of(artifact),
+            ImmutableList.of(artifact)
+        )).isEmpty();
+  }
+
+  @org.junit.Test
+  public void testNoConflictWithStaticCall() throws Exception {
+    final DeclaredMethod methodOnlyInSuper = newMethod(true, INT, "foo").build();
+    final DeclaredClass superClass =
+            newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
+
+    final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, true, false);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(ImmutableSet.of(methodCall))
+            .fieldAccesses(ImmutableSet.of())
+            .build();
+
+    final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
+
+    final Artifact artifact = newArtifact("art", superClass, mainClass);
+
+    assertThat(conflictChecker.check(artifact,
             ImmutableList.of(artifact),
-            ImmutableList.of())).isEmpty();
+            ImmutableList.of(artifact)
+    )).isEmpty();
+  }
+
+  @org.junit.Test
+  public void testConflictWithStaticToVirtualCall() throws Exception {
+    final DeclaredMethod methodOnlyInSuper = newMethod(false, INT, "foo").build();
+    final DeclaredClass superClass =
+            newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
+
+    final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, true, false);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(ImmutableSet.of(methodCall))
+            .fieldAccesses(ImmutableSet.of())
+            .build();
+
+    final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
+
+    final Artifact artifact = newArtifact("art", superClass, mainClass);
+
+    final Conflict expectedConflict = new ConflictBuilder()
+            .dependency(dependency(mainClass.className(), mainMethod, methodCall))
+            .reason("Method not found: com.super.foo()")
+            .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
+            .usedBy(artifact.name())
+            .existsIn(artifact.name())
+            .build();
+
+    assertEquals(Arrays.asList(expectedConflict),
+            conflictChecker.check(artifact,
+                    ImmutableList.of(artifact),
+                    ImmutableList.of(artifact)
+            ));
+  }
+
+  @org.junit.Test
+  public void testConflictWithVirtualToStaticCall() throws Exception {
+    final DeclaredMethod methodOnlyInSuper = newMethod(true, INT, "foo").build();
+    final DeclaredClass superClass =
+            newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
+
+    final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, false, true);
+    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(ImmutableSet.of(methodCall))
+            .fieldAccesses(ImmutableSet.of())
+            .build();
+
+    final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
+
+    final Artifact artifact = newArtifact("art", superClass, mainClass);
+
+    final Conflict expectedConflict = new ConflictBuilder()
+            .dependency(dependency(mainClass.className(), mainMethod, methodCall))
+            .reason("Method not found: com.super.foo()")
+            .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
+            .usedBy(artifact.name())
+            .existsIn(artifact.name())
+            .build();
+
+    assertEquals(Arrays.asList(expectedConflict),
+            conflictChecker.check(artifact,
+                    ImmutableList.of(artifact),
+                    ImmutableList.of(artifact)
+            ));
   }
 
   private static Dependency dependency(ClassTypeDescriptor className,

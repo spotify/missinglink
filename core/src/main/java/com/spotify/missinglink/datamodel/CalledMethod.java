@@ -26,6 +26,10 @@ public interface CalledMethod {
 
   MethodDescriptor descriptor();
 
+  boolean isStatic();
+
+  boolean isVirtual();
+
   int lineNumber();
 
   default String pretty() {
