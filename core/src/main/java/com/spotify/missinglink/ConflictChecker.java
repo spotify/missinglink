@@ -78,7 +78,7 @@ import static java.util.stream.Collectors.toList;
  * If it is in M: fail.
  * If it is in S: check it.
  * <p>
- * If we don't have access to one of the loadedClasses, we could simply assume that the call is safe
+ * If we don't have access to one of the parents, we could simply assume that the call is safe
  * This would however lead to all methods being marked as safe, since everything ultimately
  * inherits from Object (or some other jdk class).
  * <p>

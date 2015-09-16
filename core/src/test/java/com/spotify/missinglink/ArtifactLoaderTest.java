@@ -90,7 +90,7 @@ public class ArtifactLoaderTest {
   }
 
   /**
-   * verify that the DeclaredClass.loadedClasses() set is actually populated with
+   * verify that the DeclaredClass.parents() set is actually populated with
    * ClassTypeDescriptor instances - other types might leak through due to asm's use of raw lists.
    */
   @Test

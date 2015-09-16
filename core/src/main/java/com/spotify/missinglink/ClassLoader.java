@@ -150,6 +150,11 @@ public class ClassLoader {
           }
         }
         if (insn instanceof LdcInsnNode) {
+          // See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.ldc
+          // if an LDC instruction is emitted with a symbolic reference to a class, that class is
+          // loaded. This means we need to at least check for presence of that class, and also
+          // validate its static initialisation code, if any. It would probably be safe for some
+          // future to ignore other methods defined by the class.
           final LdcInsnNode ldcInsn = (LdcInsnNode) insn;
 
           if (ldcInsn.cst instanceof Type) {
