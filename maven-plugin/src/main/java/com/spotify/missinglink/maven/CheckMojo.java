@@ -63,7 +63,6 @@ import java.util.stream.StreamSupport;
 
 @Mojo(name = "check", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class CheckMojo extends AbstractMojo {
-  private static final List<String> DEFAULT_SCOPES = ImmutableList.of("compile", "test");
 
   @Parameter(defaultValue = "${project}", readonly = true, required = true)
   protected MavenProject project;
@@ -95,10 +94,8 @@ public class CheckMojo extends AbstractMojo {
   /**
    * Include dependencies with the following scopes in conflict checks. Default is "compile, test".
    */
-  // NOTE: couldn't find a way to explicitly specify a default set of strings to include, so
-  // managing that explicitly in the execute() method below.
-  @Parameter(property = "missinglink.includeScopes", defaultValue = "compile, test")
-  protected List<String> includeScopes = new ArrayList<>();
+  @Parameter(property = "missinglink.includeScopes", defaultValue = "compile,test")
+  protected List<Scope> includeScopes = new ArrayList<>();
 
   /**
    * Dependencies of the project to exclude from analysis. Defaults to an empty list. The
@@ -179,9 +176,7 @@ public class CheckMojo extends AbstractMojo {
           + "Valid choices are: " + Joiner.on(", ").join(ConflictCategory.values()));
     }
 
-    if (includeScopes.isEmpty()) {
-      includeScopes.addAll(DEFAULT_SCOPES);
-    }
+    getLog().info("Including scopes: " + includeScopes);
 
     Collection<Conflict> conflicts = loadArtifactsAndCheckConflicts();
     final int initialCount = conflicts.size();
@@ -316,7 +311,7 @@ public class CheckMojo extends AbstractMojo {
     // included
     final List<org.apache.maven.artifact.Artifact> projectDeps =
         this.project.getArtifacts().stream()
-            .filter(artifact -> includeScopes.contains(artifact.getScope()))
+            .filter(artifact -> includeScopes.contains(Scope.valueOf(artifact.getScope())))
             .collect(Collectors.toList());
 
     getLog().debug("project dependencies: " + projectDeps.stream()

@@ -378,7 +378,7 @@ public class CheckMojoTest {
 
     setupProvidedArtifact(mojo);
 
-    mojo.includeScopes.add("provided");
+    mojo.includeScopes.add(Scope.provided);
 
     mojo.execute();
 
