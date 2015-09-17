@@ -310,10 +310,6 @@ public class ConflictChecker {
       return false;
     }
 
-    if (!calledMethod.isVirtual() && !calledMethod.isStatic()) {
-      return true;
-    }
-
     // Might be defined in a super class
     for (ClassTypeDescriptor parentClass : calledClass.parents()) {
       final DeclaredClass declaredClass = classMap.get(parentClass);

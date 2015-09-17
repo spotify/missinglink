@@ -27,6 +27,7 @@ import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static com.spotify.missinglink.ClassLoadingUtil.findClass;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ClassLoaderTest {
@@ -86,18 +87,6 @@ public class ClassLoaderTest {
       assertThat(loaded.className().getClassName()).contains("LdcLoadArrayOfPrimitive");
       assertThat(loaded.loadedClasses()).isEmpty();
     }
-  }
-
-  private FileInputStream findClass(Class<?> aClass) throws Exception {
-    final File outputDir = FilePathHelper.getPath("target/test-classes");
-    File someClass = Files.walk(outputDir.toPath())
-        .map(Path::toFile)
-        .filter(file -> file.isFile() && file.getName().endsWith(aClass.getSimpleName() + ".class"))
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("no file matching " + aClass + " found in " +
-                                                     outputDir + " ?"));
-
-    return new FileInputStream(someClass);
   }
 
   static class LdcLoadType {

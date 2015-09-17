@@ -34,12 +34,10 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.logging.Logger;
 
 import static java.util.stream.Collectors.toList;
 
 public class ArtifactLoader {
-  private static final Logger LOG = Logger.getLogger(ArtifactLoader.class.getName());
 
   /** Load artifact at path, using path name as artifactId */
   public Artifact load(File path) throws IOException {
@@ -69,10 +67,11 @@ public class ArtifactLoader {
           try {
             DeclaredClass cl = ClassLoader.load(jarFile.getInputStream(entry));
             classes.put(cl.className(), cl);
+          } catch (MissingLinkException e) {
+            throw e;
           } catch (Exception e) {
-            e.printStackTrace();
-            LOG.severe("Could not load " + entry.getName() + " from " + path + ": " +
-                       e.getMessage());
+            throw new MissingLinkException("Could not load " + entry.getName() + " from " + path,
+                                           e);
           }
         }
       }
