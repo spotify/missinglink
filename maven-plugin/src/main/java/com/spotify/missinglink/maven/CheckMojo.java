@@ -357,6 +357,12 @@ public class CheckMojo extends AbstractMojo {
 
     stopwatch.reset().start();
 
+    getLog().debug("Checking for conflicts starting from " + projectArtifact.name().name());
+    getLog().debug("Artifacts included in the project: ");
+    for (Artifact artifact : runtimeArtifactsAfterExclusions) {
+      getLog().debug("    " + artifact.name().name());
+    }
+
     final Collection<Conflict> conflicts = conflictChecker.check(
         projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts);
 

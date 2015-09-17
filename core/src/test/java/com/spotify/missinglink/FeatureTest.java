@@ -22,6 +22,7 @@ import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.CalledMethod;
+import com.spotify.missinglink.datamodel.CalledMethodBuilder;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
 import com.spotify.missinglink.datamodel.DeclaredMethod;
@@ -29,6 +30,8 @@ import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
+
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -353,6 +356,55 @@ public class FeatureTest {
     assertThat(conflictChecker.check(artifact,
                                      ImmutableList.of(artifact),
                                      allArtifacts)).isEmpty();
+  }
+
+  @Test
+  public void shouldReportMissingParent() throws Exception {
+    class LostParent {
+    }
+
+    class LacksParent extends LostParent {
+    }
+
+    DeclaredClass parent = load(findClass(LostParent.class));
+    DeclaredClass mainClass = load(findClass(LacksParent.class));
+
+    final Artifact artifact = newArtifact("art", mainClass);
+
+    ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
+        .addAll(ClassLoadingUtil.bootstrapArtifacts())
+        .add(artifact)
+        .build();
+
+    DeclaredMethod parentInit = parent.methods().values().stream()
+        .filter(declaredMethod -> declaredMethod.descriptor().name().equals("<init>"))
+        .findFirst()
+        .get();
+    DeclaredMethod init = mainClass.methods().values().stream()
+        .filter(declaredMethod -> declaredMethod.descriptor().name().equals("<init>"))
+        .findFirst()
+        .get();
+
+    CalledMethod calledMethod = new CalledMethodBuilder()
+        .descriptor(parentInit.descriptor())
+        .isStatic(parentInit.isStatic())
+        .isVirtual(false)
+        .lineNumber(init.lineNumber())
+        .owner(parent.className())
+        .build();
+
+    Conflict expectedConflict = new ConflictBuilder()
+        .dependency(dependency(mainClass.className(), init, calledMethod))
+        .reason("Class not found: com.spotify.missinglink.FeatureTest$1LostParent")
+        .category(ConflictCategory.CLASS_NOT_FOUND)
+        .usedBy(artifact.name())
+        .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
+        .build();
+
+    assertThat(conflictChecker.check(artifact,
+                                     ImmutableList.of(artifact),
+                                     allArtifacts))
+        .containsExactly(expectedConflict);
   }
 
   private static Dependency dependency(ClassTypeDescriptor className,

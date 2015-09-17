@@ -27,6 +27,8 @@ public interface DeclaredMethod {
 
   boolean isStatic();
 
+  int lineNumber();
+
   /** Calls that this method makes to other methods */
   ImmutableSet<CalledMethod> methodCalls();
 

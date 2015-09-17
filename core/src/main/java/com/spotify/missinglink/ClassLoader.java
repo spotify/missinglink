@@ -154,6 +154,7 @@ public final class ClassLoader {
 
     final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
         .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
+        .lineNumber(lineNumber)
         .methodCalls(ImmutableSet.copyOf(thisCalls))
         .fieldAccesses(ImmutableSet.copyOf(thisFields))
         .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
