@@ -92,9 +92,10 @@ public class CheckMojo extends AbstractMojo {
   protected List<String> includeCategories = new ArrayList<>();
 
   /**
-   * Include dependencies with the following scopes in conflict checks. Default is "compile, test".
+   * Consider dependencies with the following scopes to be sources of classes available on the
+   * classpath at runtime. Default is "compile".
    */
-  @Parameter(property = "missinglink.includeScopes", defaultValue = "compile,test")
+  @Parameter(property = "missinglink.includeScopes", defaultValue = "compile")
   protected List<Scope> includeScopes = new ArrayList<>();
 
   /**

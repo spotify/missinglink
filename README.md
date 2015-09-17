@@ -188,9 +188,9 @@ packages on the destination side can be ignored with
 <configuration>
   <!-- ignore conflicts with groovy.lang on the caller side -->
   <ignoreSourcePackages>
-    <ignoreSourcePackages>
+    <ignoreSourcePackage>
       <package>groovy.lang</package>
-    </ignoreSourcePackages>
+    </ignoreSourcePackage>
   </ignoreSourcePackages>
   <!-- ignore conflicts with com.foo on the callee side -->
   <ignoreDestinationPackages>
@@ -206,6 +206,17 @@ By default, all subpackages of the specified packages are also ignored, but
 this can be disabled on an individual basis by adding
 `<ignoreSubpackages>false</ignoreSubpackages>` to the `<ignoreSourcePackage>`
 or `<ignoreDestinationPackage>` element.
+
+## Include dependencies with different scopes
+
+NOTE: this feature is not available in the released version, only in the latest snapshot.
+
+In general, it only makes sense to run missinglink for an executable artifact as opposed to a
+library. The reason is that the exact set of dependencies that are included can change every time
+Maven includes new things. Therefore, by default, missinglink considers only 'compile' scoped
+artifacts to be sources for classes that will be available on the classpath. It's possible to
+override this scope setting via the `missinglink.includeScopes` property/the `<includeScopes>` XML
+configuration setting.
 
 # Caveats and Limitations
 
