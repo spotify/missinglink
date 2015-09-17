@@ -333,7 +333,7 @@ public class FeatureTest {
     }
 
     class SuperClass extends SuperDuperClass {
-      // does not define equals(Object)
+      // does not define foo(Object)
     }
 
     class MainClass extends SuperClass {
@@ -428,5 +428,4 @@ public class FeatureTest {
         .fieldType(field.descriptor())
         .build();
   }
-
 }

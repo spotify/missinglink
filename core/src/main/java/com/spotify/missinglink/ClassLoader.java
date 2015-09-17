@@ -240,5 +240,4 @@ public final class ClassLoader {
   private static <T> Iterator<T> uncheckedCast(Iterator iterator) {
     return (Iterator<T>) iterator;
   }
-
 }
