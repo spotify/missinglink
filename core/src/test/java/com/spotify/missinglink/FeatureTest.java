@@ -305,7 +305,7 @@ public class FeatureTest {
         newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
 
     ClassTypeDescriptor mainClassName = TypeDescriptors.fromClassName("com/Main");
-    final CalledMethod methodCall = newCall(mainClassName, methodOnlyInSuper, true, false);
+    final CalledMethod methodCall = newCall(mainClassName, methodOnlyInSuper, true);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
         .methodCalls(ImmutableSet.of(methodCall))
         .fieldAccesses(ImmutableSet.of())
@@ -388,7 +388,6 @@ public class FeatureTest {
     CalledMethod calledMethod = new CalledMethodBuilder()
         .descriptor(parentInit.descriptor())
         .isStatic(parentInit.isStatic())
-        .isVirtual(false)
         .lineNumber(init.lineNumber())
         .owner(parent.className())
         .build();

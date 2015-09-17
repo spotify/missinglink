@@ -132,7 +132,6 @@ public class ArtifactLoaderTest {
         .owner(TypeDescriptors.fromClassName("java/io/PrintStream"))
         .lineNumber(15)
         .isStatic(false)
-        .isVirtual(true)
         .descriptor(printlnDescriptor).build();
     assertTrue("Method must contain call to other method with hairy signature",
         method.methodCalls().contains(call));

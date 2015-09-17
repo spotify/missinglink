@@ -170,19 +170,15 @@ public final class ClassLoader {
                                        int lineNumber,
                                        MethodInsnNode insn) {
     boolean isStatic;
-    boolean isVirtual;
     switch (insn.getOpcode()) {
       case Opcodes.INVOKEVIRTUAL:
       case Opcodes.INVOKEINTERFACE:
-        isVirtual = true;
         isStatic = false;
         break;
       case Opcodes.INVOKESPECIAL:
-        isVirtual = false;
         isStatic = false;
         break;
       case Opcodes.INVOKESTATIC:
-        isVirtual = false;
         isStatic = true;
         break;
       default:
@@ -193,7 +189,6 @@ public final class ClassLoader {
                         .owner(TypeDescriptors.fromClassName(insn.owner))
                         .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
                         .isStatic(isStatic)
-                        .isVirtual(isVirtual)
                         .lineNumber(lineNumber)
                         .build());
     }

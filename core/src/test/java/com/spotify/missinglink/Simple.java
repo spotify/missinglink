@@ -90,16 +90,15 @@ public class Simple {
   public static CalledMethod newCall(
           DeclaredClass owner, DeclaredMethod method,
           boolean isStatic, boolean isVirtual) {
-    return newCall(owner.className(), method, isStatic, isVirtual);
+    return newCall(owner.className(), method, isStatic);
   }
 
   public static CalledMethod newCall(ClassTypeDescriptor owner, DeclaredMethod method,
-                                      boolean isStatic, boolean isVirtual) {
+                                     boolean isStatic) {
     return new CalledMethodBuilder()
         .owner(owner)
         .descriptor(method.descriptor())
         .isStatic(isStatic)
-        .isVirtual(isVirtual)
         .build();
   }
 
