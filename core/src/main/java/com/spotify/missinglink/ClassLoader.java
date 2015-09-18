@@ -69,7 +69,7 @@ public final class ClassLoader {
     ClassNode classNode = readClassNode(in);
 
     Set<ClassTypeDescriptor> parents = readParents(classNode);
-    ImmutableSet<DeclaredField> declaredFields = readDeclaredFields(classNode);
+    ImmutableMap<String, DeclaredField> declaredFields = readDeclaredFields(classNode);
 
     Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
     Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
@@ -107,16 +107,16 @@ public final class ClassLoader {
     return parents;
   }
 
-  private static ImmutableSet<DeclaredField> readDeclaredFields(ClassNode classNode) {
-    ImmutableSet.Builder<DeclaredField> fields = new ImmutableSet.Builder<>();
+  private static ImmutableMap<String, DeclaredField> readDeclaredFields(ClassNode classNode) {
+    ImmutableMap.Builder<String, DeclaredField> fields = new ImmutableMap.Builder<>();
 
     @SuppressWarnings("unchecked")
     final Iterable<FieldNode> classFields = (Iterable<FieldNode>) classNode.fields;
     for (FieldNode field : classFields) {
-      fields.add(new DeclaredFieldBuilder()
-                     .name(field.name)
-                     .descriptor(TypeDescriptors.fromRaw(field.desc))
-                     .build());
+      fields.put(field.name, new DeclaredFieldBuilder()
+          .name(field.name)
+          .descriptor(TypeDescriptors.fromRaw(field.desc))
+          .build());
     }
     return fields.build();
   }

@@ -67,7 +67,7 @@ public class Simple {
         .parents(ImmutableSet.of())
         .loadedClasses(ImmutableSet.of())
         .methods(ImmutableMap.of())
-        .fields(ImmutableSet.<DeclaredField>of());
+        .fields(ImmutableMap.<String, DeclaredField>of());
   }
 
 

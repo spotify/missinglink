@@ -143,7 +143,7 @@ public class ArtifactLoaderTest {
     DeclaredField myField = new DeclaredFieldBuilder().name("publicFieldOne")
         .descriptor(TypeDescriptors.fromRaw("Ljava/lang/Object;")).build();
     assertTrue("Class must contain field with hairy signature",
-        loadedClass.fields().contains(myField));
+        loadedClass.fields().get("publicFieldOne").equals(myField));
   }
 
   @Test

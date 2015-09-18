@@ -18,7 +18,6 @@ package com.spotify.missinglink;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.CalledMethod;
@@ -30,6 +29,7 @@ import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
+import com.spotify.missinglink.traversal.Node;
 
 import org.junit.Test;
 
@@ -75,13 +75,7 @@ public class FeatureTest {
 
     final ImmutableList<Artifact> classpath = ImmutableList.of(root, d2);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(rootClass.className(), mainMethod, methodCall))
-        .reason("Class not found: com.d.Foo")
-        .category(ConflictCategory.CLASS_NOT_FOUND)
-        .usedBy(root.name())
-        .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
-        .build();
+    final Node expectedConflict = null;
 
     assertThat(conflictChecker
                    .check(root, classpath, classpath))
@@ -112,17 +106,9 @@ public class FeatureTest {
 
     final ImmutableList<Artifact> classpath = ImmutableList.of(root, d2);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(rootClass.className(), mainMethod, methodCall))
-        .reason("Method not found: com.d.Foo.foo()")
-        .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
-        .usedBy(root.name())
-        .existsIn(d2.name())
-        .build();
-
     assertThat(conflictChecker
                    .check(root, classpath, classpath))
-        .isEqualTo(ImmutableList.of(expectedConflict));
+        .isEqualTo(ImmutableList.of(null));
   }
 
   @org.junit.Test
@@ -148,17 +134,9 @@ public class FeatureTest {
 
     final AccessedField accessed = newAccess(INT, "foo", "com/d/Foo", 12);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(rootClass.className(), mainMethod, accessed))
-        .reason("Field not found: foo")
-        .category(ConflictCategory.FIELD_NOT_FOUND)
-        .usedBy(root.name())
-        .existsIn(d2.name())
-        .build();
-
     assertThat(conflictChecker
                    .check(root, classpath, classpath))
-        .isEqualTo(ImmutableList.of(expectedConflict));
+        .isEqualTo(ImmutableList.of(null));
   }
 
   @org.junit.Test
@@ -250,15 +228,7 @@ public class FeatureTest {
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(mainClass.className(), mainMethod, methodCall))
-        .reason("Method not found: com.super.foo()")
-        .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
-        .usedBy(artifact.name())
-        .existsIn(artifact.name())
-        .build();
-
-    assertEquals(Arrays.asList(expectedConflict),
+    assertEquals(Arrays.asList(null),
                  conflictChecker.check(artifact,
                                        ImmutableList.of(artifact),
                                        ImmutableList.of(artifact)
@@ -283,15 +253,7 @@ public class FeatureTest {
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(mainClass.className(), mainMethod, methodCall))
-        .reason("Method not found: com.super.foo()")
-        .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
-        .usedBy(artifact.name())
-        .existsIn(artifact.name())
-        .build();
-
-    assertEquals(Arrays.asList(expectedConflict),
+    assertEquals(Arrays.asList(null),
                  conflictChecker.check(artifact,
                                        ImmutableList.of(artifact),
                                        ImmutableList.of(artifact)
@@ -392,18 +354,10 @@ public class FeatureTest {
         .owner(parent.className())
         .build();
 
-    Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(mainClass.className(), init, calledMethod))
-        .reason("Class not found: com.spotify.missinglink.FeatureTest$1LostParent")
-        .category(ConflictCategory.CLASS_NOT_FOUND)
-        .usedBy(artifact.name())
-        .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
-        .build();
-
     assertThat(conflictChecker.check(artifact,
                                      ImmutableList.of(artifact),
                                      allArtifacts))
-        .containsExactly(expectedConflict);
+        .containsExactly(null);
   }
 
   private static Dependency dependency(ClassTypeDescriptor className,

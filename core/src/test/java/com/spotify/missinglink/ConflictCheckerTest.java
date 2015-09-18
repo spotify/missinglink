@@ -30,6 +30,7 @@ import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
+import com.spotify.missinglink.traversal.Node;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -58,7 +59,7 @@ public class ConflictCheckerTest {
                 .className(TypeDescriptors.fromClassName("java/lang/Object"))
                 .parents(ImmutableSet.of())
                 .loadedClasses(ImmutableSet.of())
-                .fields(ImmutableSet.<DeclaredField>of())
+                .fields(ImmutableMap.<String, DeclaredField>of())
                 .methods(ImmutableMap.of(
                     cloneDescriptor,
                     new DeclaredMethodBuilder()
@@ -102,7 +103,7 @@ public class ConflictCheckerTest {
                 .className(libClass1)
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
                 .loadedClasses(ImmutableSet.of())
-                .fields(ImmutableSet.<DeclaredField>of())
+                .fields(ImmutableMap.<String, DeclaredField>of())
                 .methods(Simple.methodMap(
                     Simple.newMethod(false, Simple.OBJECT, "broken")
                         .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
@@ -118,7 +119,7 @@ public class ConflictCheckerTest {
   public void shouldSupportInvocationsOnArrayTypes() throws Exception {
     ConflictChecker checker = new ConflictChecker();
 
-    final ImmutableList<Conflict> conflicts = checker.check(projectArtifact,
+    final ImmutableList<Node> conflicts = checker.check(projectArtifact,
         ImmutableList.of(projectArtifact, rt),
         ImmutableList.of(projectArtifact, rt)
     );

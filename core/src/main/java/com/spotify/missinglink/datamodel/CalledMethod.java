@@ -18,6 +18,7 @@ package com.spotify.missinglink.datamodel;
 import io.norberg.automatter.AutoMatter;
 
 /** Information about a method called by a DeclaredMethod */
+//TODO: rename to MethodCall
 @AutoMatter
 public interface CalledMethod {
 

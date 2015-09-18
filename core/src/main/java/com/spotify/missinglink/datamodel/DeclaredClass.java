@@ -33,6 +33,6 @@ public interface DeclaredClass {
 
   ImmutableMap<MethodDescriptor, DeclaredMethod> methods();
 
-  ImmutableSet<DeclaredField> fields();
+  ImmutableMap<String, DeclaredField> fields();
 
 }
