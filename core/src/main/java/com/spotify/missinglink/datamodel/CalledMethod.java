@@ -28,8 +28,6 @@ public interface CalledMethod {
 
   boolean isStatic();
 
-  boolean isVirtual();
-
   int lineNumber();
 
   default String pretty() {

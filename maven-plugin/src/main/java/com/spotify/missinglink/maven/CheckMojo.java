@@ -178,8 +178,6 @@ public class CheckMojo extends AbstractMojo {
           + "Valid choices are: " + Joiner.on(", ").join(ConflictCategory.values()));
     }
 
-    getLog().info("Including scopes: " + includeScopes);
-
     Collection<Conflict> conflicts = loadArtifactsAndCheckConflicts();
     final int initialCount = conflicts.size();
 
@@ -360,6 +358,12 @@ public class CheckMojo extends AbstractMojo {
     }
 
     stopwatch.reset().start();
+
+    getLog().debug("Checking for conflicts starting from " + projectArtifact.name().name());
+    getLog().debug("Artifacts included in the project: ");
+    for (Artifact artifact : runtimeArtifactsAfterExclusions) {
+      getLog().debug("    " + artifact.name().name());
+    }
 
     final Collection<Conflict> conflicts = conflictChecker.check(
         projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts);

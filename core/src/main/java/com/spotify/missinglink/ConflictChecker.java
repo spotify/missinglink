@@ -310,22 +310,15 @@ public class ConflictChecker {
       return false;
     }
 
-    if (!calledMethod.isVirtual()) {
-      return true;
-    }
-
     // Might be defined in a super class
     for (ClassTypeDescriptor parentClass : calledClass.parents()) {
       final DeclaredClass declaredClass = classMap.get(parentClass);
-      // TODO 6/2/15 mbrown -- treat properly, by flagging as a different type of Conflict
-      // note that declaredClass can only be null not on the first call to this
-      // method but on the recursive invocations
-      if (declaredClass == null) {
-        System.out.printf("Warning: Cannot find parent %s of class %s\n",
-            parentClass,
-            calledClass.className());
-      } else if (!missingMethod(calledMethod, declaredClass, classMap)) {
-        return false;
+      // ignore null parents - this means that the parent cannot be found, and this error gets
+      // reported since the class's constructor tries to call its parent's constructor.
+      if (declaredClass != null) {
+        if (!missingMethod(calledMethod, declaredClass, classMap)) {
+          return false;
+        }
       }
     }
 

@@ -67,8 +67,11 @@ public class ArtifactLoader {
           try {
             DeclaredClass cl = ClassLoader.load(jarFile.getInputStream(entry));
             classes.put(cl.className(), cl);
+          } catch (MissingLinkException e) {
+            throw e;
           } catch (Exception e) {
-            System.err.println("Could not load " + entry.getName() + " from " + path);
+            throw new MissingLinkException("Could not load " + entry.getName() + " from " + path,
+                                           e);
           }
         }
       }

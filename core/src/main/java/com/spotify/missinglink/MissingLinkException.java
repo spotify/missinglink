@@ -13,24 +13,19 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableSet;
+/**
+ * Thrown in case of a problem running missinglink that should be reported to the caller, aborting
+ * processing.
+ */
+public class MissingLinkException extends RuntimeException {
 
-import io.norberg.automatter.AutoMatter;
+  public MissingLinkException(String message) {
+    super(message);
+  }
 
-@AutoMatter
-// TODO: rename to something better - ImplementedMethod ? DefinedMethod ?
-/** Represents methods in a class */
-public interface DeclaredMethod {
-  MethodDescriptor descriptor();
-
-  boolean isStatic();
-
-  int lineNumber();
-
-  /** Calls that this method makes to other methods */
-  ImmutableSet<CalledMethod> methodCalls();
-
-  ImmutableSet<AccessedField> fieldAccesses();
+  public MissingLinkException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

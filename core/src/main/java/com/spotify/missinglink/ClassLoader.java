@@ -132,23 +132,29 @@ public final class ClassLoader {
     for (Iterator<AbstractInsnNode> instructions =
          ClassLoader.<AbstractInsnNode>uncheckedCast(method.instructions.iterator());
          instructions.hasNext();) {
-      final AbstractInsnNode insn = instructions.next();
-      if (insn instanceof LineNumberNode) {
-        lineNumber = ((LineNumberNode) insn).line;
-      }
-      if (insn instanceof MethodInsnNode) {
-        handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
-      }
-      if (insn instanceof FieldInsnNode) {
-        handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
-      }
-      if (insn instanceof LdcInsnNode) {
-        handleLdc(loadedClasses, (LdcInsnNode) insn);
+      try {
+        final AbstractInsnNode insn = instructions.next();
+        if (insn instanceof LineNumberNode) {
+          lineNumber = ((LineNumberNode) insn).line;
+        }
+        if (insn instanceof MethodInsnNode) {
+          handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
+        }
+        if (insn instanceof FieldInsnNode) {
+          handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
+        }
+        if (insn instanceof LdcInsnNode) {
+          handleLdc(loadedClasses, (LdcInsnNode) insn);
+        }
+      } catch (Exception e) {
+        throw new MissingLinkException("Error analysing " + className + "." + method.name +
+                                       ", line: " + lineNumber, e);
       }
     }
 
     final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
         .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
+        .lineNumber(lineNumber)
         .methodCalls(ImmutableSet.copyOf(thisCalls))
         .fieldAccesses(ImmutableSet.copyOf(thisFields))
         .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
@@ -164,19 +170,15 @@ public final class ClassLoader {
                                        int lineNumber,
                                        MethodInsnNode insn) {
     boolean isStatic;
-    boolean isVirtual;
     switch (insn.getOpcode()) {
       case Opcodes.INVOKEVIRTUAL:
       case Opcodes.INVOKEINTERFACE:
-        isVirtual = true;
         isStatic = false;
         break;
       case Opcodes.INVOKESPECIAL:
-        isVirtual = false;
         isStatic = false;
         break;
       case Opcodes.INVOKESTATIC:
-        isVirtual = false;
         isStatic = true;
         break;
       default:
@@ -187,7 +189,6 @@ public final class ClassLoader {
                         .owner(TypeDescriptors.fromClassName(insn.owner))
                         .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
                         .isStatic(isStatic)
-                        .isVirtual(isVirtual)
                         .lineNumber(lineNumber)
                         .build());
     }
@@ -214,7 +215,16 @@ public final class ClassLoader {
     // future to ignore other methods defined by the class.
     if (insn.cst instanceof Type) {
       Type type = (Type) insn.cst;
-      loadedClasses.add(TypeDescriptors.fromClassName(type.getInternalName()));
+
+      Type loadedType = type;
+
+      if (type.getSort() == Type.ARRAY) {
+        loadedType = type.getElementType();
+      }
+
+      if (loadedType.getSort() == Type.OBJECT) {
+        loadedClasses.add(TypeDescriptors.fromClassName(loadedType.getInternalName()));
+      }
     }
   }
 
@@ -230,5 +240,4 @@ public final class ClassLoader {
   private static <T> Iterator<T> uncheckedCast(Iterator iterator) {
     return (Iterator<T>) iterator;
   }
-
 }
