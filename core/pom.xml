@@ -40,6 +40,25 @@
       <version>1.7.1</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>missinglink-test-dependent</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.spotify</groupId>
+          <artifactId>missinglink-test-compile-dependency</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>missinglink-test-runtime-dependency</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>
