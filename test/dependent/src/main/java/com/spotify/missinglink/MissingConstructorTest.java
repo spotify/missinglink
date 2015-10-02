@@ -1,7 +1,7 @@
 package com.spotify.missinglink;
 
 public class MissingConstructorTest {
-  public static void main(String... args) {
+  public static void run() {
     MissingConstructor missingConstructor = new MissingConstructor("foo");
   }
 }

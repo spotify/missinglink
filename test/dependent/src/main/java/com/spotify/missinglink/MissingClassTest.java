@@ -1,7 +1,7 @@
 package com.spotify.missinglink;
 
 public class MissingClassTest {
-  public static void main(String... args) {
+  public static void run() {
     Class<MissingClass> clazz = MissingClass.class;
   }
 }
