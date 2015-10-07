@@ -1,0 +1,26 @@
+# lib-info is a yaml file format we use internally at Spotify to track metadata
+# about libraries in use
+
+system: maven-plugins
+id: missinglink
+
+owner: java
+
+description: 
+    Missinglink scans the bytecode of dependency libraries to attempt to find problems
+    (such as NoSuchMethodError) caused by conflicting versions that would otherwise only
+    be found at runtime.
+
+visibility: public
+
+dependencies: []
+
+facts:
+    component_type: library
+    docs: 
+        - "[README](https://github.com/spotify/missinglink/blob/master/README.md)"
+    artifact: com.spotify:missinglink-maven-plugin
+    tags:
+        - maven
+        - java
+        - static-analysis
