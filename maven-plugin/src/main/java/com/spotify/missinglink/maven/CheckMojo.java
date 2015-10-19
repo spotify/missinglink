@@ -319,9 +319,6 @@ public class CheckMojo extends AbstractMojo {
             .collect(Collectors.toList())
     );
 
-    final Consumer<String> log = verbose ? msg -> getLog().info(msg)
-                                         : msg -> getLog().debug(msg);
-
     Stopwatch stopwatch = Stopwatch.createStarted();
     // artifacts in runtime scope from the maven project (including transitives)
     final ImmutableList<Artifact> runtimeProjectArtifacts = constructArtifacts(projectDeps);
