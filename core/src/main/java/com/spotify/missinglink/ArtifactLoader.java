@@ -16,7 +16,6 @@
 package com.spotify.missinglink;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 
 import com.spotify.missinglink.datamodel.Artifact;
@@ -51,14 +50,14 @@ public class ArtifactLoader {
         "Path must be a file or directory: " + path);
 
     if (path.isFile()) {
-      JarFile jarFile;
-      try {
-        jarFile = new JarFile(path);
-      } catch (IOException e) {
-        throw new RuntimeException("Could not load " + path, e);
-      }
-      ImmutableMap.Builder<ClassTypeDescriptor, DeclaredClass> classes =
-          new ImmutableMap.Builder<>();
+      return loadFromJar(artifactName, path);
+    }
+    return loadFromDirectory(artifactName, path);
+  }
+
+  private Artifact loadFromJar(ArtifactName artifactName, File path) {
+    try (JarFile jarFile = new JarFile(path)) {
+      Builder<ClassTypeDescriptor, DeclaredClass> classes = new Builder<>();
       // Why would anyone bother updating this API to add support for iterators? Way too much work..
       Enumeration<JarEntry> entries = jarFile.entries();
       while (entries.hasMoreElements()) {
@@ -76,23 +75,27 @@ public class ArtifactLoader {
         }
       }
       return artifact(artifactName, classes);
-    } else {
-      ImmutableMap.Builder<ClassTypeDescriptor, DeclaredClass> classes =
-          new ImmutableMap.Builder<>();
-
-      List<File> classFilesInDir = Files.walk(path.toPath())
-          .map(Path::toFile)
-          .filter(file -> file.isFile() && file.getName().endsWith(".class"))
-          .collect(toList());
-
-      for (File file : classFilesInDir) {
-        try (FileInputStream fis = new FileInputStream(file)) {
-          DeclaredClass cl = ClassLoader.load(fis);
-          classes.put(cl.className(), cl);
-        }
-      }
-      return artifact(artifactName, classes);
+    } catch (IOException e) {
+      throw new RuntimeException("Could not load " + path, e);
     }
+  }
+
+  private Artifact loadFromDirectory(ArtifactName artifactName, File dir) throws IOException {
+    Builder<ClassTypeDescriptor, DeclaredClass> classes =
+        new Builder<>();
+
+    List<File> classFilesInDir = Files.walk(dir.toPath())
+        .map(Path::toFile)
+        .filter(file -> file.isFile() && file.getName().endsWith(".class"))
+        .collect(toList());
+
+    for (File file : classFilesInDir) {
+      try (FileInputStream fis = new FileInputStream(file)) {
+        DeclaredClass cl = ClassLoader.load(fis);
+        classes.put(cl.className(), cl);
+      }
+    }
+    return artifact(artifactName, classes);
   }
 
   private static Artifact artifact(ArtifactName name,

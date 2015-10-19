@@ -45,6 +45,39 @@ public class MavenArtifactName extends ArtifactName {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    MavenArtifactName that = (MavenArtifactName) o;
+
+    if (!groupId.equals(that.groupId)) {
+      return false;
+    }
+    if (!artifactId.equals(that.artifactId)) {
+      return false;
+    }
+    return version.equals(that.version);
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + groupId.hashCode();
+    result = 31 * result + artifactId.hashCode();
+    result = 31 * result + version.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return "MavenArtifactName{" + "groupId='" + groupId + '\'' + ", artifactId='" + artifactId
            + '\'' + ", version='" + version + '\'' + '}';

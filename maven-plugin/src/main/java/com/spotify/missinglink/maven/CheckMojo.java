@@ -319,9 +319,6 @@ public class CheckMojo extends AbstractMojo {
             .collect(Collectors.toList())
     );
 
-    final Consumer<String> log = verbose ? msg -> getLog().info(msg)
-                                         : msg -> getLog().debug(msg);
-
     Stopwatch stopwatch = Stopwatch.createStarted();
     // artifacts in runtime scope from the maven project (including transitives)
     final ImmutableList<Artifact> runtimeProjectArtifacts = constructArtifacts(projectDeps);
@@ -425,27 +422,27 @@ public class CheckMojo extends AbstractMojo {
     final Map<ConflictCategory, List<Conflict>> byCategory = conflicts.stream()
         .collect(Collectors.groupingBy(Conflict::category));
 
-    for (ConflictCategory category : byCategory.keySet()) {
+    byCategory.forEach((category, conflictsInCategory) -> {
       final String desc = descriptions.getOrDefault(category, category.name().replace('_', ' '));
       getLog().warn("");
       getLog().warn("Category: " + desc);
 
       // next group by artifact containing the conflict
-      final Map<ArtifactName, List<Conflict>> byArtifact = byCategory.get(category).stream()
+      final Map<ArtifactName, List<Conflict>> byArtifact = conflictsInCategory.stream()
           .collect(Collectors.groupingBy(Conflict::usedBy));
 
-      for (ArtifactName artifactName : byArtifact.keySet()) {
+      byArtifact.forEach((artifactName, conflictsInArtifact) -> {
         getLog().warn("  In artifact: " + artifactName.name());
 
         // next group by class containing the conflict
         final Map<ClassTypeDescriptor, List<Conflict>> byClassName =
-            byArtifact.get(artifactName).stream()
+            conflictsInArtifact.stream()
                 .collect(Collectors.groupingBy(c -> c.dependency().fromClass()));
 
-        for (ClassTypeDescriptor ctd : byClassName.keySet()) {
-          getLog().warn("    In class: " + ctd.toString());
+        byClassName.forEach((classDesc, conflictsInClass) -> {
+          getLog().warn("    In class: " + classDesc.toString());
 
-          byClassName.get(ctd).stream()
+          conflictsInClass.stream()
               .forEach(c -> {
                 final Dependency dep = c.dependency();
                 getLog().warn("      In method:  " + dep.fromMethod().prettyWithoutReturnType()
@@ -459,9 +456,9 @@ public class CheckMojo extends AbstractMojo {
                 // now just output a bunch of dashes always
                 getLog().warn("      --------");
               });
-        }
-      }
-    }
+        });
+      });
+    });
   }
 
   private String optionalLineNumber(int lineNumber) {
