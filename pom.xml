@@ -130,7 +130,7 @@
         <configuration>
           <configLocation>checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
-          <failOnViolation>false</failOnViolation> <!-- TODO: re-enable this -->
+          <failOnViolation>true</failOnViolation>
           <failsOnError>true</failsOnError>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <maxAllowedViolations>0</maxAllowedViolations>
@@ -145,7 +145,7 @@
               <goal>check</goal>
             </goals>
             <configuration>
-              <failOnViolation>false</failOnViolation> <!-- TODO: re-enable this -->
+              <failOnViolation>true</failOnViolation>
               <failsOnError>true</failsOnError>
             </configuration>
           </execution>

@@ -18,7 +18,6 @@ package com.spotify.missinglink;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.AccessedFieldBuilder;
 import com.spotify.missinglink.datamodel.CalledMethod;
@@ -33,7 +32,6 @@ import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.MethodDescriptors;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
-
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -46,6 +44,8 @@ import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
@@ -85,6 +85,12 @@ public final class ClassLoader {
         .loadedClasses(ImmutableSet.copyOf(loadedClasses))
         .fields(declaredFields)
         .build();
+  }
+
+  public static DeclaredClass load(File file) throws IOException {
+    try (FileInputStream fis = new FileInputStream(file)) {
+      return load(fis);
+    }
   }
 
   private static ClassNode readClassNode(InputStream in) throws IOException {

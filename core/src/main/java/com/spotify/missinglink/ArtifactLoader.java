@@ -17,7 +17,6 @@ package com.spotify.missinglink;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap.Builder;
-
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
@@ -25,7 +24,6 @@ import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -90,10 +88,8 @@ public class ArtifactLoader {
         .collect(toList());
 
     for (File file : classFilesInDir) {
-      try (FileInputStream fis = new FileInputStream(file)) {
-        DeclaredClass cl = ClassLoader.load(fis);
-        classes.put(cl.className(), cl);
-      }
+      DeclaredClass cl = ClassLoader.load(file);
+      classes.put(cl.className(), cl);
     }
     return artifact(artifactName, classes);
   }
