@@ -127,6 +127,18 @@ public class ConflictChecker {
           continue;
         }
 
+        ImmutableSet<ClassTypeDescriptor> loadedClasses = clazz.loadedClasses();
+        for (ClassTypeDescriptor loadedClass : loadedClasses) {
+          if (!state.knownClasses().containsKey(loadedClass)) {
+            builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
+                    "Class not found: " + loadedClass,
+                    methodDep(clazz, null, null),
+                    artifact.name(),
+                    null
+            ));
+          }
+        }
+
         for (DeclaredMethod method : clazz.methods().values()) {
           checkForBrokenMethodCalls(state, artifact, clazz, method, builder);
           checkForBrokenFieldAccess(state, artifact, clazz, method, builder);
@@ -163,14 +175,14 @@ public class ConflictChecker {
       if (calledClass == null) {
         builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
             "Class not found: " + owningClass,
-            dependency(clazz, method, calledMethod),
+            methodDep(clazz, method, calledMethod),
             artifact.name(),
             state.sourceMappings().get(owningClass)
         ));
       } else if (missingMethod(calledMethod, calledClass, state.knownClasses())) {
         builder.add(conflict(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND,
             "Method not found: " + calledMethod.pretty(),
-            dependency(clazz, method, calledMethod),
+            methodDep(clazz, method, calledMethod),
             artifact.name(),
             state.sourceMappings().get(owningClass)
         ));
@@ -193,14 +205,14 @@ public class ConflictChecker {
       if (calledClass == null) {
         builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
             "Class not found: " + owningClass,
-            dependency(clazz, method, field),
+            fieldDep(clazz, method, field),
             artifact.name(),
             state.sourceMappings().get(owningClass)
         ));
       } else if (missingField(declaredField, calledClass, state.knownClasses())) {
         builder.add(conflict(ConflictCategory.FIELD_NOT_FOUND,
             "Field not found: " + field.name(),
-            dependency(clazz, method, field),
+            fieldDep(clazz, method, field),
             artifact.name(),
             state.sourceMappings().get(owningClass)
         ));
@@ -273,8 +285,8 @@ public class ConflictChecker {
         .build();
   }
 
-  private Dependency dependency(DeclaredClass clazz, DeclaredMethod method,
-                                CalledMethod calledMethod) {
+  private Dependency methodDep(DeclaredClass clazz, DeclaredMethod method,
+                               CalledMethod calledMethod) {
     return new MethodDependencyBuilder()
         .fromClass(clazz.className())
         .fromMethod(method.descriptor())
@@ -284,8 +296,8 @@ public class ConflictChecker {
         .build();
   }
 
-  private Dependency dependency(DeclaredClass clazz, DeclaredMethod method,
-                                AccessedField field) {
+  private Dependency fieldDep(DeclaredClass clazz, DeclaredMethod method,
+                              AccessedField field) {
     return new FieldDependencyBuilder()
         .fromClass(clazz.className())
         .fromMethod(method.descriptor())
