@@ -265,7 +265,7 @@ runtime errors. Configure the plugin to ignore these classes/dependencies.
 
 # History
 
-This started as a [Spotify](<https://github.com/spotify) hackweek project
+This started as a [Spotify](https://github.com/spotify) hackweek project
 in June 2015 by
 [Matt Brown](https://github.com/mattnworb),
 [Kristofer Karlsson](https://github.com/krka),
