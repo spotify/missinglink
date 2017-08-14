@@ -26,7 +26,8 @@ Add the following plugin to pom.xml:
 </plugin>
 ```
 
-See [how to configure the plugin below](#Configuration of the plugin).
+See [how to configure the plugin below](#configuration-of-the-plugin).
+
 
 ## Problem definition
 
