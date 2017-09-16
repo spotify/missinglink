@@ -35,11 +35,16 @@ import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import proguard.Configuration;
+import proguard.classfile.ClassPool;
+import proguard.classfile.ProgramClass;
+import proguard.shrink.Shrinker;
 
 import static java.util.stream.Collectors.toList;
 
@@ -213,7 +218,19 @@ public class ConflictChecker {
 
   public static ImmutableSet<TypeDescriptor> reachableFrom(
       ImmutableCollection<DeclaredClass> values,
-      Map<ClassTypeDescriptor, DeclaredClass> knownClasses) {
+      Map<ClassTypeDescriptor, DeclaredClass> knownClasses) throws IOException {
+
+    Configuration configuration = new Configuration();
+    Shrinker shrinker = new Shrinker(configuration);
+    ClassPool programClassPool = new ClassPool();
+    ClassPool libraryClassPool = new ClassPool();
+
+    for (DeclaredClass value : values) {
+      programClassPool.addClass(new ProgramClass());
+    }
+
+    ClassPool newClassPool = shrinker.execute(programClassPool, libraryClassPool);
+
     Queue<DeclaredClass> toCheck = new LinkedList<>(values);
 
     Set<ClassTypeDescriptor> reachable = Sets.newHashSet();

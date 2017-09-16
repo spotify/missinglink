@@ -28,6 +28,21 @@
       <artifactId>guava</artifactId>
       <version>18.0</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/net.sf.proguard/proguard -->
+    <!--dependency>
+      <groupId>net.sf.proguard</groupId>
+      <artifactId>proguard</artifactId>
+      <version>4.4</version>
+    </dependency-->
+
+
+    <!-- https://mvnrepository.com/artifact/net.sf.proguard/proguard-base -->
+    <dependency>
+      <groupId>net.sf.proguard</groupId>
+      <artifactId>proguard-base</artifactId>
+      <version>5.3.3</version>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
