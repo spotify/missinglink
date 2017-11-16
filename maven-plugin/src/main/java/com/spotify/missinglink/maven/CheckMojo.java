@@ -15,6 +15,7 @@
  */
 package com.spotify.missinglink.maven;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
@@ -22,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
-
 import com.spotify.missinglink.ArtifactLoader;
 import com.spotify.missinglink.Conflict;
 import com.spotify.missinglink.Conflict.ConflictCategory;
@@ -33,7 +33,26 @@ import com.spotify.missinglink.datamodel.ArtifactName;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
 import com.spotify.missinglink.datamodel.Dependency;
-
+import com.spotify.missinglink.datamodel.FieldDependency;
+import com.spotify.missinglink.datamodel.MethodDependency;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.maven.model.Exclusion;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -43,24 +62,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 @Mojo(name = "check", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
     defaultPhase = LifecyclePhase.PROCESS_CLASSES)
@@ -192,7 +195,11 @@ public class CheckMojo extends AbstractMojo {
       }
       getLog().warn(warning);
 
-      outputConflicts(conflicts);
+      try {
+        outputConflicts(conflicts);
+      } catch (IOException e) {
+        throw new MojoFailureException(e.getMessage());
+      }
 
       if (failOnConflicts) {
         final String message = conflicts.size() + " class/method conflicts found between source "
@@ -413,56 +420,72 @@ public class CheckMojo extends AbstractMojo {
     return stopwatch.elapsed(TimeUnit.MILLISECONDS);
   }
 
-  private void outputConflicts(Collection<Conflict> conflicts) {
-    Map<ConflictCategory, String> descriptions = new EnumMap<>(ConflictCategory.class);
-    descriptions.put(ConflictCategory.CLASS_NOT_FOUND, "Class being called not found");
-    descriptions.put(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND, "Method being called not found");
+  private void outputConflicts(Collection<Conflict> conflicts) throws IOException {
+    JSONArray jsonArray = new JSONArray();
+    for (Conflict conflict : conflicts) {
+      jsonArray.put(toJson(conflict));
+    }
 
-    // group conflict by category
-    final Map<ConflictCategory, List<Conflict>> byCategory = conflicts.stream()
-        .collect(Collectors.groupingBy(Conflict::category));
+    final File outputDir = new File(project.getBuild().getOutputDirectory());
+    if (outputDir.exists() || outputDir.mkdirs()) {
+      final File file = new File(outputDir, "missing-link-report.json");
+      try (Writer fw = new OutputStreamWriter(new FileOutputStream(file), Charsets.UTF_8)) {
+        fw.write(jsonArray.toString(2));
+      }
+      getLog().warn("Full conflict report can be found in " + file.getAbsolutePath());
 
-    byCategory.forEach((category, conflictsInCategory) -> {
-      final String desc = descriptions.getOrDefault(category, category.name().replace('_', ' '));
-      getLog().warn("");
-      getLog().warn("Category: " + desc);
+      final File file2 = new File(outputDir, "missing-link-suggestions.txt");
+      try (Writer fw = new OutputStreamWriter(new FileOutputStream(file2), Charsets.UTF_8)) {
+        fw.append("Suggested ignore-configuration based on destination packages:\n");
+        reportByKey(fw, jsonArray, "ignoreDestinationPackage", "target-class");
+        fw.append("\n");
+        fw.append("Suggested ignore-configuration based on source packages:\n");
+        reportByKey(fw, jsonArray, "ignoreSourcePackage", "from-class");
+      }
+      getLog().warn("Suggested ignore-configurations can be found in " + file2.getAbsolutePath());
+    }
 
-      // next group by artifact containing the conflict
-      final Map<ArtifactName, List<Conflict>> byArtifact = conflictsInCategory.stream()
-          .collect(Collectors.groupingBy(Conflict::usedBy));
-
-      byArtifact.forEach((artifactName, conflictsInArtifact) -> {
-        getLog().warn("  In artifact: " + artifactName.name());
-
-        // next group by class containing the conflict
-        final Map<ClassTypeDescriptor, List<Conflict>> byClassName =
-            conflictsInArtifact.stream()
-                .collect(Collectors.groupingBy(c -> c.dependency().fromClass()));
-
-        byClassName.forEach((classDesc, conflictsInClass) -> {
-          getLog().warn("    In class: " + classDesc.toString());
-
-          conflictsInClass.stream()
-              .forEach(c -> {
-                final Dependency dep = c.dependency();
-                getLog().warn("      In method:  " + dep.fromMethod().prettyWithoutReturnType()
-                              + optionalLineNumber(dep.fromLineNumber()));
-                getLog().warn("      " + dep.describe());
-                getLog().warn("      Problem: " + c.reason());
-                if (c.existsIn() != ConflictChecker.UNKNOWN_ARTIFACT_NAME) {
-                  getLog().warn("      Found in: " + c.existsIn().name());
-                }
-                // this could be smarter about separating each blob of warnings by method, but for
-                // now just output a bunch of dashes always
-                getLog().warn("      --------");
-              });
-        });
-      });
-    });
   }
 
-  private String optionalLineNumber(int lineNumber) {
-    return lineNumber != 0 ? ":" + lineNumber : "";
+  private void reportByKey(
+      final Writer writer,
+      final JSONArray jsonArray,
+      final String ignoreTag,
+      final String ignoreKey) throws IOException {
+    PackageNode root = PackageNode.fromJSON(jsonArray, ignoreKey, ignoreTag);
+    root.shrinkTree();
+    root.printIgnores(writer);
+  }
+
+  private JSONObject toJson(final Conflict conflict) {
+    final JSONObject jsonObject = new JSONObject();
+    jsonObject.put("category", conflict.category().name());
+    jsonObject.put("exists-in", conflict.existsIn().name());
+    jsonObject.put("used-by", conflict.usedBy().name());
+    jsonObject.put("reason", conflict.reason());
+    jsonObject.put("dependency", toJson(conflict.dependency()));
+    return jsonObject;
+  }
+
+  private JSONObject toJson(final Dependency dependency) {
+    final JSONObject dest = new JSONObject();
+    if (dependency instanceof FieldDependency) {
+      FieldDependency dep = (FieldDependency) dependency;
+      dest.put("from-class", dep.fromClass().getClassName());
+      dest.put("from-method", dep.fromMethod().pretty());
+      dest.put("from-linenumber", dep.fromLineNumber());
+      dest.put("target-class", dep.targetClass().getClassName());
+      dest.put("field-type", dep.fieldType().toString());
+      dest.put("field-name", dep.fieldName());
+    } else if (dependency instanceof MethodDependency) {
+      MethodDependency dep = (MethodDependency) dependency;
+      dest.put("from-class", dep.fromClass().getClassName());
+      dest.put("from-method", dep.fromMethod().pretty());
+      dest.put("from-linenumber", dep.fromLineNumber());
+      dest.put("target-class", dep.targetClass().getClassName());
+      dest.put("target-method", dep.targetMethod().pretty());
+    }
+    return dest;
   }
 
   private Artifact toArtifact(String outputDirectory) {

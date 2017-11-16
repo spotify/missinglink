@@ -5,5 +5,5 @@ if [ $# -lt 1 ]; then
 fi
 PROJECT=$1
 shift
-mvn -e -Dverbose com.spotify:missinglink-maven-plugin:0.1.1-SNAPSHOT:check -f "$PROJECT/pom.xml" "$@"
+mvn -e -Dverbose com.spotify:missinglink-maven-plugin:0.1.2-SNAPSHOT:check -f "$PROJECT/pom.xml" "$@"
 
