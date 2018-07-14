@@ -15,26 +15,24 @@
  */
 package com.spotify.missinglink;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
-import com.spotify.missinglink.datamodel.CalledMethodBuilder;
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClassBuilder;
-import com.spotify.missinglink.datamodel.DeclaredField;
-import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
-import com.spotify.missinglink.datamodel.MethodDescriptor;
-import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-
+import com.spotify.missinglink.datamodel.access.MethodCallBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredClassBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredField;
+import com.spotify.missinglink.datamodel.state.DeclaredMethodBuilder;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
+import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConflictCheckerTest {
 
@@ -57,11 +55,12 @@ public class ConflictCheckerTest {
             TypeDescriptors.fromClassName("java/lang/Object"), new DeclaredClassBuilder()
                 .className(TypeDescriptors.fromClassName("java/lang/Object"))
                 .parents(ImmutableSet.of())
-                .loadedClasses(ImmutableSet.of())
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(ImmutableMap.of(
                     cloneDescriptor,
                     new DeclaredMethodBuilder()
+                        .owner(TypeDescriptors.fromClassName(
+                            "java/lang/Object"))
                         .descriptor(cloneDescriptor)
                         .methodCalls(ImmutableSet.of())
                         .fieldAccesses(ImmutableSet.of())
@@ -76,14 +75,13 @@ public class ConflictCheckerTest {
             TypeDescriptors.fromClassName("com/spotify/ClassName"),
             Simple.newClass("com/spotify/ClassName")
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
-                .loadedClasses(ImmutableSet.<ClassTypeDescriptor>of())
                 .methods(Simple.methodMap(
-                    Simple.newMethod(false, Simple.OBJECT, "something")
-                        .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
-                                                         .owner(TypeDescriptors.fromClassName(
-                                                             "java/lang/Object"))
-                                                         .descriptor(cloneDescriptor)
-                                                         .build()))
+                    Simple.newMethod(false, Simple.OBJECT, "com/spotify/ClassName", "something")
+                        .methodCalls(ImmutableSet.of(
+                            new MethodCallBuilder()
+                                .owner(TypeDescriptors.fromClassName("java/lang/Object"))
+                                .descriptor(cloneDescriptor)
+                                .build()))
                         .build()))
                 .build()))
         .build();
@@ -101,11 +99,10 @@ public class ConflictCheckerTest {
             libClass1, new DeclaredClassBuilder()
                 .className(libClass1)
                 .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
-                .loadedClasses(ImmutableSet.of())
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(Simple.methodMap(
-                    Simple.newMethod(false, Simple.OBJECT, "broken")
-                        .methodCalls(ImmutableSet.of(new CalledMethodBuilder()
+                    Simple.newMethod(false, Simple.OBJECT, libClass1.getClassName(), "broken")
+                        .methodCalls(ImmutableSet.of(new MethodCallBuilder()
                             .owner(TypeDescriptors.fromClassName("java/lang/Object"))
                             .descriptor(brokenMethodDescriptor)
                             .build()))
@@ -118,7 +115,7 @@ public class ConflictCheckerTest {
   public void shouldSupportInvocationsOnArrayTypes() throws Exception {
     ConflictChecker checker = new ConflictChecker();
 
-    final ImmutableList<Conflict> conflicts = checker.check(projectArtifact,
+    final ImmutableList<Conflict> conflicts = checker.check(ImmutableList.of(projectArtifact),
         ImmutableList.of(projectArtifact, rt),
         ImmutableList.of(projectArtifact, rt)
     );
@@ -131,6 +128,6 @@ public class ConflictCheckerTest {
 
     ConflictChecker checker = new ConflictChecker();
 
-    assertThat(checker.check(projectArtifact, artifacts, artifacts)).isEmpty();
+    assertThat(checker.check(ImmutableList.of(projectArtifact), artifacts, artifacts)).isEmpty();
   }
 }

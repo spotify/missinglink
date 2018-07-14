@@ -15,21 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredMethod;
-import com.spotify.missinglink.datamodel.MethodDescriptor;
-import com.spotify.missinglink.datamodel.TypeDescriptor;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-
-import org.junit.Test;
-
-import java.util.Map;
-import java.util.Set;
-
 import static com.spotify.missinglink.Simple.INT;
 import static com.spotify.missinglink.Simple.VOID;
 import static com.spotify.missinglink.Simple.classMap;
@@ -39,6 +24,19 @@ import static com.spotify.missinglink.Simple.newClass;
 import static com.spotify.missinglink.Simple.newField;
 import static com.spotify.missinglink.Simple.newMethod;
 import static org.junit.Assert.assertEquals;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.spotify.missinglink.datamodel.state.DeclaredClass;
+import com.spotify.missinglink.datamodel.state.DeclaredMethod;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptors;
+import com.spotify.missinglink.datamodel.type.TypeDescriptor;
+import com.spotify.missinglink.datamodel.type.TypeDescriptors;
+import java.util.Map;
+import java.util.Set;
+import org.junit.Test;
 
 public class ReachableTest {
 
@@ -54,15 +52,15 @@ public class ReachableTest {
 
   @Test
   public void testReachableViaCall() {
-    DeclaredMethod remoteMethod = newMethod(false, VOID, "called").build();
+    DeclaredMethod remoteMethod = newMethod(false, VOID, "other/Unknown", "called").build();
     DeclaredClass remote = newClass("other/Unknown")
         .methods(methodMap(remoteMethod))
         .build();
     DeclaredClass root = newClass("my/Root")
         .methods(methodMap(
-            newMethod(false, VOID, "foo")
+            newMethod(false, VOID, "my/Root", "foo")
                 .methodCalls(
-                    ImmutableSet.of(newCall(remote, remoteMethod, false, true))).build()))
+                    ImmutableSet.of(newCall(remoteMethod, false, true))).build()))
         .build();
     ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
     ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
@@ -85,10 +83,22 @@ public class ReachableTest {
 
   @Test
   public void testReachableViaLdcLoad() {
+    MethodDescriptor otherClInitDesc = MethodDescriptors.staticInit();
+    DeclaredMethod otherClInit =
+        DeclaredMethod.emptyStaticInit(TypeDescriptors.fromClassName("other/Unknown"));
+
+    MethodDescriptor rootClInit = MethodDescriptors.staticInit();
+
     DeclaredClass remote = newClass("other/Unknown")
+        .methods(ImmutableMap.of(otherClInitDesc, otherClInit))
         .build();
     DeclaredClass root = newClass("my/Root")
-        .loadedClasses(ImmutableSet.of(TypeDescriptors.fromClassName("other/Unknown")))
+        .methods(ImmutableMap.of(
+            rootClInit,
+            newMethod(true, VOID, "my/Root", "<clinit>")
+                .methodCalls(ImmutableSet.of(newCall(otherClInit)))
+                .build()
+        ))
         .build();
     ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
     ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
@@ -99,12 +109,15 @@ public class ReachableTest {
   @Test
   public void testReachableViaField() {
     DeclaredClass remote = newClass("other/Unknown")
-        .fields(ImmutableSet.of(newField(INT, "remoteField")))
+        .fields(ImmutableSet.of(newField(INT, "remoteField", false)))
+        .methods(ImmutableMap.of(
+            MethodDescriptors.staticInit(),
+            DeclaredMethod.emptyStaticInit(TypeDescriptors.fromClassName("other/Unknown"))))
         .build();
     ImmutableMap<MethodDescriptor, DeclaredMethod> methods = methodMap(
-        newMethod(false, VOID, "foo")
+        newMethod(false, VOID, "my/Root", "foo")
             .fieldAccesses(
-                ImmutableSet.of(Simple.newAccess(INT, "remoteField", "other/Unknown", 12)))
+                ImmutableSet.of(Simple.newAccess(INT, "remoteField", "other/Unknown", false, 12)))
             .build());
     DeclaredClass root = newClass("my/Root")
         .methods(methods)

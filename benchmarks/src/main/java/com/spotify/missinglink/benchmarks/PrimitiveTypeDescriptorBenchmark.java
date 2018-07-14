@@ -16,7 +16,7 @@
 
 package com.spotify.missinglink.benchmarks;
 
-import com.spotify.missinglink.datamodel.PrimitiveTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.PrimitiveTypeDescriptor;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;

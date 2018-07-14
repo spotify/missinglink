@@ -15,27 +15,27 @@
  */
 package com.spotify.missinglink;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
-import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
-import com.spotify.missinglink.datamodel.CalledMethod;
-import com.spotify.missinglink.datamodel.CalledMethodBuilder;
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredField;
-import com.spotify.missinglink.datamodel.DeclaredFieldBuilder;
-import com.spotify.missinglink.datamodel.DeclaredMethod;
-import com.spotify.missinglink.datamodel.MethodDescriptor;
-import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
-import com.spotify.missinglink.datamodel.TypeDescriptor;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
-
+import com.spotify.missinglink.datamodel.access.FieldAccess;
+import com.spotify.missinglink.datamodel.access.MethodCall;
+import com.spotify.missinglink.datamodel.access.MethodCallBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredClass;
+import com.spotify.missinglink.datamodel.state.DeclaredField;
+import com.spotify.missinglink.datamodel.state.DeclaredFieldBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredMethod;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.FieldDescriptorBuilder;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
+import com.spotify.missinglink.datamodel.type.TypeDescriptor;
+import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -43,11 +43,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ArtifactLoaderTest {
 
@@ -82,6 +80,7 @@ public class ArtifactLoaderTest {
         .build();
 
     printlnDescriptor = new MethodDescriptorBuilder()
+        .isStatic(false)
         .returnType(TypeDescriptors.fromRaw("V"))
         .name("println")
         .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw(
@@ -128,10 +127,9 @@ public class ArtifactLoaderTest {
   public void testLoadCall() throws Exception {
     final DeclaredClass declaredClass = artifact.classes().get(TypeDescriptors.fromClassName("A"));
     DeclaredMethod method = declaredClass.methods().get(methodOneDescriptor);
-    CalledMethod call = new CalledMethodBuilder()
+    MethodCall call = new MethodCallBuilder()
         .owner(TypeDescriptors.fromClassName("java/io/PrintStream"))
         .lineNumber(15)
-        .isStatic(false)
         .descriptor(printlnDescriptor).build();
     assertTrue("Method must contain call to other method with hairy signature",
         method.methodCalls().contains(call));
@@ -140,8 +138,12 @@ public class ArtifactLoaderTest {
   @Test
   public void testLoadField() throws Exception {
     DeclaredClass loadedClass = artifact.classes().get(TypeDescriptors.fromClassName("A"));
-    DeclaredField myField = new DeclaredFieldBuilder().name("publicFieldOne")
-        .descriptor(TypeDescriptors.fromRaw("Ljava/lang/Object;")).build();
+    DeclaredField myField = new DeclaredFieldBuilder()
+        .descriptor(new FieldDescriptorBuilder()
+            .name("publicFieldOne")
+            .fieldType(TypeDescriptors.fromRaw("Ljava/lang/Object;"))
+            .build())
+        .build();
     assertTrue("Class must contain field with hairy signature",
         loadedClass.fields().contains(myField));
   }
@@ -150,7 +152,7 @@ public class ArtifactLoaderTest {
   public void testLoadStaticFieldAccess() throws Exception {
     DeclaredMethod method = artifact.classes().get(TypeDescriptors.fromClassName("A")).methods()
         .get(internalStaticFieldAccessDescriptor);
-    AccessedField access = Simple.newAccess("Ljava/lang/Object;", "staticFieldOne", "A", 11);
+    FieldAccess access = Simple.newAccess("Ljava/lang/Object;", "staticFieldOne", "A", true, 11);
     assertTrue("Method must contain access to staticFieldOne: " + method.fieldAccesses()
                + " does not contain " + access, method.fieldAccesses().contains(access));
   }
@@ -159,7 +161,7 @@ public class ArtifactLoaderTest {
   public void testLoadFieldAccess() throws Exception {
     DeclaredMethod method = artifact.classes().get(TypeDescriptors.fromClassName("A")).methods()
         .get(internalFieldAccessDescriptor);
-    AccessedField access = Simple.newAccess("Ljava/lang/Object;", "publicFieldOne", "A", 12);
+    FieldAccess access = Simple.newAccess("Ljava/lang/Object;", "publicFieldOne", "A", false, 12);
     assertTrue("Method must contain access to staticFieldOne: " + method.fieldAccesses()
                + " does not contain " + access, method.fieldAccesses().contains(access));
   }
@@ -220,7 +222,7 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadFromDirectory() throws Exception {
-    final Artifact artifact = loader.load(FilePathHelper.getPath("target/classes"));
+    final Artifact artifact = loader.load(FilePathHelper.getPath("build/classes/java/main"));
     assertThat(artifact.classes())
         .overridingErrorMessage("Loading classes from a directory should be supported")
         .isNotEmpty()
@@ -243,7 +245,7 @@ public class ArtifactLoaderTest {
     final DeclaredMethod fooMethod = theClass.methods().get(fooMethodDescriptor);
 
     String nestedClassName = fooMethod.methodCalls().stream()
-        .map(CalledMethod::owner)
+        .map(MethodCall::owner)
         .map(TypeDescriptor::toString)
         .filter(name -> name.contains("NestedClass"))
         .findFirst()
@@ -261,7 +263,7 @@ public class ArtifactLoaderTest {
   }
 
   private Artifact loadTestClassesAsArtifact() throws IOException {
-    return loader.load(FilePathHelper.getPath("target/test-classes"));
+    return loader.load(FilePathHelper.getPath("build/classes/java/test"));
   }
 
 }

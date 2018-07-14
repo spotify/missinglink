@@ -13,37 +13,31 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import java.util.stream.Collectors;
+package com.spotify.missinglink.datamodel.type;
 
 import io.norberg.automatter.AutoMatter;
+import org.objectweb.asm.Opcodes;
 
 @AutoMatter
-public interface MethodDescriptor {
-
-  TypeDescriptor returnType();
-
+public interface FieldDescriptor {
+  TypeDescriptor fieldType();
+  boolean isStatic();
   String name();
 
-  ImmutableList<TypeDescriptor> parameterTypes();
-
-  // TODO: add modifiers
-
-  default String pretty() {
-    return returnType().toString() + " " + name() + prettyParameters();
+  default String pretty(ClassTypeDescriptor owner) {
+    return (isStatic() ? "static " : "") +
+        fieldType().toString() + " " + owner.getClassName() + "." + name();
   }
 
   default String prettyWithoutReturnType() {
-    return name() + prettyParameters();
+    return name();
   }
 
-  default String prettyParameters() {
-    return "(" +
-           Joiner.on(", ").join(parameterTypes().stream()
-                                    .map(TypeDescriptor::toString)
-                                    .collect(Collectors.toList())) + ")";
+  static FieldDescriptor fromDesc(String desc, String name, int access) {
+    return fromDesc(desc, name, (access & Opcodes.ACC_STATIC) != 0);
+  }
+
+  static FieldDescriptor fromDesc(String desc, String name, boolean isStatic) {
+    return FieldDescriptors.fromDesc(desc, name, isStatic);
   }
 }

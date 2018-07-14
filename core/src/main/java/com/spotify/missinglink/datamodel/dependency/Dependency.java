@@ -13,24 +13,25 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.dependency;
 
-import io.norberg.automatter.AutoMatter;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 
-/** Information about a method called by a DeclaredMethod */
-@AutoMatter
-public interface CalledMethod {
+/**
+ * Represents a dependency between a method and the method that it calls, used in Conflict when
+ * reporting problems
+ */
+public interface Dependency {
+  ClassTypeDescriptor fromOwner();
+  MethodDescriptor fromMethod();
+  int fromLineNumber();
 
-  /** Owning class of method being called */
-  ClassTypeDescriptor owner();
+  ClassTypeDescriptor targetClass();
 
-  MethodDescriptor descriptor();
+  String describe();
 
-  boolean isStatic();
-
-  int lineNumber();
-
-  default String pretty() {
-    return owner().toString() + "." + descriptor().prettyWithoutReturnType();
+  default String prettyFrom() {
+    return fromMethod().pretty(fromOwner()) + " (line " + fromLineNumber() + ")";
   }
 }

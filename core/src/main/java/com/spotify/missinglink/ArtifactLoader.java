@@ -15,15 +15,15 @@
  */
 package com.spotify.missinglink;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap.Builder;
-
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClass;
-
+import com.spotify.missinglink.datamodel.state.DeclaredClass;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -31,12 +31,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import static java.util.stream.Collectors.toList;
-
 public class ArtifactLoader {
+  private Map<File, Artifact> cachedArtifacts = new ConcurrentHashMap<>();
+
+  public void clearCache() {
+    cachedArtifacts.clear();
+  }
 
   /** Load artifact at path, using path name as artifactId */
   public Artifact load(File path) throws IOException {
@@ -45,24 +50,34 @@ public class ArtifactLoader {
 
   /** Load artifact at path with a custom artifactId */
   public Artifact load(ArtifactName artifactName, File path) throws IOException {
+    if (cachedArtifacts.containsKey(path)) {
+      return cachedArtifacts.get(path);
+    }
+
     Preconditions.checkArgument(path.exists(), "Path must exist: " + path);
     Preconditions.checkArgument(path.isFile() || path.isDirectory(),
         "Path must be a file or directory: " + path);
 
-    if (path.isFile()) {
-      return loadFromJar(artifactName, path);
+    Artifact result;
+    if (path.isFile() && path.getName().endsWith(".jar")) {
+      result = loadFromJar(artifactName, path);
+    } else {
+      result = loadFromDirectory(artifactName, path);
     }
-    return loadFromDirectory(artifactName, path);
+
+    cachedArtifacts.put(path, result);
+
+    return result;
   }
 
   private Artifact loadFromJar(ArtifactName artifactName, File path) {
     try (JarFile jarFile = new JarFile(path)) {
       Builder<ClassTypeDescriptor, DeclaredClass> classes = new Builder<>();
-      // Why would anyone bother updating this API to add support for iterators? Way too much work..
+
       Enumeration<JarEntry> entries = jarFile.entries();
       while (entries.hasMoreElements()) {
         JarEntry entry = entries.nextElement();
-        if (entry.getName().endsWith(".class")) {
+        if (entry.getName().endsWith(".class") && !entry.getName().endsWith("module-info.class")) {
           try {
             DeclaredClass cl = ClassLoader.load(jarFile.getInputStream(entry));
             classes.put(cl.className(), cl);
@@ -70,10 +85,11 @@ public class ArtifactLoader {
             throw e;
           } catch (Exception e) {
             throw new MissingLinkException("Could not load " + entry.getName() + " from " + path,
-                                           e);
+                e);
           }
         }
       }
+
       return artifact(artifactName, classes);
     } catch (IOException e) {
       throw new RuntimeException("Could not load " + path, e);

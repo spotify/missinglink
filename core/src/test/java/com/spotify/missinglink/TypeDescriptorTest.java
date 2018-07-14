@@ -15,19 +15,18 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableMap;
-import com.spotify.missinglink.datamodel.ArrayTypeDescriptor;
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.PrimitiveTypeDescriptor;
-import com.spotify.missinglink.datamodel.TypeDescriptor;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-import org.junit.Test;
-
-import java.util.InputMismatchException;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
+import com.google.common.collect.ImmutableMap;
+import com.spotify.missinglink.datamodel.type.ArrayTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.PrimitiveTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.TypeDescriptor;
+import com.spotify.missinglink.datamodel.type.TypeDescriptors;
+import java.util.InputMismatchException;
+import java.util.Map;
+import org.junit.Test;
 
 public class TypeDescriptorTest {
 

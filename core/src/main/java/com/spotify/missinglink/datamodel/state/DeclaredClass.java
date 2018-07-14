@@ -13,26 +13,33 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.state;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 import io.norberg.automatter.AutoMatter;
 
 @AutoMatter
 public interface DeclaredClass {
-
-  // names are com/foo/bar/Baz
   ClassTypeDescriptor className();
-
-  // parent are class names: com/foo/bar/Baz
+  /** Parent classes (e.g. interfaces and super classes). */
   ImmutableSet<ClassTypeDescriptor> parents();
-  // also includes other classes that are loaded by this class, even though
-  // no methods on those classes are explicitly called
-  ImmutableSet<ClassTypeDescriptor> loadedClasses();
-
   ImmutableMap<MethodDescriptor, DeclaredMethod> methods();
-
   ImmutableSet<DeclaredField> fields();
 
+  static DeclaredClass of(
+      ClassTypeDescriptor className,
+      ImmutableSet<ClassTypeDescriptor> parents,
+      ImmutableMap<MethodDescriptor, DeclaredMethod> methods,
+      ImmutableSet<DeclaredField> fields
+  ) {
+    return new DeclaredClassBuilder()
+        .className(className)
+        .parents(parents)
+        .methods(methods)
+        .fields(fields)
+        .build();
+  }
 }

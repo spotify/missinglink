@@ -15,25 +15,28 @@
  */
 package com.spotify.missinglink;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-
-import com.spotify.missinglink.datamodel.AccessedField;
-import com.spotify.missinglink.datamodel.AccessedFieldBuilder;
-import com.spotify.missinglink.datamodel.CalledMethod;
-import com.spotify.missinglink.datamodel.CalledMethodBuilder;
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredClassBuilder;
-import com.spotify.missinglink.datamodel.DeclaredField;
-import com.spotify.missinglink.datamodel.DeclaredFieldBuilder;
-import com.spotify.missinglink.datamodel.DeclaredMethod;
-import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
-import com.spotify.missinglink.datamodel.MethodDescriptor;
-import com.spotify.missinglink.datamodel.MethodDescriptors;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-
+import com.spotify.missinglink.datamodel.access.FieldAccess;
+import com.spotify.missinglink.datamodel.access.MethodCall;
+import com.spotify.missinglink.datamodel.state.DeclaredClass;
+import com.spotify.missinglink.datamodel.state.DeclaredClassBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredField;
+import com.spotify.missinglink.datamodel.state.DeclaredMethod;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.FieldDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
+import com.spotify.missinglink.datamodel.type.TypeDescriptors;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -45,16 +48,6 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Loads a single class from an input stream.
@@ -68,21 +61,25 @@ public final class ClassLoader {
   public static DeclaredClass load(InputStream in) throws IOException {
     ClassNode classNode = readClassNode(in);
 
+    ClassTypeDescriptor descriptor = TypeDescriptors.fromClassName(classNode.name);
+
     Set<ClassTypeDescriptor> parents = readParents(classNode);
     ImmutableSet<DeclaredField> declaredFields = readDeclaredFields(classNode);
 
     Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
-    Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
 
     for (MethodNode method : ClassLoader.<MethodNode>uncheckedCast(classNode.methods)) {
-      analyseMethod(classNode.name, method, declaredMethods, loadedClasses);
+      analyseMethod(descriptor, classNode.name, method, declaredMethods);
     }
 
+    declaredMethods.putIfAbsent(
+        MethodDescriptor.staticInit(),
+        DeclaredMethod.emptyStaticInit(descriptor));
+
     return new DeclaredClassBuilder()
-        .className(TypeDescriptors.fromClassName(classNode.name))
+        .className(descriptor)
         .methods(ImmutableMap.copyOf(declaredMethods))
         .parents(ImmutableSet.copyOf(parents))
-        .loadedClasses(ImmutableSet.copyOf(loadedClasses))
         .fields(declaredFields)
         .build();
   }
@@ -110,23 +107,18 @@ public final class ClassLoader {
   private static ImmutableSet<DeclaredField> readDeclaredFields(ClassNode classNode) {
     ImmutableSet.Builder<DeclaredField> fields = new ImmutableSet.Builder<>();
 
-    @SuppressWarnings("unchecked")
-    final Iterable<FieldNode> classFields = (Iterable<FieldNode>) classNode.fields;
-    for (FieldNode field : classFields) {
-      fields.add(new DeclaredFieldBuilder()
-                     .name(field.name)
-                     .descriptor(TypeDescriptors.fromRaw(field.desc))
-                     .build());
+    for (FieldNode field : ClassLoader.<FieldNode>uncheckedCast(classNode.fields)) {
+      fields.add(DeclaredField.of(FieldDescriptor.fromDesc(field.desc, field.name, field.access)));
     }
     return fields.build();
   }
 
-  private static void analyseMethod(String className,
+  private static void analyseMethod(ClassTypeDescriptor descriptor,
+                                    String className,
                                     MethodNode method,
-                                    Map<MethodDescriptor, DeclaredMethod> declaredMethods,
-                                    Set<ClassTypeDescriptor> loadedClasses) {
-    final Set<CalledMethod> thisCalls = new HashSet<>();
-    final Set<AccessedField> thisFields = new HashSet<>();
+                                    Map<MethodDescriptor, DeclaredMethod> declaredMethods) {
+    final Set<MethodCall> thisCalls = new HashSet<>();
+    final Set<FieldAccess> thisFields = new HashSet<>();
 
     int lineNumber = 0;
     for (Iterator<AbstractInsnNode> instructions =
@@ -144,7 +136,7 @@ public final class ClassLoader {
           handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
         }
         if (insn instanceof LdcInsnNode) {
-          handleLdc(loadedClasses, (LdcInsnNode) insn);
+          handleLdc(thisCalls, lineNumber, (LdcInsnNode) insn);
         }
       } catch (Exception e) {
         throw new MissingLinkException("Error analysing " + className + "." + method.name +
@@ -152,13 +144,12 @@ public final class ClassLoader {
       }
     }
 
-    final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
-        .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
-        .lineNumber(lineNumber)
-        .methodCalls(ImmutableSet.copyOf(thisCalls))
-        .fieldAccesses(ImmutableSet.copyOf(thisFields))
-        .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
-        .build();
+    final DeclaredMethod declaredMethod = DeclaredMethod.of(
+        descriptor,
+        MethodDescriptor.fromDesc(method.desc, method.name, method.access),
+        lineNumber,
+        ImmutableSet.copyOf(thisCalls),
+        ImmutableSet.copyOf(thisFields));
 
     if (declaredMethods.put(declaredMethod.descriptor(), declaredMethod) != null) {
       throw new RuntimeException(
@@ -166,7 +157,7 @@ public final class ClassLoader {
     }
   }
 
-  private static void handleMethodCall(Set<CalledMethod> thisCalls,
+  private static void handleMethodCall(Set<MethodCall> thisCalls,
                                        int lineNumber,
                                        MethodInsnNode insn) {
     boolean isStatic;
@@ -185,29 +176,27 @@ public final class ClassLoader {
         throw new RuntimeException("Unexpected method call opcode: " + insn.getOpcode());
     }
     if (insn.owner.charAt(0) != '[') {
-      thisCalls.add(new CalledMethodBuilder()
-                        .owner(TypeDescriptors.fromClassName(insn.owner))
-                        .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
-                        .isStatic(isStatic)
-                        .lineNumber(lineNumber)
-                        .build());
+      thisCalls.add(MethodCall.of(
+          TypeDescriptors.fromClassName(insn.owner),
+          MethodDescriptor.fromDesc(insn.desc, insn.name, isStatic),
+          lineNumber));
     }
   }
 
-  private static void handleFieldAccess(Set<AccessedField> thisFields, int lineNumber,
+  private static void handleFieldAccess(Set<FieldAccess> thisFields, int lineNumber,
                                         FieldInsnNode insn) {
     if (insn.owner.charAt(0) != '[') {
-      thisFields.add(
-          new AccessedFieldBuilder()
-              .name(insn.name)
-              .descriptor(TypeDescriptors.fromRaw(insn.desc))
-              .owner(TypeDescriptors.fromClassName(insn.owner))
-              .lineNumber(lineNumber)
-              .build());
+      thisFields.add(FieldAccess.of(
+          TypeDescriptors.fromClassName(insn.owner),
+          FieldDescriptor.fromDesc(insn.desc, insn.name,
+              insn.getOpcode() == Opcodes.GETSTATIC || insn.getOpcode() == Opcodes.PUTSTATIC),
+          lineNumber));
     }
   }
 
-  private static void handleLdc(Set<ClassTypeDescriptor> loadedClasses, LdcInsnNode insn) {
+  private static void handleLdc(Set<MethodCall> thisCalls,
+      int lineNumber,
+      LdcInsnNode insn) {
     // See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.ldc
     // if an LDC instruction is emitted with a symbolic reference to a class, that class is
     // loaded. This means we need to at least check for presence of that class, and also
@@ -223,7 +212,10 @@ public final class ClassLoader {
       }
 
       if (loadedType.getSort() == Type.OBJECT) {
-        loadedClasses.add(TypeDescriptors.fromClassName(loadedType.getInternalName()));
+        thisCalls.add(MethodCall.of(
+            TypeDescriptors.fromClassName(loadedType.getInternalName()),
+            MethodDescriptor.staticInit(),
+            lineNumber));
       }
     }
   }

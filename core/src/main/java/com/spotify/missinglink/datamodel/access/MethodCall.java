@@ -13,23 +13,28 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.access;
 
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 import io.norberg.automatter.AutoMatter;
 
-/** Information about a field accessed in a method */
+/** Information about a method called by a DeclaredMethod */
 @AutoMatter
-public interface AccessedField {
-
+public interface MethodCall {
   ClassTypeDescriptor owner();
-
-  TypeDescriptor descriptor();
-
-  String name();
-
+  MethodDescriptor descriptor();
   int lineNumber();
 
   default String pretty() {
-    return descriptor().toString() + " " + owner().toString() + "." + name();
+    return descriptor().pretty(owner());
+  }
+
+  static MethodCall of(ClassTypeDescriptor owner, MethodDescriptor descriptor, int lineNumber) {
+    return new MethodCallBuilder()
+        .owner(owner)
+        .descriptor(descriptor)
+        .lineNumber(lineNumber)
+        .build();
   }
 }

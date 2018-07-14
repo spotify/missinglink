@@ -18,26 +18,25 @@ package com.spotify.missinglink;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
-import com.spotify.missinglink.datamodel.AccessedField;
-import com.spotify.missinglink.datamodel.AccessedFieldBuilder;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
-import com.spotify.missinglink.datamodel.CalledMethod;
-import com.spotify.missinglink.datamodel.CalledMethodBuilder;
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredClassBuilder;
-import com.spotify.missinglink.datamodel.DeclaredField;
-import com.spotify.missinglink.datamodel.DeclaredFieldBuilder;
-import com.spotify.missinglink.datamodel.DeclaredMethod;
-import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
-import com.spotify.missinglink.datamodel.MethodDescriptor;
-import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
-import com.spotify.missinglink.datamodel.TypeDescriptor;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-
+import com.spotify.missinglink.datamodel.access.FieldAccess;
+import com.spotify.missinglink.datamodel.access.FieldAccessBuilder;
+import com.spotify.missinglink.datamodel.access.MethodCall;
+import com.spotify.missinglink.datamodel.access.MethodCallBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredClass;
+import com.spotify.missinglink.datamodel.state.DeclaredClassBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredField;
+import com.spotify.missinglink.datamodel.state.DeclaredFieldBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredMethod;
+import com.spotify.missinglink.datamodel.state.DeclaredMethodBuilder;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.FieldDescriptorBuilder;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
+import com.spotify.missinglink.datamodel.type.TypeDescriptor;
+import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,40 +64,36 @@ public class Simple {
     return new DeclaredClassBuilder()
         .className(TypeDescriptors.fromClassName(className))
         .parents(ImmutableSet.of())
-        .loadedClasses(ImmutableSet.of())
         .methods(ImmutableMap.of())
         .fields(ImmutableSet.<DeclaredField>of());
   }
 
 
-  public static DeclaredMethodBuilder newMethod(boolean isStatic, String returnDesc, String name,
-                                                String... parameterDesc) {
+  public static DeclaredMethodBuilder newMethod(
+      boolean isStatic, String returnDesc, String className, String name, String... parameterDesc) {
     List<TypeDescriptor> param = ImmutableList.copyOf(parameterDesc).stream()
         .map(TypeDescriptors::fromRaw)
         .collect(Collectors.toList());
 
     return new DeclaredMethodBuilder()
-        .isStatic(isStatic)
-        .fieldAccesses(ImmutableSet.<AccessedField>of())
-        .methodCalls(ImmutableSet.<CalledMethod>of())
+        .owner(TypeDescriptors.fromClassName(className))
+        .fieldAccesses(ImmutableSet.<FieldAccess>of())
+        .methodCalls(ImmutableSet.<MethodCall>of())
         .descriptor(new MethodDescriptorBuilder()
+            .isStatic(isStatic)
             .name(name)
-        .parameterTypes(ImmutableList.copyOf(param))
-        .returnType(TypeDescriptors.fromRaw(returnDesc)).build());
+            .parameterTypes(ImmutableList.copyOf(param))
+            .returnType(TypeDescriptors.fromRaw(returnDesc)).build());
   }
 
-  public static CalledMethod newCall(
-          DeclaredClass owner, DeclaredMethod method,
-          boolean isStatic, boolean isVirtual) {
-    return newCall(owner.className(), method, isStatic);
+  public static MethodCall newCall(DeclaredMethod method, boolean isStatic, boolean isVirtual) {
+    return newCall(method);
   }
 
-  public static CalledMethod newCall(ClassTypeDescriptor owner, DeclaredMethod method,
-                                     boolean isStatic) {
-    return new CalledMethodBuilder()
-        .owner(owner)
+  public static MethodCall newCall(DeclaredMethod method) {
+    return new MethodCallBuilder()
+        .owner(method.owner())
         .descriptor(method.descriptor())
-        .isStatic(isStatic)
         .build();
   }
 
@@ -120,18 +115,25 @@ public class Simple {
     return builder.build();
   }
 
-  public static DeclaredField newField(String desc, String name) {
+  public static DeclaredField newField(String desc, String name, boolean isStatic) {
     return new DeclaredFieldBuilder()
-        .name(name)
-        .descriptor(TypeDescriptors.fromRaw(desc))
+        .descriptor(new FieldDescriptorBuilder()
+            .isStatic(isStatic)
+            .name(name)
+            .fieldType(TypeDescriptors.fromRaw(desc))
+            .build())
         .build();
   }
 
-  public static AccessedField newAccess(String desc, String name, String owner, int lineNumber) {
-    return new AccessedFieldBuilder()
-        .name(name)
-        .descriptor(TypeDescriptors.fromRaw(desc))
+  public static FieldAccess newAccess(
+      String desc, String name, String owner, boolean isStatic, int lineNumber) {
+    return new FieldAccessBuilder()
         .owner(TypeDescriptors.fromClassName(owner))
+        .descriptor(new FieldDescriptorBuilder()
+            .name(name)
+            .fieldType(TypeDescriptors.fromRaw(desc))
+            .isStatic(isStatic)
+            .build())
         .lineNumber(lineNumber)
         .build();
   }

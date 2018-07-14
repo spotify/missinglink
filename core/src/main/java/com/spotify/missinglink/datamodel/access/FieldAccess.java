@@ -13,24 +13,28 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.access;
 
-import com.google.common.collect.ImmutableSet;
-
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.FieldDescriptor;
 import io.norberg.automatter.AutoMatter;
 
+/** Information about a field accessed in a method */
 @AutoMatter
-// TODO: rename to something better - ImplementedMethod ? DefinedMethod ?
-/** Represents methods in a class */
-public interface DeclaredMethod {
-  MethodDescriptor descriptor();
-
-  boolean isStatic();
-
+public interface FieldAccess {
+  ClassTypeDescriptor owner();
+  FieldDescriptor descriptor();
   int lineNumber();
 
-  /** Calls that this method makes to other methods */
-  ImmutableSet<CalledMethod> methodCalls();
+  default String pretty() {
+    return descriptor().pretty(owner());
+  }
 
-  ImmutableSet<AccessedField> fieldAccesses();
+  static FieldAccess of(ClassTypeDescriptor owner, FieldDescriptor descriptor, int lineNumber) {
+    return new FieldAccessBuilder()
+        .owner(owner)
+        .descriptor(descriptor)
+        .lineNumber(lineNumber)
+        .build();
+  }
 }

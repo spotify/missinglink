@@ -13,7 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.type;
 
-public interface TypeDescriptor {
+public class VoidTypeDescriptor implements TypeDescriptor {
+
+  public static final VoidTypeDescriptor voidTypeDescriptor = new VoidTypeDescriptor();
+
+  private VoidTypeDescriptor() {
+  }
+
+  @Override
+  public String pretty() {
+    return "void";
+  }
+
+  @Override
+  public String toString() {
+    return pretty();
+  }
 }

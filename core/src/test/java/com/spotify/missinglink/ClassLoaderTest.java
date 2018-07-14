@@ -15,20 +15,20 @@
  */
 package com.spotify.missinglink;
 
-import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
+import static com.spotify.missinglink.ClassLoadingUtil.findClass;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
+import com.google.common.collect.Iterables;
+import com.spotify.missinglink.datamodel.state.DeclaredClass;
+import com.spotify.missinglink.datamodel.type.MethodDescriptors;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static com.spotify.missinglink.ClassLoadingUtil.findClass;
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.stream.Collectors;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ClassLoaderTest {
 
@@ -36,7 +36,7 @@ public class ClassLoaderTest {
 
   @Before
   public void setUp() throws Exception {
-    final File outputDir = FilePathHelper.getPath("target/classes");
+    final File outputDir = FilePathHelper.getPath("build/classes/java/main");
     File someClass = Files.walk(outputDir.toPath())
         .map(Path::toFile)
         .filter(file -> file.isFile() && file.getName().endsWith(".class"))
@@ -74,8 +74,15 @@ public class ClassLoaderTest {
       DeclaredClass loaded = ClassLoader.load(inputStream);
 
       assertThat(loaded.className().getClassName()).contains("LdcLoadArrayOfType");
-      assertThat(loaded.loadedClasses())
-          .containsExactly(TypeDescriptors.fromClassName(Object.class.getName()));
+      assertThat(Iterables.getOnlyElement(
+          loaded.methods().get(
+              MethodDescriptors.fromDesc("()V", "test", true)
+          ).methodCalls()
+              .stream()
+              .filter(method -> method.descriptor().name().equals("<clinit>"))
+              .collect(Collectors.toList())
+      ).descriptor())
+          .isEqualTo(MethodDescriptors.staticInit());
     }
   }
 
@@ -85,7 +92,14 @@ public class ClassLoaderTest {
       DeclaredClass loaded = ClassLoader.load(inputStream);
 
       assertThat(loaded.className().getClassName()).contains("LdcLoadArrayOfPrimitive");
-      assertThat(loaded.loadedClasses()).isEmpty();
+      assertThat(
+          loaded.methods().get(
+              MethodDescriptors.fromDesc("()V", "test", true)
+          ).methodCalls()
+          .stream()
+          .filter(method -> method.descriptor().name().equals("<clinit>"))
+          .collect(Collectors.toList())
+      ).isEmpty();
     }
   }
 

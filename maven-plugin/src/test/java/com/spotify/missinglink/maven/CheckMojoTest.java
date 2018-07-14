@@ -15,10 +15,19 @@
  */
 package com.spotify.missinglink.maven;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
 import com.spotify.missinglink.ArtifactLoader;
 import com.spotify.missinglink.Conflict;
 import com.spotify.missinglink.Conflict.ConflictCategory;
@@ -27,17 +36,17 @@ import com.spotify.missinglink.ConflictChecker;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
-import com.spotify.missinglink.datamodel.CalledMethod;
-import com.spotify.missinglink.datamodel.CalledMethodBuilder;
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredMethod;
-import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
-import com.spotify.missinglink.datamodel.Dependency;
-import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
-import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-
+import com.spotify.missinglink.datamodel.access.MethodCall;
+import com.spotify.missinglink.datamodel.dependency.Dependency;
+import com.spotify.missinglink.datamodel.dependency.MethodDependencyBuilder;
+import com.spotify.missinglink.datamodel.state.DeclaredClass;
+import com.spotify.missinglink.datamodel.state.DeclaredMethod;
+import com.spotify.missinglink.datamodel.state.DeclaredMethodBuilder;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
+import com.spotify.missinglink.datamodel.type.TypeDescriptors;
+import java.io.File;
+import java.util.List;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -53,19 +62,6 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * A note on the maven plugin testing harness:
@@ -120,7 +116,7 @@ public class CheckMojoTest {
   }
 
   private void setMockConflictResults(ImmutableList<Conflict> results) {
-    when(conflictChecker.check(any(Artifact.class),
+    when(conflictChecker.check(anyListOf(Artifact.class),
             anyListOf(Artifact.class),
             anyListOf(Artifact.class))
     ).thenReturn(results);
@@ -137,14 +133,13 @@ public class CheckMojoTest {
   }
 
   private static Conflict conflict(ConflictCategory category, ClassTypeDescriptor inClass,
-                                   DeclaredMethod caller, CalledMethod callee, String reason) {
+                                   DeclaredMethod caller, MethodCall callee, String reason) {
 
     final Dependency dep = new MethodDependencyBuilder()
-        .fromClass(inClass)
+        .fromOwner(inClass)
         .fromMethod(caller.descriptor())
         .fromLineNumber(callee.lineNumber())
-        .targetClass(callee.owner())
-        .targetMethod(callee.descriptor())
+        .methodCall(callee)
         .build();
 
     return new ConflictBuilder()
@@ -167,16 +162,17 @@ public class CheckMojoTest {
                                                 ConflictCategory category,
                                                 ConflictCategory... additionalCategories) {
 
-    final CalledMethod callee = new CalledMethodBuilder()
-        .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
-        .descriptor(new MethodDescriptorBuilder()
+    final MethodCall callee = MethodCall.of(
+        TypeDescriptors.fromClassName("com/foo/Bar"),
+        new MethodDescriptorBuilder()
                         .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
                         .name("bat")
                         .parameterTypes(ImmutableList.of())
-                        .build())
-        .build();
+                        .build(),
+        -1);
 
     final DeclaredMethod caller = new DeclaredMethodBuilder()
+        .owner(TypeDescriptors.fromClassName("com/foo/Baz"))
         .methodCalls(ImmutableSet.of())
         .fieldAccesses(ImmutableSet.of())
         .descriptor(new MethodDescriptorBuilder()
@@ -231,7 +227,7 @@ public class CheckMojoTest {
    */
   @Test
   public void testBadValuesForIncludeCategories() throws Exception {
-    when(conflictChecker.check(any(Artifact.class),
+    when(conflictChecker.check(anyListOf(Artifact.class),
             anyListOf(Artifact.class),
             anyListOf(Artifact.class))
     ).thenThrow(new RuntimeException("Mojo should not get as far as checking conflicts if the "
@@ -270,7 +266,7 @@ public class CheckMojoTest {
     ArgumentCaptor<ImmutableList> toCheck = ArgumentCaptor.forClass(ImmutableList.class);
 
     verify(conflictChecker).check(
-        any(Artifact.class),
+        anyListOf(Artifact.class),
         toCheck.capture(),
         anyListOf(Artifact.class)
     );
@@ -305,16 +301,17 @@ public class CheckMojoTest {
 
   @Test
   public void testIgnoreDestinationPackages() throws Exception {
-    final CalledMethod callee = new CalledMethodBuilder()
-        .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
-        .descriptor(new MethodDescriptorBuilder()
+    final MethodCall callee = MethodCall.of(
+        TypeDescriptors.fromClassName("com/foo/Bar"),
+        new MethodDescriptorBuilder()
             .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
             .name("bat")
             .parameterTypes(ImmutableList.of())
-            .build())
-        .build();
+            .build(),
+        -1);
 
     final DeclaredMethod caller = new DeclaredMethodBuilder()
+        .owner(TypeDescriptors.fromClassName("com/foo/Baz"))
         .methodCalls(ImmutableSet.of())
         .fieldAccesses(ImmutableSet.of())
         .descriptor(new MethodDescriptorBuilder()

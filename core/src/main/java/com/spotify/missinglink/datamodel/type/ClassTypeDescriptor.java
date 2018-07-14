@@ -13,29 +13,35 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
-
+package com.spotify.missinglink.datamodel.type;
 
 import com.google.common.base.Preconditions;
+import java.util.InputMismatchException;
 
-public class ArrayTypeDescriptor implements TypeDescriptor {
+public class ClassTypeDescriptor implements TypeDescriptor {
 
-  private final TypeDescriptor subType;
-  private final int dimensions;
+  private final String className;
 
-  public ArrayTypeDescriptor(TypeDescriptor subType, int dimensions) {
-    this.dimensions = dimensions;
-    this.subType = Preconditions.checkNotNull(subType);
+  ClassTypeDescriptor(String className) {
+    this.className = Preconditions.checkNotNull(className).replace('/', '.');
+    if (className.endsWith(";")) {
+      throw new InputMismatchException(
+          "Got a signature where a class name was expected: " + className);
+    }
+  }
+
+  public String getClassName() {
+    return className;
+  }
+
+  @Override
+  public String pretty() {
+    return className;
   }
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(subType.toString());
-    for (int i = 0; i < dimensions; i++) {
-      sb.append("[]");
-    }
-    return sb.toString();
+    return pretty();
   }
 
   @Override
@@ -47,13 +53,17 @@ public class ArrayTypeDescriptor implements TypeDescriptor {
       return false;
     }
 
-    ArrayTypeDescriptor that = (ArrayTypeDescriptor) o;
+    ClassTypeDescriptor that = (ClassTypeDescriptor) o;
 
-    return subType.equals(that.subType) && dimensions == that.dimensions;
+    if (!className.equals(that.className)) {
+      return false;
+    }
+
+    return true;
   }
 
   @Override
   public int hashCode() {
-    return subType.hashCode();
+    return className.hashCode();
   }
 }

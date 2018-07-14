@@ -13,8 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.dependency;
 
+import com.spotify.missinglink.datamodel.access.MethodCall;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 import io.norberg.automatter.AutoMatter;
 
 /**
@@ -23,16 +26,30 @@ import io.norberg.automatter.AutoMatter;
  */
 @AutoMatter
 public interface MethodDependency extends Dependency {
-
-  ClassTypeDescriptor fromClass();
+  ClassTypeDescriptor fromOwner();
   MethodDescriptor fromMethod();
   int fromLineNumber();
 
-  ClassTypeDescriptor targetClass();
-  MethodDescriptor targetMethod();
+  MethodCall methodCall();
+
+  @Override
+  default ClassTypeDescriptor targetClass() {
+    return methodCall().owner();
+  }
 
   @Override
   default String describe() {
-    return "Call to: " + targetClass().toString() + "." + targetMethod().prettyWithoutReturnType();
+    return "Call to: " + methodCall().pretty();
+  }
+
+  static MethodDependency of(
+      ClassTypeDescriptor fromOwner, MethodDescriptor fromMethod, int fromLineNumber,
+      MethodCall methodCall) {
+    return new MethodDependencyBuilder()
+        .fromOwner(fromOwner)
+        .fromMethod(fromMethod)
+        .fromLineNumber(fromLineNumber)
+        .methodCall(methodCall)
+        .build();
   }
 }

@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.type;
 
 import java.util.HashMap;
 import java.util.InputMismatchException;
@@ -30,12 +30,17 @@ public class TypeDescriptors {
   // want to turn a String into a ClassTypeDescriptor, we can optimize how many strings are
   // created/replaced with this map.
   private static Map<String, ClassTypeDescriptor> classTypeDescriptorCache = new HashMap<>();
+  private static Map<String, TypeDescriptor> rawTypeDescriptorCache = new HashMap<>();
 
   public static ClassTypeDescriptor fromClassName(String className) {
     return classTypeDescriptorCache.computeIfAbsent(className, ClassTypeDescriptor::new);
   }
 
   public static TypeDescriptor fromRaw(String raw) {
+    return rawTypeDescriptorCache.computeIfAbsent(raw, TypeDescriptors::uncachedFromRaw);
+  }
+
+  private static TypeDescriptor uncachedFromRaw(String raw) {
     final int length = raw.length();
 
     int dimensions = raw.lastIndexOf('[') + 1;

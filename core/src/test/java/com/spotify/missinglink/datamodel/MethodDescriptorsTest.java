@@ -15,17 +15,22 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import com.google.common.collect.ImmutableList;
-
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+
+import com.google.common.collect.ImmutableList;
+import com.spotify.missinglink.datamodel.type.MethodDescriptor;
+import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
+import com.spotify.missinglink.datamodel.type.TypeDescriptors;
+import org.junit.Test;
+import org.objectweb.asm.Opcodes;
 
 public class MethodDescriptorsTest {
 
   @Test
   public void testMethodDescriptionParser() {
-    MethodDescriptor desc1 = MethodDescriptors.fromDesc("([I[[Lfoo/Bar;Z)V", "baz");
+    MethodDescriptor desc1 =
+        MethodDescriptor.fromDesc("([I[[Lfoo/Bar;Z)V", "baz", Opcodes.ACC_STATIC);
+
     MethodDescriptor desc2 = new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw("V"))
         .parameterTypes(ImmutableList.of(
@@ -33,6 +38,7 @@ public class MethodDescriptorsTest {
             TypeDescriptors.fromRaw("[[Lfoo/Bar;"),
             TypeDescriptors.fromRaw("Z")))
         .name("baz")
+        .isStatic(true)
         .build();
     assertEquals("Method descriptors should be identical", desc1, desc2);
   }

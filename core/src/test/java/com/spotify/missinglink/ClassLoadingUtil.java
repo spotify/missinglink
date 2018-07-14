@@ -16,9 +16,7 @@
 package com.spotify.missinglink;
 
 import com.google.common.collect.ImmutableList;
-
 import com.spotify.missinglink.datamodel.Artifact;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,7 +35,7 @@ public class ClassLoadingUtil {
       new AtomicReference<>();
 
   public static FileInputStream findClass(Class<?> aClass) throws Exception {
-    final File outputDir = FilePathHelper.getPath("target/test-classes");
+    final File outputDir = FilePathHelper.getPath("build/classes/java/test");
     File someClass = Files.walk(outputDir.toPath())
         .map(Path::toFile)
         .filter(file -> file.isFile() && file.getName().endsWith(aClass.getSimpleName() + ".class"))

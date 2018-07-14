@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.type;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -31,8 +31,13 @@ public enum PrimitiveTypeDescriptor implements TypeDescriptor {
   }
 
   @Override
-  public String toString() {
+  public String pretty() {
     return pretty;
+  }
+
+  @Override
+  public String toString() {
+    return pretty();
   }
 
   public String getRaw() {

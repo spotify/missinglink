@@ -16,7 +16,8 @@
 package com.spotify.missinglink.datamodel;
 
 import com.google.common.collect.ImmutableMap;
-
+import com.spotify.missinglink.datamodel.state.DeclaredClass;
+import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
 import io.norberg.automatter.AutoMatter;
 
 @AutoMatter
@@ -29,4 +30,5 @@ public interface Artifact {
    * Map of classname to class object. Names are com/foo/bar/Baz
    */
   ImmutableMap<ClassTypeDescriptor, DeclaredClass> classes();
+
 }

@@ -13,13 +13,8 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.type;
 
-import io.norberg.automatter.AutoMatter;
-
-@AutoMatter
-/** Represents field in a class */
-public interface DeclaredField {
-  String name();
-  TypeDescriptor descriptor();
+public interface TypeDescriptor {
+    String pretty();
 }

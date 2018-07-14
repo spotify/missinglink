@@ -16,8 +16,7 @@
 package com.spotify.missinglink;
 
 import com.spotify.missinglink.datamodel.ArtifactName;
-import com.spotify.missinglink.datamodel.Dependency;
-
+import com.spotify.missinglink.datamodel.dependency.Dependency;
 import io.norberg.automatter.AutoMatter;
 
 @AutoMatter

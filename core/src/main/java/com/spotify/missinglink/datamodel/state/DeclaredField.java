@@ -13,17 +13,21 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.state;
 
-public class VoidTypeDescriptor implements TypeDescriptor {
+import com.spotify.missinglink.datamodel.type.FieldDescriptor;
+import io.norberg.automatter.AutoMatter;
 
-  public static final VoidTypeDescriptor voidTypeDescriptor = new VoidTypeDescriptor();
+@AutoMatter
+/** Represents field in a class */
+public interface DeclaredField {
+  FieldDescriptor descriptor();
 
-  private VoidTypeDescriptor() {
-  }
-
-  @Override
-  public String toString() {
-    return "void";
+  static DeclaredField of(
+      FieldDescriptor descriptor
+  ) {
+    return new DeclaredFieldBuilder()
+        .descriptor(descriptor)
+        .build();
   }
 }

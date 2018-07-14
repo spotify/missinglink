@@ -13,28 +13,38 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.datamodel;
+package com.spotify.missinglink.datamodel.type;
+
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-
-import org.objectweb.asm.Type;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
+import java.util.Objects;
+import org.objectweb.asm.Type;
 
 public final class MethodDescriptors {
+  private static final MethodDescriptor STATIC_INIT = new MethodDescriptorBuilder()
+      .returnType(TypeDescriptors.fromRaw("V"))
+      .isStatic(true)
+      .name("<clinit>")
+      .parameterTypes(ImmutableList.of())
+      .build();
+  private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache = new HashMap<>();
 
   private MethodDescriptors() {
   }
 
-  public static MethodDescriptor fromDesc(String desc, String name) {
-    final MethodKey key = new MethodKey(name, desc);
+  public static MethodDescriptor fromDesc(String desc, String name, boolean isStatic) {
+    final MethodKey key = new MethodKey(name, desc, isStatic);
     return methodDescriptorCache.computeIfAbsent(key, MethodDescriptors::newDescriptor);
+  }
+
+  public static MethodDescriptor staticInit() {
+    return STATIC_INIT;
   }
 
   private static MethodDescriptor newDescriptor(MethodKey key) {
@@ -47,20 +57,21 @@ public final class MethodDescriptors {
 
     return new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw(type.getReturnType().getDescriptor()))
+        .isStatic(key.isStatic)
         .name(key.name)
         .parameterTypes(ImmutableList.copyOf(params))
         .build();
   }
 
-  private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache = new HashMap<>();
-
   private static class MethodKey {
     private final String name;
     private final String desc;
+    private final boolean isStatic;
 
-    public MethodKey(String name, String desc) {
+    private MethodKey(String name, String desc, boolean isStatic) {
       this.name = Preconditions.checkNotNull(name);
       this.desc = Preconditions.checkNotNull(desc);
+      this.isStatic = isStatic;
     }
 
     @Override
@@ -71,21 +82,15 @@ public final class MethodDescriptors {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-
-      MethodKey key = (MethodKey) o;
-
-      if (!name.equals(key.name)) {
-        return false;
-      }
-      return desc.equals(key.desc);
-
+      MethodKey methodKey = (MethodKey) o;
+      return isStatic == methodKey.isStatic &&
+          Objects.equals(name, methodKey.name) &&
+          Objects.equals(desc, methodKey.desc);
     }
 
     @Override
     public int hashCode() {
-      int result = name.hashCode();
-      result = 31 * result + desc.hashCode();
-      return result;
+      return Objects.hash(name, desc, isStatic);
     }
   }
 }
