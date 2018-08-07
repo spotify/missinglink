@@ -222,7 +222,7 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadFromDirectory() throws Exception {
-    final Artifact artifact = loader.load(FilePathHelper.getPath("build/classes/java/main"));
+    final Artifact artifact = loader.load(FilePathHelper.getPath("target/classes"));
     assertThat(artifact.classes())
         .overridingErrorMessage("Loading classes from a directory should be supported")
         .isNotEmpty()
@@ -263,7 +263,7 @@ public class ArtifactLoaderTest {
   }
 
   private Artifact loadTestClassesAsArtifact() throws IOException {
-    return loader.load(FilePathHelper.getPath("build/classes/java/test"));
+    return loader.load(FilePathHelper.getPath("target/test-classes"));
   }
 
 }

@@ -37,7 +37,7 @@ public class ClassLoaderTest {
 
   @Before
   public void setUp() throws Exception {
-    final File outputDir = FilePathHelper.getPath("build/classes/java/main");
+    final File outputDir = FilePathHelper.getPath("target/classes");
     File someClass = Files.walk(outputDir.toPath())
         .map(Path::toFile)
         .filter(file -> file.isFile() && file.getName().endsWith(".class"))

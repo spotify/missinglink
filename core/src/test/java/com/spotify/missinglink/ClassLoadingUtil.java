@@ -35,7 +35,7 @@ public class ClassLoadingUtil {
       new AtomicReference<>();
 
   public static FileInputStream findClass(Class<?> aClass) throws Exception {
-    final File outputDir = FilePathHelper.getPath("build/classes/java/test");
+    final File outputDir = FilePathHelper.getPath("target/test-classes");
     File someClass = Files.walk(outputDir.toPath())
         .map(Path::toFile)
         .filter(file -> file.isFile() && file.getName().endsWith(aClass.getSimpleName() + ".class"))

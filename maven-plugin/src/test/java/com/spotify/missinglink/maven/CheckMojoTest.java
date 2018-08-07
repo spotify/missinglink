@@ -33,6 +33,7 @@ import com.spotify.missinglink.Conflict;
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.ConflictBuilder;
 import com.spotify.missinglink.ConflictChecker;
+import com.spotify.missinglink.InstanceCache;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
@@ -44,7 +45,6 @@ import com.spotify.missinglink.datamodel.state.DeclaredMethod;
 import com.spotify.missinglink.datamodel.state.DeclaredMethodBuilder;
 import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
-import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import java.io.File;
 import java.util.List;
 import org.apache.maven.artifact.DefaultArtifact;
@@ -84,6 +84,7 @@ import org.slf4j.LoggerFactory;
 public class CheckMojoTest {
 
   private static final Logger log = LoggerFactory.getLogger(CheckMojoTest.class);
+  private final InstanceCache cache = new InstanceCache();
 
   @Rule
   public MojoRule rule = new MojoRule();
