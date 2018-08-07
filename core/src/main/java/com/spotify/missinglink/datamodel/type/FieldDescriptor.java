@@ -16,7 +16,6 @@
 package com.spotify.missinglink.datamodel.type;
 
 import io.norberg.automatter.AutoMatter;
-import org.objectweb.asm.Opcodes;
 
 @AutoMatter
 public interface FieldDescriptor {
@@ -33,11 +32,4 @@ public interface FieldDescriptor {
     return name();
   }
 
-  static FieldDescriptor fromDesc(String desc, String name, int access) {
-    return fromDesc(desc, name, (access & Opcodes.ACC_STATIC) != 0);
-  }
-
-  static FieldDescriptor fromDesc(String desc, String name, boolean isStatic) {
-    return FieldDescriptors.fromDesc(desc, name, isStatic);
-  }
 }

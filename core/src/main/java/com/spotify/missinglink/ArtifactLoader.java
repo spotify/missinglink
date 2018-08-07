@@ -37,11 +37,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ArtifactLoader {
+  private InstanceCache instanceCache = new InstanceCache();
   private Map<File, Artifact> cachedArtifacts = new ConcurrentHashMap<>();
-
-  public void clearCache() {
-    cachedArtifacts.clear();
-  }
 
   /** Load artifact at path, using path name as artifactId */
   public Artifact load(File path) throws IOException {
@@ -70,6 +67,10 @@ public class ArtifactLoader {
     return result;
   }
 
+  public InstanceCache instanceCache() {
+    return instanceCache;
+  }
+
   private Artifact loadFromJar(ArtifactName artifactName, File path) {
     try (JarFile jarFile = new JarFile(path)) {
       Builder<ClassTypeDescriptor, DeclaredClass> classes = new Builder<>();
@@ -79,7 +80,7 @@ public class ArtifactLoader {
         JarEntry entry = entries.nextElement();
         if (entry.getName().endsWith(".class") && !entry.getName().endsWith("module-info.class")) {
           try {
-            DeclaredClass cl = ClassLoader.load(jarFile.getInputStream(entry));
+            DeclaredClass cl = ClassLoader.load(instanceCache, jarFile.getInputStream(entry));
             classes.put(cl.className(), cl);
           } catch (MissingLinkException e) {
             throw e;
@@ -107,7 +108,7 @@ public class ArtifactLoader {
 
     for (File file : classFilesInDir) {
       try (FileInputStream fis = new FileInputStream(file)) {
-        DeclaredClass cl = ClassLoader.load(fis);
+        DeclaredClass cl = ClassLoader.load(instanceCache, fis);
         classes.put(cl.className(), cl);
       }
     }

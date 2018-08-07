@@ -33,12 +33,12 @@ import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptors;
 import com.spotify.missinglink.datamodel.type.TypeDescriptor;
-import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 
 public class ReachableTest {
+  private final InstanceCache cache = new InstanceCache();
 
   @Test
   public void testUnreachable() {
@@ -73,7 +73,7 @@ public class ReachableTest {
     DeclaredClass remote = newClass("other/Unknown")
         .build();
     DeclaredClass root = newClass("my/Root")
-        .parents(ImmutableSet.of(TypeDescriptors.fromClassName("other/Unknown")))
+        .parents(ImmutableSet.of(cache.typeFromClassName("other/Unknown")))
         .build();
     ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
     ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
@@ -85,7 +85,7 @@ public class ReachableTest {
   public void testReachableViaLdcLoad() {
     MethodDescriptor otherClInitDesc = MethodDescriptors.staticInit();
     DeclaredMethod otherClInit =
-        DeclaredMethod.emptyStaticInit(TypeDescriptors.fromClassName("other/Unknown"));
+        DeclaredMethod.emptyStaticInit(cache.typeFromClassName("other/Unknown"));
 
     MethodDescriptor rootClInit = MethodDescriptors.staticInit();
 
@@ -112,7 +112,7 @@ public class ReachableTest {
         .fields(ImmutableSet.of(newField(INT, "remoteField", false)))
         .methods(ImmutableMap.of(
             MethodDescriptors.staticInit(),
-            DeclaredMethod.emptyStaticInit(TypeDescriptors.fromClassName("other/Unknown"))))
+            DeclaredMethod.emptyStaticInit(cache.typeFromClassName("other/Unknown"))))
         .build();
     ImmutableMap<MethodDescriptor, DeclaredMethod> methods = methodMap(
         newMethod(false, VOID, "my/Root", "foo")

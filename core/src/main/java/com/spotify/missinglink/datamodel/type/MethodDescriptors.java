@@ -19,44 +19,52 @@ import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.spotify.missinglink.InstanceCache;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 public final class MethodDescriptors {
   private static final MethodDescriptor STATIC_INIT = new MethodDescriptorBuilder()
-      .returnType(TypeDescriptors.fromRaw("V"))
+      .returnType(VoidTypeDescriptor.voidTypeDescriptor)
       .isStatic(true)
       .name("<clinit>")
       .parameterTypes(ImmutableList.of())
       .build();
-  private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache = new HashMap<>();
 
-  private MethodDescriptors() {
+  private final Map<MethodKey, MethodDescriptor> methodDescriptorCache = new ConcurrentHashMap<>();
+
+  public MethodDescriptors() {
   }
 
-  public static MethodDescriptor fromDesc(String desc, String name, boolean isStatic) {
+  public MethodDescriptor fromDesc(InstanceCache cache, String desc, String name, int access) {
+    return fromDesc(cache, desc, name, (access & Opcodes.ACC_STATIC) != 0);
+  }
+
+  public MethodDescriptor fromDesc(
+      InstanceCache cache, String desc, String name, boolean isStatic) {
     final MethodKey key = new MethodKey(name, desc, isStatic);
-    return methodDescriptorCache.computeIfAbsent(key, MethodDescriptors::newDescriptor);
+    return methodDescriptorCache.computeIfAbsent(key, k -> newDescriptor(cache, k));
   }
 
   public static MethodDescriptor staticInit() {
     return STATIC_INIT;
   }
 
-  private static MethodDescriptor newDescriptor(MethodKey key) {
+  private static MethodDescriptor newDescriptor(InstanceCache cache, MethodKey key) {
     Type type = Type.getMethodType(key.desc);
 
     List<TypeDescriptor> params = Arrays.stream(type.getArgumentTypes())
         .map(Type::getDescriptor)
-        .map(TypeDescriptors::fromRaw)
+        .map(cache::typeFromRaw)
         .collect(toList());
 
     return new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw(type.getReturnType().getDescriptor()))
+        .returnType(cache.typeFromRaw(type.getReturnType().getDescriptor()))
         .isStatic(key.isStatic)
         .name(key.name)
         .parameterTypes(ImmutableList.copyOf(params))

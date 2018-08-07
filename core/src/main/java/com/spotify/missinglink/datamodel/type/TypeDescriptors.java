@@ -15,13 +15,13 @@
  */
 package com.spotify.missinglink.datamodel.type;
 
-import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TypeDescriptors {
 
-  private TypeDescriptors() {
+  public TypeDescriptors() {
   }
 
   // Keep a cache of all the created ClassTypeDescriptor instances to prevent unnecessary
@@ -29,18 +29,18 @@ public class TypeDescriptors {
   // Since the CTD constructor involves string replacement, and there are several places where we
   // want to turn a String into a ClassTypeDescriptor, we can optimize how many strings are
   // created/replaced with this map.
-  private static Map<String, ClassTypeDescriptor> classTypeDescriptorCache = new HashMap<>();
-  private static Map<String, TypeDescriptor> rawTypeDescriptorCache = new HashMap<>();
+  private Map<String, ClassTypeDescriptor> classTypeDescriptorCache = new ConcurrentHashMap<>();
+  private Map<String, TypeDescriptor> rawTypeDescriptorCache = new ConcurrentHashMap<>();
 
-  public static ClassTypeDescriptor fromClassName(String className) {
+  public ClassTypeDescriptor fromClassName(String className) {
     return classTypeDescriptorCache.computeIfAbsent(className, ClassTypeDescriptor::new);
   }
 
-  public static TypeDescriptor fromRaw(String raw) {
-    return rawTypeDescriptorCache.computeIfAbsent(raw, TypeDescriptors::uncachedFromRaw);
+  public TypeDescriptor fromRaw(String raw) {
+    return rawTypeDescriptorCache.computeIfAbsent(raw, this::uncachedFromRaw);
   }
 
-  private static TypeDescriptor uncachedFromRaw(String raw) {
+  private TypeDescriptor uncachedFromRaw(String raw) {
     final int length = raw.length();
 
     int dimensions = raw.lastIndexOf('[') + 1;

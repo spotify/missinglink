@@ -30,11 +30,11 @@ import com.spotify.missinglink.datamodel.state.DeclaredMethodBuilder;
 import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
-import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ConflictCheckerTest {
+  private final InstanceCache cache = new InstanceCache();
 
   Artifact projectArtifact;
   Artifact rt;
@@ -46,20 +46,20 @@ public class ConflictCheckerTest {
     cloneDescriptor = new MethodDescriptorBuilder()
         .name("clone")
         .parameterTypes(ImmutableList.of())
-        .returnType(TypeDescriptors.fromClassName("java/lang/Object"))
+        .returnType(cache.typeFromClassName("java/lang/Object"))
         .build();
 
     rt = new ArtifactBuilder()
         .name(new ArtifactName("rt"))
         .classes(ImmutableMap.of(
-            TypeDescriptors.fromClassName("java/lang/Object"), new DeclaredClassBuilder()
-                .className(TypeDescriptors.fromClassName("java/lang/Object"))
+            cache.typeFromClassName("java/lang/Object"), new DeclaredClassBuilder()
+                .className(cache.typeFromClassName("java/lang/Object"))
                 .parents(ImmutableSet.of())
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(ImmutableMap.of(
                     cloneDescriptor,
                     new DeclaredMethodBuilder()
-                        .owner(TypeDescriptors.fromClassName(
+                        .owner(cache.typeFromClassName(
                             "java/lang/Object"))
                         .descriptor(cloneDescriptor)
                         .methodCalls(ImmutableSet.of())
@@ -72,25 +72,25 @@ public class ConflictCheckerTest {
     projectArtifact = new ArtifactBuilder()
         .name(new ArtifactName("foo"))
         .classes(ImmutableMap.of(
-            TypeDescriptors.fromClassName("com/spotify/ClassName"),
+            cache.typeFromClassName("com/spotify/ClassName"),
             Simple.newClass("com/spotify/ClassName")
-                .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
+                .parents(ImmutableSet.of(cache.typeFromClassName("java/lang/Object")))
                 .methods(Simple.methodMap(
                     Simple.newMethod(false, Simple.OBJECT, "com/spotify/ClassName", "something")
                         .methodCalls(ImmutableSet.of(
                             new MethodCallBuilder()
-                                .owner(TypeDescriptors.fromClassName("java/lang/Object"))
+                                .owner(cache.typeFromClassName("java/lang/Object"))
                                 .descriptor(cloneDescriptor)
                                 .build()))
                         .build()))
                 .build()))
         .build();
 
-    ClassTypeDescriptor libClass1 = TypeDescriptors.fromClassName("org/library/ClassName");
+    ClassTypeDescriptor libClass1 = cache.typeFromClassName("org/library/ClassName");
     MethodDescriptor brokenMethodDescriptor = new MethodDescriptorBuilder()
         .name("broken")
         .parameterTypes(ImmutableList.of())
-        .returnType(TypeDescriptors.fromClassName("java/lang/Object"))
+        .returnType(cache.typeFromClassName("java/lang/Object"))
         .build();
 
     libraryArtifact = new ArtifactBuilder()
@@ -98,12 +98,12 @@ public class ConflictCheckerTest {
         .classes(ImmutableMap.of(
             libClass1, new DeclaredClassBuilder()
                 .className(libClass1)
-                .parents(ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")))
+                .parents(ImmutableSet.of(cache.typeFromClassName("java/lang/Object")))
                 .fields(ImmutableSet.<DeclaredField>of())
                 .methods(Simple.methodMap(
                     Simple.newMethod(false, Simple.OBJECT, libClass1.getClassName(), "broken")
                         .methodCalls(ImmutableSet.of(new MethodCallBuilder()
-                            .owner(TypeDescriptors.fromClassName("java/lang/Object"))
+                            .owner(cache.typeFromClassName("java/lang/Object"))
                             .descriptor(brokenMethodDescriptor)
                             .build()))
                         .build()))

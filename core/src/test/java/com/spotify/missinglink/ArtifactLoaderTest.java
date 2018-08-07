@@ -35,7 +35,6 @@ import com.spotify.missinglink.datamodel.type.FieldDescriptorBuilder;
 import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
 import com.spotify.missinglink.datamodel.type.TypeDescriptor;
-import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -55,6 +54,7 @@ public class ArtifactLoaderTest {
   private MethodDescriptor internalStaticFieldAccessDescriptor;
   private MethodDescriptor internalFieldAccessDescriptor;
 
+  private final InstanceCache cache = new InstanceCache();
   private final ArtifactLoader loader = new ArtifactLoader();
 
   @Before
@@ -62,28 +62,28 @@ public class ArtifactLoaderTest {
     artifact = loader.load(FilePathHelper.getPath("src/test/resources/ArtifactLoaderTest.jar"));
 
     methodOneDescriptor = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
+        .returnType(cache.typeFromRaw("V"))
         .name("methodOne")
-        .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("Ljava/lang/String;")))
+        .parameterTypes(ImmutableList.of(cache.typeFromRaw("Ljava/lang/String;")))
         .build();
 
     internalStaticFieldAccessDescriptor = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
+        .returnType(cache.typeFromRaw("V"))
         .name("internalStaticFieldAccess")
         .parameterTypes(ImmutableList.of())
         .build();
 
     internalFieldAccessDescriptor = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
+        .returnType(cache.typeFromRaw("V"))
         .name("internalFieldAccess")
         .parameterTypes(ImmutableList.of())
         .build();
 
     printlnDescriptor = new MethodDescriptorBuilder()
         .isStatic(false)
-        .returnType(TypeDescriptors.fromRaw("V"))
+        .returnType(cache.typeFromRaw("V"))
         .name("println")
-        .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw(
+        .parameterTypes(ImmutableList.of(cache.typeFromRaw(
                 "Ljava/lang/String;")))
         .build();
   }
@@ -114,21 +114,21 @@ public class ArtifactLoaderTest {
   @Test
   public void testLoadClass() throws Exception {
     assertNotNull("Artifact must contain class 'A'",
-        artifact.classes().get(TypeDescriptors.fromClassName("A")));
+        artifact.classes().get(cache.typeFromClassName("A")));
   }
 
   @Test
   public void testLoadMethod() throws Exception {
     assertTrue("Class must contain method with hairy signature", artifact.classes().get(
-        TypeDescriptors.fromClassName("A")).methods().containsKey(methodOneDescriptor));
+        cache.typeFromClassName("A")).methods().containsKey(methodOneDescriptor));
   }
 
   @Test
   public void testLoadCall() throws Exception {
-    final DeclaredClass declaredClass = artifact.classes().get(TypeDescriptors.fromClassName("A"));
+    final DeclaredClass declaredClass = artifact.classes().get(cache.typeFromClassName("A"));
     DeclaredMethod method = declaredClass.methods().get(methodOneDescriptor);
     MethodCall call = new MethodCallBuilder()
-        .owner(TypeDescriptors.fromClassName("java/io/PrintStream"))
+        .owner(cache.typeFromClassName("java/io/PrintStream"))
         .lineNumber(15)
         .descriptor(printlnDescriptor).build();
     assertTrue("Method must contain call to other method with hairy signature",
@@ -137,11 +137,11 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadField() throws Exception {
-    DeclaredClass loadedClass = artifact.classes().get(TypeDescriptors.fromClassName("A"));
+    DeclaredClass loadedClass = artifact.classes().get(cache.typeFromClassName("A"));
     DeclaredField myField = new DeclaredFieldBuilder()
         .descriptor(new FieldDescriptorBuilder()
             .name("publicFieldOne")
-            .fieldType(TypeDescriptors.fromRaw("Ljava/lang/Object;"))
+            .fieldType(cache.typeFromRaw("Ljava/lang/Object;"))
             .build())
         .build();
     assertTrue("Class must contain field with hairy signature",
@@ -150,7 +150,7 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadStaticFieldAccess() throws Exception {
-    DeclaredMethod method = artifact.classes().get(TypeDescriptors.fromClassName("A")).methods()
+    DeclaredMethod method = artifact.classes().get(cache.typeFromClassName("A")).methods()
         .get(internalStaticFieldAccessDescriptor);
     FieldAccess access = Simple.newAccess("Ljava/lang/Object;", "staticFieldOne", "A", true, 11);
     assertTrue("Method must contain access to staticFieldOne: " + method.fieldAccesses()
@@ -159,7 +159,7 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadFieldAccess() throws Exception {
-    DeclaredMethod method = artifact.classes().get(TypeDescriptors.fromClassName("A")).methods()
+    DeclaredMethod method = artifact.classes().get(cache.typeFromClassName("A")).methods()
         .get(internalFieldAccessDescriptor);
     FieldAccess access = Simple.newAccess("Ljava/lang/Object;", "publicFieldOne", "A", false, 12);
     assertTrue("Method must contain access to staticFieldOne: " + method.fieldAccesses()
@@ -168,8 +168,8 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadParent() throws Exception {
-    assertEquals(artifact.classes().get(TypeDescriptors.fromClassName("A")).parents(),
-                 ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")));
+    assertEquals(artifact.classes().get(cache.typeFromClassName("A")).parents(),
+                 ImmutableSet.of(cache.typeFromClassName("java/lang/Object")));
   }
 
   /**
@@ -227,7 +227,7 @@ public class ArtifactLoaderTest {
         .overridingErrorMessage("Loading classes from a directory should be supported")
         .isNotEmpty()
             // test that a class known to be in this directory exists in the map
-        .containsKey(TypeDescriptors.fromClassName(MethodDescriptor.class.getName()));
+        .containsKey(cache.typeFromClassName(MethodDescriptor.class.getName()));
   }
 
   @Test
@@ -252,11 +252,11 @@ public class ArtifactLoaderTest {
         .orElseThrow(() -> new RuntimeException("call to NestedClass.bar missing?"));
 
     //make sure that the classMap contains an entry for the nestedClassName
-    assertThat(artifact.classes()).containsKey(TypeDescriptors.fromClassName(nestedClassName));
+    assertThat(artifact.classes()).containsKey(cache.typeFromClassName(nestedClassName));
   }
 
   private DeclaredClass getDeclaredClass(Artifact artifact, String className) {
-    final ClassTypeDescriptor key = TypeDescriptors.fromClassName(className);
+    final ClassTypeDescriptor key = cache.typeFromClassName(className);
     assertThat(artifact.classes()).containsKey(key);
 
     return artifact.classes().get(key);

@@ -153,7 +153,7 @@ public class CheckMojoTest {
 
   private ImmutableList<Conflict> mockConflicts(ConflictCategory category,
                                                 ConflictCategory... additionalCategories) {
-    final ClassTypeDescriptor ctd = TypeDescriptors.fromClassName("com/foo/Whatever");
+    final ClassTypeDescriptor ctd = cache.typeFromClassName("com/foo/Whatever");
     return mockConflicts(ctd, category, additionalCategories);
 
   }
@@ -163,22 +163,22 @@ public class CheckMojoTest {
                                                 ConflictCategory... additionalCategories) {
 
     final MethodCall callee = MethodCall.of(
-        TypeDescriptors.fromClassName("com/foo/Bar"),
+        cache.typeFromClassName("com/foo/Bar"),
         new MethodDescriptorBuilder()
-                        .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+                        .returnType(cache.typeFromRaw("Ljava/lang/String;"))
                         .name("bat")
                         .parameterTypes(ImmutableList.of())
                         .build(),
         -1);
 
     final DeclaredMethod caller = new DeclaredMethodBuilder()
-        .owner(TypeDescriptors.fromClassName("com/foo/Baz"))
+        .owner(cache.typeFromClassName("com/foo/Baz"))
         .methodCalls(ImmutableSet.of())
         .fieldAccesses(ImmutableSet.of())
         .descriptor(new MethodDescriptorBuilder()
-            .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+            .returnType(cache.typeFromRaw("Ljava/lang/String;"))
             .name("bat")
-            .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("I")))
+            .parameterTypes(ImmutableList.of(cache.typeFromRaw("I")))
             .build())
         .build();
 
@@ -292,7 +292,7 @@ public class CheckMojoTest {
         );
 
     setMockConflictResults(
-        mockConflicts(TypeDescriptors.fromClassName("groovy.lang.foo.Bar"),
+        mockConflicts(cache.typeFromClassName("groovy.lang.foo.Bar"),
                       ConflictCategory.CLASS_NOT_FOUND)
     );
 
@@ -302,28 +302,28 @@ public class CheckMojoTest {
   @Test
   public void testIgnoreDestinationPackages() throws Exception {
     final MethodCall callee = MethodCall.of(
-        TypeDescriptors.fromClassName("com/foo/Bar"),
+        cache.typeFromClassName("com/foo/Bar"),
         new MethodDescriptorBuilder()
-            .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+            .returnType(cache.typeFromRaw("Ljava/lang/String;"))
             .name("bat")
             .parameterTypes(ImmutableList.of())
             .build(),
         -1);
 
     final DeclaredMethod caller = new DeclaredMethodBuilder()
-        .owner(TypeDescriptors.fromClassName("com/foo/Baz"))
+        .owner(cache.typeFromClassName("com/foo/Baz"))
         .methodCalls(ImmutableSet.of())
         .fieldAccesses(ImmutableSet.of())
         .descriptor(new MethodDescriptorBuilder()
-            .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+            .returnType(cache.typeFromRaw("Ljava/lang/String;"))
             .name("bat")
-            .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("I")))
+            .parameterTypes(ImmutableList.of(cache.typeFromRaw("I")))
             .build())
         .build();
 
     // a conflict from com/Whatever => com/foo/Bar.bat where the latter class cannot be found
     setMockConflictResults(ImmutableList.of(
-        conflict(ConflictCategory.CLASS_NOT_FOUND, TypeDescriptors.fromClassName("com/Whatever"),
+        conflict(ConflictCategory.CLASS_NOT_FOUND, cache.typeFromClassName("com/Whatever"),
                  caller, callee, "class com/foo/Bar not found")
     ));
 

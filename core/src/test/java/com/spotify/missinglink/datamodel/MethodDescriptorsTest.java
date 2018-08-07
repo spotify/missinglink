@@ -18,25 +18,26 @@ package com.spotify.missinglink.datamodel;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
+import com.spotify.missinglink.InstanceCache;
 import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
-import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import org.junit.Test;
 import org.objectweb.asm.Opcodes;
 
 public class MethodDescriptorsTest {
+  private final InstanceCache cache = new InstanceCache();
 
   @Test
   public void testMethodDescriptionParser() {
     MethodDescriptor desc1 =
-        MethodDescriptor.fromDesc("([I[[Lfoo/Bar;Z)V", "baz", Opcodes.ACC_STATIC);
+        cache.methodFromDesc("([I[[Lfoo/Bar;Z)V", "baz", Opcodes.ACC_STATIC);
 
     MethodDescriptor desc2 = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
+        .returnType(cache.typeFromRaw("V"))
         .parameterTypes(ImmutableList.of(
-            TypeDescriptors.fromRaw("[I"),
-            TypeDescriptors.fromRaw("[[Lfoo/Bar;"),
-            TypeDescriptors.fromRaw("Z")))
+            cache.typeFromRaw("[I"),
+            cache.typeFromRaw("[[Lfoo/Bar;"),
+            cache.typeFromRaw("Z")))
         .name("baz")
         .isStatic(true)
         .build();

@@ -18,7 +18,6 @@ package com.spotify.missinglink.datamodel.type;
 import com.google.common.collect.ImmutableList;
 import io.norberg.automatter.AutoMatter;
 import java.util.stream.Collectors;
-import org.objectweb.asm.Opcodes;
 
 @AutoMatter
 public interface MethodDescriptor {
@@ -46,14 +45,6 @@ public interface MethodDescriptor {
         parameterTypes().stream()
             .map(TypeDescriptor::pretty)
             .collect(Collectors.joining(", ")) + ")";
-  }
-
-  static MethodDescriptor fromDesc(String desc, String name, int access) {
-    return fromDesc(desc, name, (access & Opcodes.ACC_STATIC) != 0);
-  }
-
-  static MethodDescriptor fromDesc(String desc, String name, boolean isStatic) {
-    return MethodDescriptors.fromDesc(desc, name, isStatic);
   }
 
   static MethodDescriptor staticInit() {

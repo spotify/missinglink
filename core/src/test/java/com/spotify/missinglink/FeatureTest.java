@@ -48,6 +48,7 @@ import org.junit.Test;
 
 public class FeatureTest {
 
+  private final InstanceCache instanceCache = new InstanceCache();
   private final ConflictChecker conflictChecker = new ConflictChecker();
 
   @org.junit.Test
@@ -338,9 +339,9 @@ public class FeatureTest {
       }
     }
 
-    DeclaredClass superDuperClass = load(findClass(SuperDuperClass.class));
-    DeclaredClass superClass = load(findClass(SuperClass.class));
-    DeclaredClass mainClass = load(findClass(MainClass.class));
+    DeclaredClass superDuperClass = load(instanceCache, findClass(SuperDuperClass.class));
+    DeclaredClass superClass = load(instanceCache, findClass(SuperClass.class));
+    DeclaredClass mainClass = load(instanceCache, findClass(MainClass.class));
 
     final Artifact artifact = newArtifact("art", superDuperClass, superClass, mainClass);
 
@@ -362,8 +363,8 @@ public class FeatureTest {
     class LacksParent extends LostParent {
     }
 
-    DeclaredClass parent = load(findClass(LostParent.class));
-    DeclaredClass mainClass = load(findClass(LacksParent.class));
+    DeclaredClass parent = load(instanceCache, findClass(LostParent.class));
+    DeclaredClass mainClass = load(instanceCache, findClass(LacksParent.class));
 
     final Artifact artifact = newArtifact("art", mainClass);
 

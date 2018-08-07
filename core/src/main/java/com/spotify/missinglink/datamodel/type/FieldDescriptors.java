@@ -16,29 +16,34 @@
 package com.spotify.missinglink.datamodel.type;
 
 import com.google.common.base.Preconditions;
-import java.util.HashMap;
+import com.spotify.missinglink.InstanceCache;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import org.objectweb.asm.Opcodes;
 
 public final class FieldDescriptors {
+  private final Map<FieldKey, FieldDescriptor> fieldDescriptorCache = new ConcurrentHashMap<>();
 
-  private FieldDescriptors() {
+  public FieldDescriptors() {
   }
 
-  public static FieldDescriptor fromDesc(String desc, String name, boolean isStatic) {
+  public FieldDescriptor fromDesc(InstanceCache cache, String desc, String name, int access) {
+    return fromDesc(cache, desc, name, (access & Opcodes.ACC_STATIC) != 0);
+  }
+
+  public FieldDescriptor fromDesc(InstanceCache cache, String desc, String name, boolean isStatic) {
     final FieldKey key = new FieldKey(name, desc, isStatic);
-    return fieldDescriptorCache.computeIfAbsent(key, FieldDescriptors::newDescriptor);
+    return fieldDescriptorCache.computeIfAbsent(key, k -> newDescriptor(cache, k));
   }
 
-  private static FieldDescriptor newDescriptor(FieldKey key) {
+  private FieldDescriptor newDescriptor(InstanceCache cache, FieldKey key) {
     return new FieldDescriptorBuilder()
         .isStatic(key.isStatic)
-        .fieldType(TypeDescriptors.fromRaw(key.desc))
+        .fieldType(cache.typeFromRaw(key.desc))
         .name(key.name)
         .build();
   }
-
-  private static final Map<FieldKey, FieldDescriptor> fieldDescriptorCache = new HashMap<>();
 
   private static class FieldKey {
     private final String name;

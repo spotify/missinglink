@@ -27,9 +27,7 @@ import com.spotify.missinglink.datamodel.state.DeclaredClassBuilder;
 import com.spotify.missinglink.datamodel.state.DeclaredField;
 import com.spotify.missinglink.datamodel.state.DeclaredMethod;
 import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.type.FieldDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptor;
-import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
@@ -58,18 +56,18 @@ public final class ClassLoader {
     // prevent instantiation
   }
 
-  public static DeclaredClass load(InputStream in) throws IOException {
+  public static DeclaredClass load(InstanceCache cache, InputStream in) throws IOException {
     ClassNode classNode = readClassNode(in);
 
-    ClassTypeDescriptor descriptor = TypeDescriptors.fromClassName(classNode.name);
+    ClassTypeDescriptor descriptor = cache.typeFromClassName(classNode.name);
 
-    Set<ClassTypeDescriptor> parents = readParents(classNode);
-    ImmutableSet<DeclaredField> declaredFields = readDeclaredFields(classNode);
+    Set<ClassTypeDescriptor> parents = readParents(cache, classNode);
+    ImmutableSet<DeclaredField> declaredFields = readDeclaredFields(cache, classNode);
 
     Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
 
     for (MethodNode method : ClassLoader.<MethodNode>uncheckedCast(classNode.methods)) {
-      analyseMethod(descriptor, classNode.name, method, declaredMethods);
+      analyseMethod(cache, descriptor, classNode.name, method, declaredMethods);
     }
 
     declaredMethods.putIfAbsent(
@@ -91,29 +89,31 @@ public final class ClassLoader {
     return classNode;
   }
 
-  private static Set<ClassTypeDescriptor> readParents(ClassNode classNode) {
+  private static Set<ClassTypeDescriptor> readParents(InstanceCache cache, ClassNode classNode) {
     final Set<ClassTypeDescriptor> parents = new HashSet<>();
     parents.addAll(ClassLoader.<String>uncheckedCast(classNode.interfaces)
                        .stream()
-                       .map(TypeDescriptors::fromClassName)
+                       .map(cache::typeFromClassName)
                        .collect(toList()));
     // java/lang/Object has no superclass
     if (classNode.superName != null) {
-      parents.add(TypeDescriptors.fromClassName(classNode.superName));
+      parents.add(cache.typeFromClassName(classNode.superName));
     }
     return parents;
   }
 
-  private static ImmutableSet<DeclaredField> readDeclaredFields(ClassNode classNode) {
+  private static ImmutableSet<DeclaredField> readDeclaredFields(
+      InstanceCache cache, ClassNode classNode) {
     ImmutableSet.Builder<DeclaredField> fields = new ImmutableSet.Builder<>();
 
     for (FieldNode field : ClassLoader.<FieldNode>uncheckedCast(classNode.fields)) {
-      fields.add(DeclaredField.of(FieldDescriptor.fromDesc(field.desc, field.name, field.access)));
+      fields.add(DeclaredField.of(cache.fieldFromDesc(field.desc, field.name, field.access)));
     }
     return fields.build();
   }
 
-  private static void analyseMethod(ClassTypeDescriptor descriptor,
+  private static void analyseMethod(InstanceCache cache,
+                                    ClassTypeDescriptor descriptor,
                                     String className,
                                     MethodNode method,
                                     Map<MethodDescriptor, DeclaredMethod> declaredMethods) {
@@ -130,13 +130,13 @@ public final class ClassLoader {
           lineNumber = ((LineNumberNode) insn).line;
         }
         if (insn instanceof MethodInsnNode) {
-          handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
+          handleMethodCall(cache, thisCalls, lineNumber, (MethodInsnNode) insn);
         }
         if (insn instanceof FieldInsnNode) {
-          handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
+          handleFieldAccess(cache, thisFields, lineNumber, (FieldInsnNode) insn);
         }
         if (insn instanceof LdcInsnNode) {
-          handleLdc(thisCalls, lineNumber, (LdcInsnNode) insn);
+          handleLdc(cache, thisCalls, lineNumber, (LdcInsnNode) insn);
         }
       } catch (Exception e) {
         throw new MissingLinkException("Error analysing " + className + "." + method.name +
@@ -146,7 +146,7 @@ public final class ClassLoader {
 
     final DeclaredMethod declaredMethod = DeclaredMethod.of(
         descriptor,
-        MethodDescriptor.fromDesc(method.desc, method.name, method.access),
+        cache.methodFromDesc(method.desc, method.name, method.access),
         lineNumber,
         ImmutableSet.copyOf(thisCalls),
         ImmutableSet.copyOf(thisFields));
@@ -157,7 +157,8 @@ public final class ClassLoader {
     }
   }
 
-  private static void handleMethodCall(Set<MethodCall> thisCalls,
+  private static void handleMethodCall(InstanceCache cache,
+                                       Set<MethodCall> thisCalls,
                                        int lineNumber,
                                        MethodInsnNode insn) {
     boolean isStatic;
@@ -177,24 +178,27 @@ public final class ClassLoader {
     }
     if (insn.owner.charAt(0) != '[') {
       thisCalls.add(MethodCall.of(
-          TypeDescriptors.fromClassName(insn.owner),
-          MethodDescriptor.fromDesc(insn.desc, insn.name, isStatic),
+          cache.typeFromClassName(insn.owner),
+          cache.methodFromDesc(insn.desc, insn.name, isStatic),
           lineNumber));
     }
   }
 
-  private static void handleFieldAccess(Set<FieldAccess> thisFields, int lineNumber,
+  private static void handleFieldAccess(InstanceCache cache,
+                                        Set<FieldAccess> thisFields,
+                                        int lineNumber,
                                         FieldInsnNode insn) {
     if (insn.owner.charAt(0) != '[') {
       thisFields.add(FieldAccess.of(
-          TypeDescriptors.fromClassName(insn.owner),
-          FieldDescriptor.fromDesc(insn.desc, insn.name,
+          cache.typeFromClassName(insn.owner),
+          cache.fieldFromDesc(insn.desc, insn.name,
               insn.getOpcode() == Opcodes.GETSTATIC || insn.getOpcode() == Opcodes.PUTSTATIC),
           lineNumber));
     }
   }
 
-  private static void handleLdc(Set<MethodCall> thisCalls,
+  private static void handleLdc(InstanceCache cache,
+      Set<MethodCall> thisCalls,
       int lineNumber,
       LdcInsnNode insn) {
     // See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.ldc
@@ -213,7 +217,7 @@ public final class ClassLoader {
 
       if (loadedType.getSort() == Type.OBJECT) {
         thisCalls.add(MethodCall.of(
-            TypeDescriptors.fromClassName(loadedType.getInternalName()),
+            cache.typeFromClassName(loadedType.getInternalName()),
             MethodDescriptor.staticInit(),
             lineNumber));
       }

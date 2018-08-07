@@ -32,6 +32,7 @@ import org.junit.Test;
 
 public class ClassLoaderTest {
 
+  private InstanceCache instanceCache = new InstanceCache();
   private FileInputStream inputStream;
 
   @Before
@@ -54,7 +55,7 @@ public class ClassLoaderTest {
   /** Simple test that load() doesn't blow up */
   @Test
   public void testLoad() throws Exception {
-    final DeclaredClass declaredClass = ClassLoader.load(inputStream);
+    final DeclaredClass declaredClass = ClassLoader.load(instanceCache, inputStream);
     assertThat(declaredClass).isNotNull();
     assertThat(declaredClass.methods()).isNotEmpty();
   }
@@ -62,7 +63,7 @@ public class ClassLoaderTest {
   @Test
   public void shouldHandleLoadingOfType() throws Exception {
     try (FileInputStream inputStream = findClass(LdcLoadType.class)) {
-      DeclaredClass loaded = ClassLoader.load(inputStream);
+      DeclaredClass loaded = ClassLoader.load(instanceCache, inputStream);
 
       assertThat(loaded.className().getClassName()).contains("LdcLoadType");
     }
@@ -71,12 +72,12 @@ public class ClassLoaderTest {
   @Test
   public void shouldHandleLoadingOfArrayOfType() throws Exception {
     try (FileInputStream inputStream = findClass(LdcLoadArrayOfType.class)) {
-      DeclaredClass loaded = ClassLoader.load(inputStream);
+      DeclaredClass loaded = ClassLoader.load(instanceCache, inputStream);
 
       assertThat(loaded.className().getClassName()).contains("LdcLoadArrayOfType");
       assertThat(Iterables.getOnlyElement(
           loaded.methods().get(
-              MethodDescriptors.fromDesc("()V", "test", true)
+              instanceCache.methodFromDesc("()V", "test", true)
           ).methodCalls()
               .stream()
               .filter(method -> method.descriptor().name().equals("<clinit>"))
@@ -89,12 +90,12 @@ public class ClassLoaderTest {
   @Test
   public void shouldHandleLoadingOfArrayOfPrimitive() throws Exception {
     try (FileInputStream inputStream = findClass(LdcLoadArrayOfPrimitive.class)) {
-      DeclaredClass loaded = ClassLoader.load(inputStream);
+      DeclaredClass loaded = ClassLoader.load(instanceCache, inputStream);
 
       assertThat(loaded.className().getClassName()).contains("LdcLoadArrayOfPrimitive");
       assertThat(
           loaded.methods().get(
-              MethodDescriptors.fromDesc("()V", "test", true)
+              instanceCache.methodFromDesc("()V", "test", true)
           ).methodCalls()
           .stream()
           .filter(method -> method.descriptor().name().equals("<clinit>"))

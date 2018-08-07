@@ -36,7 +36,6 @@ import com.spotify.missinglink.datamodel.type.FieldDescriptorBuilder;
 import com.spotify.missinglink.datamodel.type.MethodDescriptor;
 import com.spotify.missinglink.datamodel.type.MethodDescriptorBuilder;
 import com.spotify.missinglink.datamodel.type.TypeDescriptor;
-import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +43,8 @@ import java.util.stream.Collectors;
  * Created by axel on 04/06/15.
  */
 public class Simple {
+
+  private static final InstanceCache cache = new InstanceCache();
 
   public static final String INT = "I";
   public static final String VOID = "V";
@@ -62,7 +63,7 @@ public class Simple {
    */
   public static DeclaredClassBuilder newClass(String className) {
     return new DeclaredClassBuilder()
-        .className(TypeDescriptors.fromClassName(className))
+        .className(cache.typeFromClassName(className))
         .parents(ImmutableSet.of())
         .methods(ImmutableMap.of())
         .fields(ImmutableSet.<DeclaredField>of());
@@ -72,18 +73,18 @@ public class Simple {
   public static DeclaredMethodBuilder newMethod(
       boolean isStatic, String returnDesc, String className, String name, String... parameterDesc) {
     List<TypeDescriptor> param = ImmutableList.copyOf(parameterDesc).stream()
-        .map(TypeDescriptors::fromRaw)
+        .map(cache::typeFromRaw)
         .collect(Collectors.toList());
 
     return new DeclaredMethodBuilder()
-        .owner(TypeDescriptors.fromClassName(className))
+        .owner(cache.typeFromClassName(className))
         .fieldAccesses(ImmutableSet.<FieldAccess>of())
         .methodCalls(ImmutableSet.<MethodCall>of())
         .descriptor(new MethodDescriptorBuilder()
             .isStatic(isStatic)
             .name(name)
             .parameterTypes(ImmutableList.copyOf(param))
-            .returnType(TypeDescriptors.fromRaw(returnDesc)).build());
+            .returnType(cache.typeFromRaw(returnDesc)).build());
   }
 
   public static MethodCall newCall(DeclaredMethod method, boolean isStatic, boolean isVirtual) {
@@ -120,7 +121,7 @@ public class Simple {
         .descriptor(new FieldDescriptorBuilder()
             .isStatic(isStatic)
             .name(name)
-            .fieldType(TypeDescriptors.fromRaw(desc))
+            .fieldType(cache.typeFromRaw(desc))
             .build())
         .build();
   }
@@ -128,10 +129,10 @@ public class Simple {
   public static FieldAccess newAccess(
       String desc, String name, String owner, boolean isStatic, int lineNumber) {
     return new FieldAccessBuilder()
-        .owner(TypeDescriptors.fromClassName(owner))
+        .owner(cache.typeFromClassName(owner))
         .descriptor(new FieldDescriptorBuilder()
             .name(name)
-            .fieldType(TypeDescriptors.fromRaw(desc))
+            .fieldType(cache.typeFromRaw(desc))
             .isStatic(isStatic)
             .build())
         .lineNumber(lineNumber)

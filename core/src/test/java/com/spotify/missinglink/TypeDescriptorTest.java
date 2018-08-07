@@ -23,12 +23,12 @@ import com.spotify.missinglink.datamodel.type.ArrayTypeDescriptor;
 import com.spotify.missinglink.datamodel.type.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.type.PrimitiveTypeDescriptor;
 import com.spotify.missinglink.datamodel.type.TypeDescriptor;
-import com.spotify.missinglink.datamodel.type.TypeDescriptors;
 import java.util.InputMismatchException;
 import java.util.Map;
 import org.junit.Test;
 
 public class TypeDescriptorTest {
+  private final InstanceCache cache = new InstanceCache();
 
   @Test
   public void testEquality() {
@@ -40,13 +40,13 @@ public class TypeDescriptorTest {
     for (String signature1 : signatures) {
       for (String signature2 : signatures) {
         if (signature1.equals(signature2)) {
-          assertEquals(TypeDescriptors.fromRaw(signature1),
-                       TypeDescriptors.fromRaw(signature2));
-          assertEquals(TypeDescriptors.fromRaw(signature1).hashCode(),
-                       TypeDescriptors.fromRaw(signature2).hashCode());
+          assertEquals(cache.typeFromRaw(signature1),
+                       cache.typeFromRaw(signature2));
+          assertEquals(cache.typeFromRaw(signature1).hashCode(),
+                       cache.typeFromRaw(signature2).hashCode());
         } else {
-          assertNotEquals(TypeDescriptors.fromRaw(signature1),
-                          TypeDescriptors.fromRaw(signature2));
+          assertNotEquals(cache.typeFromRaw(signature1),
+                          cache.typeFromRaw(signature2));
         }
       }
     }
@@ -72,7 +72,7 @@ public class TypeDescriptorTest {
         .put("Lfoo/bar/Baz;", "foo.bar.Baz")
         .build();
     for (Map.Entry<String, String> entry : desc.entrySet()) {
-      assertEquals(entry.getValue(), TypeDescriptors.fromRaw(entry.getKey()).toString());
+      assertEquals(entry.getValue(), cache.typeFromRaw(entry.getKey()).toString());
     }
   }
 
@@ -94,41 +94,41 @@ public class TypeDescriptorTest {
         .put("Lfoo/bar/Baz;", ClassTypeDescriptor.class)
         .build();
     for (Map.Entry<String, Class> entry : desc.entrySet()) {
-      assertEquals(entry.getValue(), TypeDescriptors.fromRaw(entry.getKey()).getClass());
+      assertEquals(entry.getValue(), cache.typeFromRaw(entry.getKey()).getClass());
     }
   }
 
   @Test(expected = InputMismatchException.class)
   public void testInvalid() {
-    TypeDescriptors.fromRaw("X");
+    cache.typeFromRaw("X");
   }
 
   @Test(expected = InputMismatchException.class)
   public void testMoarInvalid() {
-    TypeDescriptors.fromRaw("LFoo");
+    cache.typeFromRaw("LFoo");
   }
 
   @Test(expected = InputMismatchException.class)
   public void testMoastInvalid() {
-    TypeDescriptors.fromClassName("LFoo;");
+    cache.typeFromClassName("LFoo;");
   }
 
   @Test(expected = InputMismatchException.class)
   public void testMoarDifferentInvalid() {
-    TypeDescriptors.fromRaw("JJ");
+    cache.typeFromRaw("JJ");
   }
 
   @Test
   public void testCanonicalNames() throws Exception {
-    final TypeDescriptor expected = TypeDescriptors.fromClassName("foo.Bar");
-    final TypeDescriptor actual = TypeDescriptors.fromClassName("foo/Bar");
+    final TypeDescriptor expected = cache.typeFromClassName("foo.Bar");
+    final TypeDescriptor actual = cache.typeFromClassName("foo/Bar");
     assertEquals(expected, actual);
   }
 
   @Test
   public void testNewClassTypeDescriptor() throws Exception {
-    final ClassTypeDescriptor a = TypeDescriptors.fromClassName("foo.Bar");
-    final ClassTypeDescriptor b = TypeDescriptors.fromClassName("foo/Bar");
+    final ClassTypeDescriptor a = cache.typeFromClassName("foo.Bar");
+    final ClassTypeDescriptor b = cache.typeFromClassName("foo/Bar");
     assertEquals(a, b);
   }
 }
