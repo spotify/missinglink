@@ -18,6 +18,7 @@ package com.spotify.missinglink;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,7 +75,9 @@ public class ArtifactLoader {
 
   private Artifact loadFromJar(ArtifactName artifactName, File path) {
     try (JarFile jarFile = new JarFile(path)) {
-      Builder<ClassTypeDescriptor, DeclaredClass> classes = new Builder<>();
+      // Note: due to packaging issues zip files can contain multiple files at the same path.
+      // Keeping latest file as the "real" file.
+      Map<ClassTypeDescriptor, DeclaredClass> classes = new HashMap<>();
 
       Enumeration<JarEntry> entries = jarFile.entries();
       while (entries.hasMoreElements()) {
@@ -91,7 +95,7 @@ public class ArtifactLoader {
         }
       }
 
-      return artifact(artifactName, classes);
+      return artifact(artifactName, ImmutableMap.copyOf(classes));
     } catch (IOException e) {
       throw new RuntimeException("Could not load " + path, e);
     }
@@ -112,14 +116,14 @@ public class ArtifactLoader {
         classes.put(cl.className(), cl);
       }
     }
-    return artifact(artifactName, classes);
+    return artifact(artifactName, classes.build());
   }
 
   private static Artifact artifact(ArtifactName name,
-                                   Builder<ClassTypeDescriptor, DeclaredClass> classes) {
+                                   ImmutableMap<ClassTypeDescriptor, DeclaredClass> classes) {
     return new ArtifactBuilder()
         .name(name)
-        .classes(classes.build())
+        .classes(classes)
         .build();
   }
 
