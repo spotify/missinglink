@@ -3,7 +3,6 @@
     "-//Puppy Crawl//DTD Check Configuration 1.2//EN"
     "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
 <module name="Checker">
-    <module name="SuppressionCommentFilter"/>
     <module name="NewlineAtEndOfFile"/>
 
     <module name="FileLength"/>
@@ -19,7 +18,7 @@
     </module>
 
     <module name="TreeWalker">
-        <module name="FileContentsHolder"/>
+        <module name="SuppressionCommentFilter"/>
         <property name="cacheFile" value="${checkstyle.cache.file}"/>
         <!--module name="ConstantName"/-->
         <module name="LocalFinalVariableName"/>
@@ -81,7 +80,6 @@
         <module name="InnerAssignment"/>
         <!--module name="MagicNumber"/-->
         <module name="MissingSwitchDefault"/>
-        <module name="RedundantThrows"/>
         <module name="SimplifyBooleanExpression"/>
         <!--module name="SimplifyBooleanReturn"/-->
 
