@@ -58,7 +58,7 @@ public final class MethodDescriptors {
     private final String name;
     private final String desc;
 
-    public MethodKey(String name, String desc) {
+    MethodKey(String name, String desc) {
       this.name = Preconditions.checkNotNull(name);
       this.desc = Preconditions.checkNotNull(desc);
     }
