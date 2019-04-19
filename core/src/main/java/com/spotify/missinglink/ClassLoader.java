@@ -15,10 +15,11 @@
  */
 package com.spotify.missinglink;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.AccessedFieldBuilder;
 import com.spotify.missinglink.datamodel.CalledMethod;
@@ -33,19 +34,6 @@ import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.MethodDescriptors;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
-
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.LineNumberNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
@@ -53,8 +41,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static java.util.stream.Collectors.toList;
+import java.util.stream.Collectors;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LineNumberNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 
 /**
  * Loads a single class from an input stream.
@@ -128,23 +128,37 @@ public final class ClassLoader {
     final Set<CalledMethod> thisCalls = new HashSet<>();
     final Set<AccessedField> thisFields = new HashSet<>();
 
+    final List<TryCatchBlockNode> tryCatchBlocks =
+        ((List<TryCatchBlockNode>) method.tryCatchBlocks).stream()
+            .filter(block -> isNotFoundCatch(block.type))
+            .collect(Collectors.toList());
+    int ignoreStack = 0;
     int lineNumber = 0;
     for (Iterator<AbstractInsnNode> instructions =
          ClassLoader.<AbstractInsnNode>uncheckedCast(method.instructions.iterator());
          instructions.hasNext();) {
       try {
         final AbstractInsnNode insn = instructions.next();
+        if (insn instanceof LabelNode) {
+          if (enterTryCatch(tryCatchBlocks, (LabelNode) insn)) {
+            ignoreStack++;
+          } else if (leavingTryCatch(tryCatchBlocks, (LabelNode) insn)) {
+            ignoreStack--;
+          }
+        }
         if (insn instanceof LineNumberNode) {
           lineNumber = ((LineNumberNode) insn).line;
         }
-        if (insn instanceof MethodInsnNode) {
-          handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
-        }
-        if (insn instanceof FieldInsnNode) {
-          handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
-        }
-        if (insn instanceof LdcInsnNode) {
-          handleLdc(loadedClasses, (LdcInsnNode) insn);
+        if (ignoreStack == 0) {
+          if (insn instanceof MethodInsnNode) {
+            handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
+          }
+          if (insn instanceof FieldInsnNode) {
+            handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
+          }
+          if (insn instanceof LdcInsnNode) {
+            handleLdc(loadedClasses, (LdcInsnNode) insn);
+          }
         }
       } catch (Exception e) {
         throw new MissingLinkException("Error analysing " + className + "." + method.name +
@@ -164,6 +178,32 @@ public final class ClassLoader {
       throw new RuntimeException(
           "Multiple definitions of " + declaredMethod.descriptor() + " in class " + className);
     }
+  }
+
+  private static boolean enterTryCatch(
+      final List<TryCatchBlockNode> tryCatchBlocks, final LabelNode insn) {
+    for (TryCatchBlockNode tryCatchBlock : tryCatchBlocks) {
+      if (tryCatchBlock.start.equals(insn)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean leavingTryCatch(
+      final List<TryCatchBlockNode> tryCatchBlocks, final LabelNode insn) {
+    for (TryCatchBlockNode tryCatchBlock : tryCatchBlocks) {
+      if (tryCatchBlock.end.equals(insn)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean isNotFoundCatch(final String type) {
+    // TODO: figure out the exact internal names of these exceptions
+    return type != null && (type.contains("NoSuchMethodError") ||
+                            type.contains("NoClassDefFoundError"));
   }
 
   private static void handleMethodCall(Set<CalledMethod> thisCalls,
