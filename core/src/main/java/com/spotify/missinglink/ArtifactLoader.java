@@ -16,6 +16,8 @@
 package com.spotify.missinglink;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 
 import com.spotify.missinglink.datamodel.Artifact;
@@ -27,8 +29,10 @@ import com.spotify.missinglink.datamodel.DeclaredClass;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -50,9 +54,27 @@ public class ArtifactLoader {
         "Path must be a file or directory: " + path);
 
     if (path.isFile()) {
-      return loadFromJar(artifactName, path);
+      if (path.getName().endsWith(".class")) {
+        try (InputStream is = new FileInputStream(path)) {
+          DeclaredClass cl = ClassLoader.load(is);
+          return artifact(artifactName, ImmutableMap.of(cl.className(), cl));
+        }
+      } else {
+        return loadFromJar(artifactName, path);
+      }
     }
     return loadFromDirectory(artifactName, path);
+  }
+
+  public Artifact load(ArtifactName artifactName, Collection<File> paths) throws IOException {
+    final Builder<ClassTypeDescriptor, DeclaredClass> builder = ImmutableMap.builder();
+    for (File path : paths) {
+      try (InputStream is = new FileInputStream(path)) {
+        DeclaredClass cl = ClassLoader.load(is);
+        builder.put(cl.className(), cl);
+      }
+    }
+    return artifact(artifactName, builder.build());
   }
 
   private Artifact loadFromJar(ArtifactName artifactName, File path) {
@@ -74,7 +96,7 @@ public class ArtifactLoader {
           }
         }
       }
-      return artifact(artifactName, classes);
+      return artifact(artifactName, classes.build());
     } catch (IOException e) {
       throw new RuntimeException("Could not load " + path, e);
     }
@@ -95,14 +117,13 @@ public class ArtifactLoader {
         classes.put(cl.className(), cl);
       }
     }
-    return artifact(artifactName, classes);
+    return artifact(artifactName, classes.build());
   }
 
-  private static Artifact artifact(ArtifactName name,
-                                   Builder<ClassTypeDescriptor, DeclaredClass> classes) {
+  private static Artifact artifact(ArtifactName name, final ImmutableMap<ClassTypeDescriptor, DeclaredClass> classes) {
     return new ArtifactBuilder()
         .name(name)
-        .classes(classes.build())
+        .classes(classes)
         .build();
   }
 

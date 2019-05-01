@@ -48,7 +48,7 @@ public class ClassLoadingUtil {
     return new FileInputStream(someClass);
   }
 
-  public static List<Artifact> bootstrapArtifacts() {
+  public static ImmutableList<Artifact> bootstrapArtifacts() {
     if (bootstrapArtifacts.get() == null) {
       String bootstrapClasspath = System.getProperty("sun.boot.class.path");
 
@@ -72,7 +72,7 @@ public class ClassLoadingUtil {
     return ImmutableList.copyOf(list);
   }
 
-  private static boolean filterValidClasspathEntries(String element) {
+  public static boolean filterValidClasspathEntries(String element) {
     return filterValid(new File(element));
   }
 
