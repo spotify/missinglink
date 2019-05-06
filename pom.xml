@@ -107,7 +107,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.3</version>
+          <version>3.5</version>
           <configuration>
             <source>${java.version}</source>
             <target>${java.version}</target>
@@ -155,14 +155,14 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>[8.18,)</version>
+            <version>[8.20,)</version>
           </dependency>
         </dependencies>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>3.0.1</version>
+        <version>3.0.5</version>
         <executions>
           <execution>
             <goals>

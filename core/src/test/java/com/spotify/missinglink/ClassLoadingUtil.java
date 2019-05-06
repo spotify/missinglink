@@ -16,9 +16,7 @@
 package com.spotify.missinglink;
 
 import com.google.common.collect.ImmutableList;
-
 import com.spotify.missinglink.datamodel.Artifact;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,12 +48,21 @@ public class ClassLoadingUtil {
 
   public static List<Artifact> bootstrapArtifacts() {
     if (bootstrapArtifacts.get() == null) {
+
       String bootstrapClasspath = System.getProperty("sun.boot.class.path");
 
-      ImmutableList<Artifact> artifacts = constructArtifacts(Arrays.asList(
-          bootstrapClasspath.split(System.getProperty("path.separator"))));
-
-      bootstrapArtifacts.set(artifacts);
+      if (bootstrapClasspath != null) {
+        ImmutableList<Artifact> artifacts = ImmutableList.copyOf(constructArtifacts(Arrays.asList(
+            bootstrapClasspath.split(System.getProperty("path.separator"))))
+            .stream()
+            .filter(c -> !c.name().name().equals("test-classes"))
+            .collect(Collectors.toList()));
+        bootstrapArtifacts.set(artifacts);
+      } else {
+        ImmutableList<Artifact> artifacts = Java9ModuleLoader
+            .getJava9ModuleArtifacts((s, ex) -> ex.printStackTrace());
+        bootstrapArtifacts.set(artifacts);
+      }
     }
     return bootstrapArtifacts.get();
   }
