@@ -19,7 +19,6 @@
 
     <module name="TreeWalker">
         <module name="SuppressionCommentFilter"/>
-        <property name="cacheFile" value="${checkstyle.cache.file}"/>
         <!--module name="ConstantName"/-->
         <module name="LocalFinalVariableName"/>
         <module name="LocalVariableName"/>

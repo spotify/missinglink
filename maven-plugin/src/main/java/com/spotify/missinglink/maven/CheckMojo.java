@@ -22,28 +22,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
-
 import com.spotify.missinglink.ArtifactLoader;
 import com.spotify.missinglink.Conflict;
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.ConflictChecker;
+import com.spotify.missinglink.Java9ModuleLoader;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
 import com.spotify.missinglink.datamodel.Dependency;
-
-import org.apache.maven.model.Exclusion;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -61,6 +50,15 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.apache.maven.model.Exclusion;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
 
 @Mojo(name = "check", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
     defaultPhase = LifecyclePhase.PROCESS_CLASSES)
@@ -143,6 +141,7 @@ public class CheckMojo extends AbstractMojo {
    * a classpath - various file paths separated by the path separator.
    * <p>
    * When not set, the bootclasspath is determined by examining the "sun.boot.class.path" system
+   * on java 8 and below. On java 9 and above will use the modules.
    * property.</p>
    */
   @Parameter(property = "misslink.bootClasspath")
@@ -315,8 +314,8 @@ public class CheckMojo extends AbstractMojo {
             .collect(Collectors.toList());
 
     getLog().debug("project dependencies: " + projectDeps.stream()
-            .map(this::mavenCoordinates)
-            .collect(Collectors.toList())
+        .map(this::mavenCoordinates)
+        .collect(Collectors.toList())
     );
 
     Stopwatch stopwatch = Stopwatch.createStarted();
@@ -330,8 +329,7 @@ public class CheckMojo extends AbstractMojo {
 
     stopwatch.reset().start();
 
-    final List<Artifact> bootstrapArtifacts = constructArtifacts(Arrays.<String>asList(
-        bootstrapClasspath.split(System.getProperty("path.separator"))));
+    final List<Artifact> bootstrapArtifacts = loadBootstrapArtifacts(bootstrapClasspath);
 
     stopwatch.stop();
     getLog().debug("constructing bootstrap artifacts took: " + asMillis(stopwatch) + " ms");
@@ -371,6 +369,17 @@ public class CheckMojo extends AbstractMojo {
     getLog().debug(conflicts.size() + " total conflicts found");
     return conflicts;
   }
+
+
+  private List<Artifact> loadBootstrapArtifacts(final String bootstrapClasspath) {
+    if (bootstrapClasspath == null) {
+      return Java9ModuleLoader.getJava9ModuleArtifacts((s, ex) -> getLog().warn(s, ex));
+    } else {
+      return constructArtifacts(Arrays.<String>asList(
+          bootstrapClasspath.split(System.getProperty("path.separator"))));
+    }
+  }
+
 
   private String bootClassPathToUse() {
     if (this.bootClasspath != null) {

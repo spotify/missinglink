@@ -15,27 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
-import com.spotify.missinglink.Conflict.ConflictCategory;
-import com.spotify.missinglink.datamodel.AccessedField;
-import com.spotify.missinglink.datamodel.Artifact;
-import com.spotify.missinglink.datamodel.CalledMethod;
-import com.spotify.missinglink.datamodel.CalledMethodBuilder;
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredMethod;
-import com.spotify.missinglink.datamodel.Dependency;
-import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
-import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-
-import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.Collections;
-
 import static com.spotify.missinglink.ClassLoader.load;
 import static com.spotify.missinglink.ClassLoadingUtil.findClass;
 import static com.spotify.missinglink.Simple.INT;
@@ -50,6 +29,24 @@ import static com.spotify.missinglink.Simple.newClass;
 import static com.spotify.missinglink.Simple.newMethod;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.spotify.missinglink.Conflict.ConflictCategory;
+import com.spotify.missinglink.datamodel.AccessedField;
+import com.spotify.missinglink.datamodel.Artifact;
+import com.spotify.missinglink.datamodel.CalledMethod;
+import com.spotify.missinglink.datamodel.CalledMethodBuilder;
+import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.DeclaredClass;
+import com.spotify.missinglink.datamodel.DeclaredMethod;
+import com.spotify.missinglink.datamodel.Dependency;
+import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
+import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
+import com.spotify.missinglink.datamodel.TypeDescriptors;
+import java.util.Arrays;
+import java.util.Collections;
+import org.junit.Test;
 
 public class FeatureTest {
 
@@ -403,6 +400,7 @@ public class FeatureTest {
     assertThat(conflictChecker.check(artifact,
                                      ImmutableList.of(artifact),
                                      allArtifacts))
+
         .containsExactly(expectedConflict);
   }
 
