@@ -16,6 +16,7 @@
 package com.spotify.missinglink.datamodel;
 
 import io.norberg.automatter.AutoMatter;
+import java.util.List;
 
 /** Information about a field accessed in a method */
 @AutoMatter
@@ -28,6 +29,9 @@ public interface AccessedField {
   String name();
 
   int lineNumber();
+
+  /** List of exception classes that protect this method call **/
+  List<ClassTypeDescriptor> caughtExceptions();
 
   default String pretty() {
     return descriptor().toString() + " " + owner().toString() + "." + name();

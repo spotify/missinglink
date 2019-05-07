@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.datamodel.AccessedField;
@@ -39,6 +40,7 @@ import com.spotify.missinglink.datamodel.CalledMethod;
 import com.spotify.missinglink.datamodel.CalledMethodBuilder;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
+import com.spotify.missinglink.datamodel.DeclaredClassBuilder;
 import com.spotify.missinglink.datamodel.DeclaredMethod;
 import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
@@ -81,7 +83,7 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-                   .check(root, classpath, classpath))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
@@ -118,7 +120,7 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-                   .check(root, classpath, classpath))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
@@ -154,7 +156,7 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-                   .check(root, classpath, classpath))
+        .check(root, classpath, classpath))
         .isEqualTo(ImmutableList.of(expectedConflict));
   }
 
@@ -178,8 +180,8 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
 
     assertThat(conflictChecker.check(artifact,
-                                     ImmutableList.of(artifact),
-                                     ImmutableList.of(artifact)
+        ImmutableList.of(artifact),
+        ImmutableList.of(artifact)
     )).isEmpty();
   }
 
@@ -203,10 +205,10 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
 
     assertThat(conflictChecker
-                   .check(artifact,
-                          ImmutableList.of(artifact),
-                          ImmutableList.of(artifact)
-                   )).isEmpty();
+        .check(artifact,
+            ImmutableList.of(artifact),
+            ImmutableList.of(artifact)
+        )).isEmpty();
   }
 
   @org.junit.Test
@@ -226,8 +228,8 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
     assertThat(conflictChecker.check(artifact,
-                                     ImmutableList.of(artifact),
-                                     ImmutableList.of(artifact)
+        ImmutableList.of(artifact),
+        ImmutableList.of(artifact)
     )).isEmpty();
   }
 
@@ -256,10 +258,10 @@ public class FeatureTest {
         .build();
 
     assertEquals(Arrays.asList(expectedConflict),
-                 conflictChecker.check(artifact,
-                                       ImmutableList.of(artifact),
-                                       ImmutableList.of(artifact)
-                 ));
+        conflictChecker.check(artifact,
+            ImmutableList.of(artifact),
+            ImmutableList.of(artifact)
+        ));
   }
 
   @org.junit.Test
@@ -289,10 +291,10 @@ public class FeatureTest {
         .build();
 
     assertEquals(Arrays.asList(expectedConflict),
-                 conflictChecker.check(artifact,
-                                       ImmutableList.of(artifact),
-                                       ImmutableList.of(artifact)
-                 ));
+        conflictChecker.check(artifact,
+            ImmutableList.of(artifact),
+            ImmutableList.of(artifact)
+        ));
   }
 
   @org.junit.Test
@@ -315,15 +317,16 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
     assertEquals(Collections.emptyList(),
-                 conflictChecker.check(artifact,
-                                       ImmutableList.of(artifact),
-                                       ImmutableList.of(artifact)
-                 ));
+        conflictChecker.check(artifact,
+            ImmutableList.of(artifact),
+            ImmutableList.of(artifact)
+        ));
   }
 
   @org.junit.Test
   public void testNoConflictWithSpecialCallToSuper() throws Exception {
     class SuperDuperClass {
+
       boolean fie(Object o) {
         return o != null;
       }
@@ -334,6 +337,7 @@ public class FeatureTest {
     }
 
     class MainClass extends SuperClass {
+
       boolean foo(Object o) {
         return super.fie(o);
       }
@@ -351,16 +355,18 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker.check(artifact,
-                                     ImmutableList.of(artifact),
-                                     allArtifacts)).isEmpty();
+        ImmutableList.of(artifact),
+        allArtifacts)).isEmpty();
   }
 
   @Test
   public void shouldReportMissingParent() throws Exception {
     class LostParent {
+
     }
 
     class LacksParent extends LostParent {
+
     }
 
     DeclaredClass parent = load(findClass(LostParent.class));
@@ -398,10 +404,84 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker.check(artifact,
-                                     ImmutableList.of(artifact),
-                                     allArtifacts))
+        ImmutableList.of(artifact),
+        allArtifacts))
 
         .containsExactly(expectedConflict);
+  }
+
+  @Test
+  public void shouldNotReportConflictIfCatchingNoClassDefFoundError() throws Exception {
+    class MissingClass {
+
+      public void foo() {
+
+      }
+    }
+
+    class CatchesMissingClass {
+
+      public void bar() {
+        try {
+          new MissingClass().foo();
+        } catch (NoClassDefFoundError ex) {
+          ex.printStackTrace();
+        }
+      }
+    }
+
+    DeclaredClass catcher = load(findClass(CatchesMissingClass.class));
+
+    final Artifact artifact = newArtifact("art", catcher);
+
+    ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
+        .addAll(ClassLoadingUtil.bootstrapArtifacts())
+        .add(artifact)
+        .build();
+
+    assertThat(conflictChecker.check(artifact,
+        ImmutableList.of(artifact),
+        allArtifacts))
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNotReportConflictIfCatchingNoSuchMethodError() throws Exception {
+    class MissingMethodClass {
+
+      public void foo() {
+
+      }
+    }
+
+    class CatchesMissingMethod {
+
+      public void bar() {
+        try {
+          new MissingMethodClass().foo();
+        } catch (NoSuchMethodError ex) {
+          ex.printStackTrace();
+        }
+      }
+    }
+
+    DeclaredClass missingMethod = DeclaredClassBuilder
+        .from(load(findClass(MissingMethodClass.class)))
+        .methods(ImmutableMap.of()).build();
+
+    DeclaredClass catcher = load(findClass(CatchesMissingMethod.class));
+
+    final Artifact artifact = newArtifact("art", catcher, missingMethod);
+
+    ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
+        .addAll(ClassLoadingUtil.bootstrapArtifacts())
+        .add(artifact)
+        .build();
+
+    assertThat(conflictChecker.check(artifact,
+        ImmutableList.of(artifact),
+        allArtifacts))
+        .isEmpty();
   }
 
   private static Dependency dependency(ClassTypeDescriptor className,

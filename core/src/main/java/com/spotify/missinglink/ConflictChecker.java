@@ -15,6 +15,8 @@
  */
 package com.spotify.missinglink;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -34,14 +36,11 @@ import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Inputs:
@@ -153,7 +152,9 @@ public class ConflictChecker {
     }
   }
 
-  private void checkForBrokenMethodCalls(CheckerState state, Artifact artifact, DeclaredClass clazz,
+  private void checkForBrokenMethodCalls(CheckerState state,
+                                         Artifact artifact,
+                                         DeclaredClass clazz,
                                          DeclaredMethod method,
                                          ImmutableList.Builder<Conflict> builder) {
     for (CalledMethod calledMethod : method.methodCalls()) {
@@ -161,19 +162,31 @@ public class ConflictChecker {
       final DeclaredClass calledClass = state.knownClasses().get(owningClass);
 
       if (calledClass == null) {
-        builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
-            "Class not found: " + owningClass,
-            dependency(clazz, method, calledMethod),
-            artifact.name(),
-            state.sourceMappings().get(owningClass)
-        ));
+        final boolean catchesNoClassDef = calledMethod
+            .caughtExceptions()
+            .stream()
+            .anyMatch(c -> c.getClassName().equals("java.lang.NoClassDefFoundError"));
+        if (!catchesNoClassDef) {
+          builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
+              "Class not found: " + owningClass,
+              dependency(clazz, method, calledMethod),
+              artifact.name(),
+              state.sourceMappings().get(owningClass)
+          ));
+        }
       } else if (missingMethod(calledMethod, calledClass, state.knownClasses())) {
-        builder.add(conflict(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND,
-            "Method not found: " + calledMethod.pretty(),
-            dependency(clazz, method, calledMethod),
-            artifact.name(),
-            state.sourceMappings().get(owningClass)
-        ));
+        final boolean catchesNoSuchMethod = calledMethod
+            .caughtExceptions()
+            .stream()
+            .anyMatch(c -> c.getClassName().equals("java.lang.NoSuchMethodError"));
+        if (!catchesNoSuchMethod) {
+          builder.add(conflict(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND,
+              "Method not found: " + calledMethod.pretty(),
+              dependency(clazz, method, calledMethod),
+              artifact.name(),
+              state.sourceMappings().get(owningClass)
+          ));
+        }
       }
     }
   }
@@ -187,8 +200,8 @@ public class ConflictChecker {
 
       DeclaredField declaredField = new DeclaredFieldBuilder()
           .descriptor(field.descriptor())
-              .name(field.name())
-              .build();
+          .name(field.name())
+          .build();
 
       if (calledClass == null) {
         builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
