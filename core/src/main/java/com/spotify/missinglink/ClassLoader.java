@@ -15,10 +15,10 @@
  */
 package com.spotify.missinglink;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.AccessedFieldBuilder;
 import com.spotify.missinglink.datamodel.CalledMethod;
@@ -33,7 +33,13 @@ import com.spotify.missinglink.datamodel.DeclaredMethodBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.MethodDescriptors;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -45,16 +51,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static java.util.stream.Collectors.toList;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 
 /**
  * Loads a single class from an input stream.
@@ -74,7 +71,7 @@ public final class ClassLoader {
     Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
     Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
 
-    for (MethodNode method : ClassLoader.<MethodNode>uncheckedCast(classNode.methods)) {
+    for (MethodNode method : classNode.methods) {
       analyseMethod(classNode.name, method, declaredMethods, loadedClasses);
     }
 
@@ -95,11 +92,11 @@ public final class ClassLoader {
   }
 
   private static Set<ClassTypeDescriptor> readParents(ClassNode classNode) {
-    final Set<ClassTypeDescriptor> parents = new HashSet<>();
-    parents.addAll(ClassLoader.<String>uncheckedCast(classNode.interfaces)
-                       .stream()
-                       .map(TypeDescriptors::fromClassName)
-                       .collect(toList()));
+    final Set<ClassTypeDescriptor> parents =
+        classNode.interfaces
+            .stream()
+            .map(TypeDescriptors::fromClassName)
+            .collect(Collectors.toSet());
     // java/lang/Object has no superclass
     if (classNode.superName != null) {
       parents.add(TypeDescriptors.fromClassName(classNode.superName));
@@ -110,13 +107,12 @@ public final class ClassLoader {
   private static ImmutableSet<DeclaredField> readDeclaredFields(ClassNode classNode) {
     ImmutableSet.Builder<DeclaredField> fields = new ImmutableSet.Builder<>();
 
-    @SuppressWarnings("unchecked")
-    final Iterable<FieldNode> classFields = (Iterable<FieldNode>) classNode.fields;
+    final Iterable<FieldNode> classFields = classNode.fields;
     for (FieldNode field : classFields) {
       fields.add(new DeclaredFieldBuilder()
-                     .name(field.name)
-                     .descriptor(TypeDescriptors.fromRaw(field.desc))
-                     .build());
+          .name(field.name)
+          .descriptor(TypeDescriptors.fromRaw(field.desc))
+          .build());
     }
     return fields.build();
   }
@@ -129,19 +125,20 @@ public final class ClassLoader {
     final Set<AccessedField> thisFields = new HashSet<>();
 
     int lineNumber = 0;
-    for (Iterator<AbstractInsnNode> instructions =
-         ClassLoader.<AbstractInsnNode>uncheckedCast(method.instructions.iterator());
-         instructions.hasNext();) {
+    final List<AbstractInsnNode> instructions =
+        ImmutableList.copyOf(method.instructions.iterator());
+    for (final AbstractInsnNode insn : instructions) {
       try {
-        final AbstractInsnNode insn = instructions.next();
         if (insn instanceof LineNumberNode) {
           lineNumber = ((LineNumberNode) insn).line;
         }
         if (insn instanceof MethodInsnNode) {
-          handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn);
+          handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn,
+              getTryCatchBlocksProtecting(instructions, insn, method));
         }
         if (insn instanceof FieldInsnNode) {
-          handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn);
+          handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn,
+              getTryCatchBlocksProtecting(instructions, insn, method));
         }
         if (insn instanceof LdcInsnNode) {
           handleLdc(loadedClasses, (LdcInsnNode) insn);
@@ -166,9 +163,30 @@ public final class ClassLoader {
     }
   }
 
-  private static void handleMethodCall(Set<CalledMethod> thisCalls,
-                                       int lineNumber,
-                                       MethodInsnNode insn) {
+  private static List<TryCatchBlockNode> getTryCatchBlocksProtecting(
+      final List<AbstractInsnNode> instructions,
+      final AbstractInsnNode insn,
+      final MethodNode method) {
+
+    final ImmutableList.Builder<TryCatchBlockNode> protectedByTryCatches = ImmutableList.builder();
+    final int instructionIndex = instructions.indexOf(insn);
+    for (final TryCatchBlockNode tryCatchBlockNode : method.tryCatchBlocks) {
+      if (tryCatchBlockNode.type == null) {
+        continue;
+      }
+      final int catchStartIndex = instructions.indexOf(tryCatchBlockNode.start);
+      final int catchEndIndex = instructions.indexOf(tryCatchBlockNode.end);
+      if (instructionIndex > catchStartIndex && instructionIndex < catchEndIndex) {
+        protectedByTryCatches.add(tryCatchBlockNode);
+      }
+    }
+    return protectedByTryCatches.build();
+  }
+
+  private static void handleMethodCall(final Set<CalledMethod> thisCalls,
+                                       final int lineNumber,
+                                       final MethodInsnNode insn,
+                                       final List<TryCatchBlockNode> tryCatchBlocksProtecting) {
     boolean isStatic;
     switch (insn.getOpcode()) {
       case Opcodes.INVOKEVIRTUAL:
@@ -186,16 +204,19 @@ public final class ClassLoader {
     }
     if (insn.owner.charAt(0) != '[') {
       thisCalls.add(new CalledMethodBuilder()
-                        .owner(TypeDescriptors.fromClassName(insn.owner))
-                        .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
-                        .isStatic(isStatic)
-                        .lineNumber(lineNumber)
-                        .build());
+          .owner(TypeDescriptors.fromClassName(insn.owner))
+          .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
+          .isStatic(isStatic)
+          .lineNumber(lineNumber)
+          .caughtExceptions(tryCatchBlocksProtecting.stream()
+              .map(node -> TypeDescriptors.fromClassName(node.type)).collect(Collectors.toList()))
+          .build());
     }
   }
 
   private static void handleFieldAccess(Set<AccessedField> thisFields, int lineNumber,
-                                        FieldInsnNode insn) {
+                                        FieldInsnNode insn,
+                                        final List<TryCatchBlockNode> tryCatchBlocksProtecting) {
     if (insn.owner.charAt(0) != '[') {
       thisFields.add(
           new AccessedFieldBuilder()
@@ -203,6 +224,9 @@ public final class ClassLoader {
               .descriptor(TypeDescriptors.fromRaw(insn.desc))
               .owner(TypeDescriptors.fromClassName(insn.owner))
               .lineNumber(lineNumber)
+              .caughtExceptions(tryCatchBlocksProtecting.stream()
+                  .map(node -> TypeDescriptors.fromClassName(node.type))
+                  .collect(Collectors.toList()))
               .build());
     }
   }
@@ -226,18 +250,5 @@ public final class ClassLoader {
         loadedClasses.add(TypeDescriptors.fromClassName(loadedType.getInternalName()));
       }
     }
-  }
-
-  // asm seems to compile it's code with a very low source version, so all collections from it
-  // are unchecked types. These helper functions at least suppress the warnings for us:
-  //
-  @SuppressWarnings("unchecked")
-  private static <T> List<T> uncheckedCast(List list) {
-    return (List<T>) list;
-  }
-
-  @SuppressWarnings("unchecked")
-  private static <T> Iterator<T> uncheckedCast(Iterator iterator) {
-    return (Iterator<T>) iterator;
   }
 }

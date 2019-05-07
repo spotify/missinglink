@@ -16,6 +16,7 @@
 package com.spotify.missinglink.datamodel;
 
 import io.norberg.automatter.AutoMatter;
+import java.util.List;
 
 /** Information about a method called by a DeclaredMethod */
 @AutoMatter
@@ -29,6 +30,9 @@ public interface CalledMethod {
   boolean isStatic();
 
   int lineNumber();
+
+  /** List of exception classes that protect this method call **/
+  List<ClassTypeDescriptor> caughtExceptions();
 
   default String pretty() {
     return owner().toString() + "." + descriptor().prettyWithoutReturnType();
