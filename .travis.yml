@@ -6,7 +6,7 @@ secure: "U9dY+CGViIQmq/vU6t0kByXZHQnwi5b+vhNUdjU40XzKKgJRa/WV4us7wNkICljDAFv1lto
 language: java
 
 jdk:
-  - oraclejdk8
+  - openjdk8
   - openjdk11
 
 after_success:
