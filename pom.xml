@@ -4,7 +4,7 @@
 
   <groupId>com.spotify</groupId>
   <artifactId>missinglink-parent</artifactId>
-  <version>0.1.4-SNAPSHOT</version>
+  <version>0.1.4</version>
   <packaging>pom</packaging>
 
   <name>missinglink</name>
@@ -81,7 +81,7 @@
     <connection>scm:git:git@github.com:spotify/missinglink.git</connection>
     <developerConnection>scm:git:git@github.com:spotify/missinglink.git</developerConnection>
     <url>https://github.com/spotify/missinglink</url>
-    <tag>HEAD</tag>
+    <tag>missinglink-parent-0.1.4</tag>
   </scm>
 
   <distributionManagement>
