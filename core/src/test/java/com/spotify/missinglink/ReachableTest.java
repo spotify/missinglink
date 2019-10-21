@@ -15,20 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
-import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
-import com.spotify.missinglink.datamodel.DeclaredClass;
-import com.spotify.missinglink.datamodel.DeclaredMethod;
-import com.spotify.missinglink.datamodel.MethodDescriptor;
-import com.spotify.missinglink.datamodel.TypeDescriptor;
-import com.spotify.missinglink.datamodel.TypeDescriptors;
-
-import org.junit.Test;
-
-import java.util.Map;
-import java.util.Set;
 
 import static com.spotify.missinglink.Simple.INT;
 import static com.spotify.missinglink.Simple.VOID;
@@ -40,16 +26,29 @@ import static com.spotify.missinglink.Simple.newField;
 import static com.spotify.missinglink.Simple.newMethod;
 import static org.junit.Assert.assertEquals;
 
+import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
+import com.spotify.missinglink.datamodel.DeclaredClass;
+import com.spotify.missinglink.datamodel.DeclaredMethod;
+import com.spotify.missinglink.datamodel.MethodDescriptor;
+import com.spotify.missinglink.datamodel.TypeDescriptor;
+import com.spotify.missinglink.datamodel.TypeDescriptors;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.junit.Test;
+
 public class ReachableTest {
 
   @Test
   public void testUnreachable() {
     DeclaredClass root = newClass("my/Root").build();
-    ImmutableSet< DeclaredClass > myClasses = ImmutableSet.of(root);
+    Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world =
         classMap(root, newClass("other/Unknown").build());
     Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    assertEquals(ImmutableSet.of(root.className()), reachable);
+    assertEquals(Collections.singleton(root.className()), reachable);
   }
 
   @Test
@@ -62,12 +61,15 @@ public class ReachableTest {
         .methods(methodMap(
             newMethod(false, VOID, "foo")
                 .methodCalls(
-                    ImmutableSet.of(newCall(remote, remoteMethod, false, true))).build()))
+                    Collections.singleton(newCall(remote, remoteMethod, false, true))).build()))
         .build();
-    ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
-    ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
-    ImmutableSet<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    assertEquals(ImmutableSet.of(root.className(), remote.className()), reachable);
+    Set<DeclaredClass> myClasses = Collections.singleton(root);
+    Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
+    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
+        root.className(), remote.className()
+    ));
+    assertEquals(expected, reachable);
   }
 
   @Test
@@ -75,12 +77,15 @@ public class ReachableTest {
     DeclaredClass remote = newClass("other/Unknown")
         .build();
     DeclaredClass root = newClass("my/Root")
-        .parents(ImmutableSet.of(TypeDescriptors.fromClassName("other/Unknown")))
+        .parents(Collections.singleton(TypeDescriptors.fromClassName("other/Unknown")))
         .build();
-    ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
-    ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
-    ImmutableSet<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    assertEquals(ImmutableSet.of(root.className(), remote.className()), reachable);
+    Set<DeclaredClass> myClasses = Collections.singleton(root);
+    Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
+    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
+        root.className(), remote.className()
+    ));
+    assertEquals(expected, reachable);
   }
 
   @Test
@@ -88,31 +93,37 @@ public class ReachableTest {
     DeclaredClass remote = newClass("other/Unknown")
         .build();
     DeclaredClass root = newClass("my/Root")
-        .loadedClasses(ImmutableSet.of(TypeDescriptors.fromClassName("other/Unknown")))
+        .loadedClasses(Collections.singleton(TypeDescriptors.fromClassName("other/Unknown")))
         .build();
-    ImmutableSet<DeclaredClass> myClasses = ImmutableSet.of(root);
-    ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
-    ImmutableSet<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    assertEquals(ImmutableSet.of(root.className(), remote.className()), reachable);
+    Set<DeclaredClass> myClasses = Collections.singleton(root);
+    Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
+    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
+        root.className(), remote.className()
+    ));
+    assertEquals(expected, reachable);
   }
 
   @Test
   public void testReachableViaField() {
     DeclaredClass remote = newClass("other/Unknown")
-        .fields(ImmutableSet.of(newField(INT, "remoteField")))
+        .fields(Collections.singleton(newField(INT, "remoteField")))
         .build();
-    ImmutableMap<MethodDescriptor, DeclaredMethod> methods = methodMap(
+    Map<MethodDescriptor, DeclaredMethod> methods = methodMap(
         newMethod(false, VOID, "foo")
             .fieldAccesses(
-                ImmutableSet.of(Simple.newAccess(INT, "remoteField", "other/Unknown", 12)))
+                Collections.singleton(Simple.newAccess(INT, "remoteField", "other/Unknown", 12)))
             .build());
     DeclaredClass root = newClass("my/Root")
         .methods(methods)
         .build();
-    ImmutableSet< DeclaredClass > myClasses = ImmutableSet.of(root);
-    ImmutableMap<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
-    ImmutableSet<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    assertEquals(ImmutableSet.of(root.className(), remote.className()), reachable);
+    Set<DeclaredClass> myClasses = Collections.singleton(root);
+    Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
+    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
+        root.className(), remote.className()
+    ));
+    assertEquals(expected, reachable);
   }
 
 }

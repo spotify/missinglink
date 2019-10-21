@@ -15,9 +15,9 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import io.norberg.automatter.AutoMatter;
+import java.util.Map;
+import java.util.Set;
 
 @AutoMatter
 public interface DeclaredClass {
@@ -26,13 +26,13 @@ public interface DeclaredClass {
   ClassTypeDescriptor className();
 
   // parent are class names: com/foo/bar/Baz
-  ImmutableSet<ClassTypeDescriptor> parents();
+  Set<ClassTypeDescriptor> parents();
   // also includes other classes that are loaded by this class, even though
   // no methods on those classes are explicitly called
-  ImmutableSet<ClassTypeDescriptor> loadedClasses();
+  Set<ClassTypeDescriptor> loadedClasses();
 
-  ImmutableMap<MethodDescriptor, DeclaredMethod> methods();
+  Map<MethodDescriptor, DeclaredMethod> methods();
 
-  ImmutableSet<DeclaredField> fields();
+  Set<DeclaredField> fields();
 
 }

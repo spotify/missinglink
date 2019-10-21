@@ -17,10 +17,6 @@ package com.spotify.missinglink;
 
 import static java.util.stream.Collectors.toList;
 
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
@@ -36,6 +32,9 @@ import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -103,9 +102,9 @@ public class ConflictChecker {
    *                         artifacts)
    * @return a list of conflicts
    */
-  public ImmutableList<Conflict> check(Artifact projectArtifact,
-                                       List<Artifact> artifactsToCheck,
-                                       List<Artifact> allArtifacts) {
+  public List<Conflict> check(Artifact projectArtifact,
+                              List<Artifact> artifactsToCheck,
+                              List<Artifact> allArtifacts) {
 
     final CheckerStateBuilder stateBuilder = new CheckerStateBuilder();
 
@@ -116,7 +115,7 @@ public class ConflictChecker {
     Set<TypeDescriptor> reachableClasses =
         reachableFrom(projectArtifact.classes().values(), state.knownClasses());
 
-    final ImmutableList.Builder<Conflict> builder = ImmutableList.builder();
+    final List<Conflict> conflicts = new ArrayList<>();
 
     // Then go through everything in the classpath to make sure all the method calls / field references
     // are satisfied.
@@ -127,12 +126,12 @@ public class ConflictChecker {
         }
 
         for (DeclaredMethod method : clazz.methods().values()) {
-          checkForBrokenMethodCalls(state, artifact, clazz, method, builder);
-          checkForBrokenFieldAccess(state, artifact, clazz, method, builder);
+          conflicts.addAll(checkForBrokenMethodCalls(state, artifact, clazz, method));
+          conflicts.addAll(checkForBrokenFieldAccess(state, artifact, clazz, method));
         }
       }
     }
-    return builder.build();
+    return conflicts;
   }
 
   /**
@@ -152,11 +151,12 @@ public class ConflictChecker {
     }
   }
 
-  private void checkForBrokenMethodCalls(CheckerState state,
-                                         Artifact artifact,
-                                         DeclaredClass clazz,
-                                         DeclaredMethod method,
-                                         ImmutableList.Builder<Conflict> builder) {
+  private List<Conflict> checkForBrokenMethodCalls(CheckerState state,
+                                                   Artifact artifact,
+                                                   DeclaredClass clazz,
+                                                   DeclaredMethod method) {
+    List<Conflict> conflicts = new ArrayList<>();
+
     for (CalledMethod calledMethod : method.methodCalls()) {
       final ClassTypeDescriptor owningClass = calledMethod.owner();
       final DeclaredClass calledClass = state.knownClasses().get(owningClass);
@@ -167,7 +167,7 @@ public class ConflictChecker {
             .stream()
             .anyMatch(c -> c.getClassName().equals("java.lang.NoClassDefFoundError"));
         if (!catchesNoClassDef) {
-          builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
+          conflicts.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
               "Class not found: " + owningClass,
               dependency(clazz, method, calledMethod),
               artifact.name(),
@@ -180,7 +180,7 @@ public class ConflictChecker {
             .stream()
             .anyMatch(c -> c.getClassName().equals("java.lang.NoSuchMethodError"));
         if (!catchesNoSuchMethod) {
-          builder.add(conflict(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND,
+          conflicts.add(conflict(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND,
               "Method not found: " + calledMethod.pretty(),
               dependency(clazz, method, calledMethod),
               artifact.name(),
@@ -189,11 +189,16 @@ public class ConflictChecker {
         }
       }
     }
+
+    return conflicts;
   }
 
-  private void checkForBrokenFieldAccess(CheckerState state, Artifact artifact, DeclaredClass clazz,
-                                         DeclaredMethod method,
-                                         ImmutableList.Builder<Conflict> builder) {
+  private List<Conflict> checkForBrokenFieldAccess(CheckerState state, Artifact artifact,
+                                                   DeclaredClass clazz,
+                                                   DeclaredMethod method) {
+
+    List<Conflict> conflicts = new ArrayList<>();
+
     for (AccessedField field : method.fieldAccesses()) {
       final ClassTypeDescriptor owningClass = field.owner();
       final DeclaredClass calledClass = state.knownClasses().get(owningClass);
@@ -204,14 +209,14 @@ public class ConflictChecker {
           .build();
 
       if (calledClass == null) {
-        builder.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
+        conflicts.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
             "Class not found: " + owningClass,
             dependency(clazz, method, field),
             artifact.name(),
             state.sourceMappings().get(owningClass)
         ));
       } else if (missingField(declaredField, calledClass, state.knownClasses())) {
-        builder.add(conflict(ConflictCategory.FIELD_NOT_FOUND,
+        conflicts.add(conflict(ConflictCategory.FIELD_NOT_FOUND,
             "Field not found: " + field.name(),
             dependency(clazz, method, field),
             artifact.name(),
@@ -222,14 +227,17 @@ public class ConflictChecker {
 
       }
     }
+
+    return conflicts;
   }
 
-  public static ImmutableSet<TypeDescriptor> reachableFrom(
-      ImmutableCollection<DeclaredClass> values,
+  static Set<TypeDescriptor> reachableFrom(
+      Collection<DeclaredClass> values,
       Map<ClassTypeDescriptor, DeclaredClass> knownClasses) {
+
     Queue<DeclaredClass> toCheck = new LinkedList<>(values);
 
-    Set<ClassTypeDescriptor> reachable = Sets.newHashSet();
+    Set<TypeDescriptor> reachable = new HashSet<>();
 
     while (!toCheck.isEmpty()) {
       DeclaredClass current = toCheck.remove();
@@ -267,7 +275,7 @@ public class ConflictChecker {
           .collect(toList()));
     }
 
-    return ImmutableSet.copyOf(reachable);
+    return reachable;
   }
 
   private Conflict conflict(ConflictCategory category, String reason,

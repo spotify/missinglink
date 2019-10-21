@@ -15,9 +15,8 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import com.google.common.collect.ImmutableSet;
-
 import io.norberg.automatter.AutoMatter;
+import java.util.Set;
 
 @AutoMatter
 // TODO: rename to something better - ImplementedMethod ? DefinedMethod ?
@@ -30,7 +29,7 @@ public interface DeclaredMethod {
   int lineNumber();
 
   /** Calls that this method makes to other methods */
-  ImmutableSet<CalledMethod> methodCalls();
+  Set<CalledMethod> methodCalls();
 
-  ImmutableSet<AccessedField> fieldAccesses();
+  Set<AccessedField> fieldAccesses();
 }

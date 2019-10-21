@@ -15,17 +15,14 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-
-import org.objectweb.asm.Type;
+import static java.util.stream.Collectors.toList;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
+import java.util.Objects;
+import org.objectweb.asm.Type;
 
 public final class MethodDescriptors {
 
@@ -48,7 +45,7 @@ public final class MethodDescriptors {
     return new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw(type.getReturnType().getDescriptor()))
         .name(key.name)
-        .parameterTypes(ImmutableList.copyOf(params))
+        .parameterTypes(params)
         .build();
   }
 
@@ -59,8 +56,8 @@ public final class MethodDescriptors {
     private final String desc;
 
     MethodKey(String name, String desc) {
-      this.name = Preconditions.checkNotNull(name);
-      this.desc = Preconditions.checkNotNull(desc);
+      this.name = Objects.requireNonNull(name);
+      this.desc = Objects.requireNonNull(desc);
     }
 
     @Override

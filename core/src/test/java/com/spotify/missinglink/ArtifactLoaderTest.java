@@ -15,9 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.CalledMethod;
@@ -32,6 +29,7 @@ import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
 
+import java.util.Collections;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,26 +64,23 @@ public class ArtifactLoaderTest {
     methodOneDescriptor = new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw("V"))
         .name("methodOne")
-        .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("Ljava/lang/String;")))
+        .parameterTypes(Collections.singletonList(TypeDescriptors.fromRaw("Ljava/lang/String;")))
         .build();
 
     internalStaticFieldAccessDescriptor = new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw("V"))
         .name("internalStaticFieldAccess")
-        .parameterTypes(ImmutableList.of())
         .build();
 
     internalFieldAccessDescriptor = new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw("V"))
         .name("internalFieldAccess")
-        .parameterTypes(ImmutableList.of())
         .build();
 
     printlnDescriptor = new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw("V"))
         .name("println")
-        .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw(
-                "Ljava/lang/String;")))
+        .parameterTypes(Collections.singletonList(TypeDescriptors.fromRaw("Ljava/lang/String;")))
         .build();
   }
 
@@ -167,7 +162,7 @@ public class ArtifactLoaderTest {
   @Test
   public void testLoadParent() throws Exception {
     assertEquals(artifact.classes().get(TypeDescriptors.fromClassName("A")).parents(),
-                 ImmutableSet.of(TypeDescriptors.fromClassName("java/lang/Object")));
+        Collections.singleton(TypeDescriptors.fromClassName("java/lang/Object")));
   }
 
   /**

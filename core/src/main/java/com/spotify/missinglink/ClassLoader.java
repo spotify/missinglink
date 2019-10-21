@@ -15,10 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.AccessedFieldBuilder;
 import com.spotify.missinglink.datamodel.CalledMethod;
@@ -35,8 +31,11 @@ import com.spotify.missinglink.datamodel.MethodDescriptors;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -66,9 +65,9 @@ public final class ClassLoader {
     ClassNode classNode = readClassNode(in);
 
     Set<ClassTypeDescriptor> parents = readParents(classNode);
-    ImmutableSet<DeclaredField> declaredFields = readDeclaredFields(classNode);
+    Set<DeclaredField> declaredFields = readDeclaredFields(classNode);
 
-    Map<MethodDescriptor, DeclaredMethod> declaredMethods = Maps.newHashMap();
+    Map<MethodDescriptor, DeclaredMethod> declaredMethods = new HashMap<>();
     Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
 
     for (MethodNode method : classNode.methods) {
@@ -77,9 +76,9 @@ public final class ClassLoader {
 
     return new DeclaredClassBuilder()
         .className(TypeDescriptors.fromClassName(classNode.name))
-        .methods(ImmutableMap.copyOf(declaredMethods))
-        .parents(ImmutableSet.copyOf(parents))
-        .loadedClasses(ImmutableSet.copyOf(loadedClasses))
+        .methods(declaredMethods)
+        .parents(parents)
+        .loadedClasses(loadedClasses)
         .fields(declaredFields)
         .build();
   }
@@ -104,8 +103,8 @@ public final class ClassLoader {
     return parents;
   }
 
-  private static ImmutableSet<DeclaredField> readDeclaredFields(ClassNode classNode) {
-    ImmutableSet.Builder<DeclaredField> fields = new ImmutableSet.Builder<>();
+  private static Set<DeclaredField> readDeclaredFields(ClassNode classNode) {
+    Set<DeclaredField> fields = new HashSet<>();
 
     final Iterable<FieldNode> classFields = classNode.fields;
     for (FieldNode field : classFields) {
@@ -114,7 +113,7 @@ public final class ClassLoader {
           .descriptor(TypeDescriptors.fromRaw(field.desc))
           .build());
     }
-    return fields.build();
+    return fields;
   }
 
   private static void analyseMethod(String className,
@@ -125,8 +124,8 @@ public final class ClassLoader {
     final Set<AccessedField> thisFields = new HashSet<>();
 
     int lineNumber = 0;
-    final List<AbstractInsnNode> instructions =
-        ImmutableList.copyOf(method.instructions.iterator());
+    final List<AbstractInsnNode> instructions = toList(method.instructions.iterator());
+
     for (final AbstractInsnNode insn : instructions) {
       try {
         if (insn instanceof LineNumberNode) {
@@ -152,8 +151,8 @@ public final class ClassLoader {
     final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
         .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
         .lineNumber(lineNumber)
-        .methodCalls(ImmutableSet.copyOf(thisCalls))
-        .fieldAccesses(ImmutableSet.copyOf(thisFields))
+        .methodCalls(thisCalls)
+        .fieldAccesses(thisFields)
         .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
         .build();
 
@@ -163,12 +162,20 @@ public final class ClassLoader {
     }
   }
 
+  private static <T> List<T> toList(final ListIterator<T> iterator) {
+    List<T> list = new ArrayList<T>();
+    while (iterator.hasNext()) {
+      list.add(iterator.next());
+    }
+    return list;
+  }
+
   private static List<TryCatchBlockNode> getTryCatchBlocksProtecting(
       final List<AbstractInsnNode> instructions,
       final AbstractInsnNode insn,
       final MethodNode method) {
 
-    final ImmutableList.Builder<TryCatchBlockNode> protectedByTryCatches = ImmutableList.builder();
+    final List<TryCatchBlockNode> protectedByTryCatches = new ArrayList<>();
     final int instructionIndex = instructions.indexOf(insn);
     for (final TryCatchBlockNode tryCatchBlockNode : method.tryCatchBlocks) {
       if (tryCatchBlockNode.type == null) {
@@ -180,7 +187,7 @@ public final class ClassLoader {
         protectedByTryCatches.add(tryCatchBlockNode);
       }
     }
-    return protectedByTryCatches.build();
+    return protectedByTryCatches;
   }
 
   private static void handleMethodCall(final Set<CalledMethod> thisCalls,

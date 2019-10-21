@@ -15,8 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
@@ -25,7 +23,10 @@ import com.spotify.missinglink.datamodel.DeclaredClass;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -34,8 +35,8 @@ import java.util.stream.Stream;
 
 public class Java9ModuleLoader {
 
-  public static ImmutableList<Artifact> getJava9ModuleArtifacts(BiConsumer<String, Exception> log) {
-    ImmutableList.Builder<Artifact> builder = ImmutableList.builder();
+  public static List<Artifact> getJava9ModuleArtifacts(BiConsumer<String, Exception> log) {
+    List<Artifact> artifacts = new ArrayList<>();
     try {
 
       final Class moduleFinderClass = Class.forName("java.lang.module.ModuleFinder");
@@ -56,7 +57,7 @@ public class Java9ModuleLoader {
         Object reader = moduleReferenceClass.getMethod("open").invoke(moduleReference);
         try {
           final ArtifactName name = new ArtifactName(moduleName);
-          ImmutableMap.Builder<ClassTypeDescriptor, DeclaredClass> classes = ImmutableMap.builder();
+          Map<ClassTypeDescriptor, DeclaredClass> classes = new HashMap<>();
           final List<String> readerList =
               ((Stream<String>) moduleReaderClass.getMethod("list").invoke(reader))
                   .filter(className -> className.endsWith(".class"))
@@ -76,7 +77,7 @@ public class Java9ModuleLoader {
               log.accept("Could not read class " + className, e);
             }
           }
-          builder.add(new ArtifactBuilder().name(name).classes(classes.build()).build());
+          artifacts.add(new ArtifactBuilder().name(name).classes(classes).build());
         } finally {
           try {
             moduleReaderClass.getMethod("close").invoke(reader);
@@ -90,6 +91,6 @@ public class Java9ModuleLoader {
         IllegalAccessException | ClassNotFoundException e) {
       log.accept("Could not read java 9 modules", e);
     }
-    return builder.build();
+    return artifacts;
   }
 }
