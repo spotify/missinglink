@@ -15,7 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableList;
 import com.spotify.missinglink.datamodel.Artifact;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +30,7 @@ import java.util.stream.StreamSupport;
 public class ClassLoadingUtil {
 
   private static final ArtifactLoader artifactLoader = new ArtifactLoader();
-  private static final AtomicReference<ImmutableList<Artifact>> bootstrapArtifacts =
+  private static final AtomicReference<List<Artifact>> bootstrapArtifacts =
       new AtomicReference<>();
 
   public static FileInputStream findClass(Class<?> aClass) throws Exception {
@@ -52,14 +51,14 @@ public class ClassLoadingUtil {
       String bootstrapClasspath = System.getProperty("sun.boot.class.path");
 
       if (bootstrapClasspath != null) {
-        ImmutableList<Artifact> artifacts = ImmutableList.copyOf(constructArtifacts(Arrays.asList(
+        List<Artifact> artifacts = constructArtifacts(Arrays.asList(
             bootstrapClasspath.split(System.getProperty("path.separator"))))
             .stream()
             .filter(c -> !c.name().name().equals("test-classes"))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
         bootstrapArtifacts.set(artifacts);
       } else {
-        ImmutableList<Artifact> artifacts = Java9ModuleLoader
+        List<Artifact> artifacts = Java9ModuleLoader
             .getJava9ModuleArtifacts((s, ex) -> ex.printStackTrace());
         bootstrapArtifacts.set(artifacts);
       }
@@ -67,7 +66,7 @@ public class ClassLoadingUtil {
     return bootstrapArtifacts.get();
   }
 
-  private static ImmutableList<Artifact> constructArtifacts(Iterable<String> entries) {
+  private static List<Artifact> constructArtifacts(Iterable<String> entries) {
     final List<Artifact> list = StreamSupport.stream(entries.spliterator(), false)
         // don't inspect paths that don't exist.
         // some bootclasspath entries, like sunrsasign.jar, are reported even if they
@@ -76,7 +75,7 @@ public class ClassLoadingUtil {
         .filter(ClassLoadingUtil::filterValidClasspathEntries)
         .map(ClassLoadingUtil::filepathToArtifact)
         .collect(Collectors.toList());
-    return ImmutableList.copyOf(list);
+    return list;
   }
 
   private static boolean filterValidClasspathEntries(String element) {

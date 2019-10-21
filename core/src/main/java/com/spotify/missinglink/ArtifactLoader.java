@@ -15,9 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap.Builder;
-
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
@@ -30,7 +27,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -45,10 +44,12 @@ public class ArtifactLoader {
 
   /** Load artifact at path with a custom artifactId */
   public Artifact load(ArtifactName artifactName, File path) throws IOException {
-    Preconditions.checkArgument(path.exists(), "Path must exist: " + path);
-    Preconditions.checkArgument(path.isFile() || path.isDirectory(),
-        "Path must be a file or directory: " + path);
-
+    if (!path.exists()) {
+      throw new IllegalArgumentException("Path must exist: " + path);
+    }
+    if (!path.isFile() && !path.isDirectory()) {
+      throw new IllegalArgumentException("Path must be a file or directory: " + path);
+    }
     if (path.isFile()) {
       return loadFromJar(artifactName, path);
     }
@@ -57,7 +58,7 @@ public class ArtifactLoader {
 
   private Artifact loadFromJar(ArtifactName artifactName, File path) {
     try (JarFile jarFile = new JarFile(path)) {
-      Builder<ClassTypeDescriptor, DeclaredClass> classes = new Builder<>();
+      Map<ClassTypeDescriptor, DeclaredClass> classes = new HashMap<>();
       // Why would anyone bother updating this API to add support for iterators? Way too much work..
       Enumeration<JarEntry> entries = jarFile.entries();
       while (entries.hasMoreElements()) {
@@ -81,8 +82,7 @@ public class ArtifactLoader {
   }
 
   private Artifact loadFromDirectory(ArtifactName artifactName, File dir) throws IOException {
-    Builder<ClassTypeDescriptor, DeclaredClass> classes =
-        new Builder<>();
+    Map<ClassTypeDescriptor, DeclaredClass> classes = new HashMap<>();
 
     List<File> classFilesInDir = Files.walk(dir.toPath())
         .map(Path::toFile)
@@ -99,10 +99,10 @@ public class ArtifactLoader {
   }
 
   private static Artifact artifact(ArtifactName name,
-                                   Builder<ClassTypeDescriptor, DeclaredClass> classes) {
+                                   Map<ClassTypeDescriptor, DeclaredClass> classes) {
     return new ArtifactBuilder()
         .name(name)
-        .classes(classes.build())
+        .classes(classes)
         .build();
   }
 

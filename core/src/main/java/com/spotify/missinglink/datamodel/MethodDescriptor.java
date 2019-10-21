@@ -15,11 +15,9 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import java.util.stream.Collectors;
-
 import io.norberg.automatter.AutoMatter;
+import java.util.List;
+import java.util.StringJoiner;
 
 @AutoMatter
 public interface MethodDescriptor {
@@ -28,7 +26,7 @@ public interface MethodDescriptor {
 
   String name();
 
-  ImmutableList<TypeDescriptor> parameterTypes();
+  List<TypeDescriptor> parameterTypes();
 
   // TODO: add modifiers
 
@@ -41,9 +39,12 @@ public interface MethodDescriptor {
   }
 
   default String prettyParameters() {
-    return "(" +
-           Joiner.on(", ").join(parameterTypes().stream()
-                                    .map(TypeDescriptor::toString)
-                                    .collect(Collectors.toList())) + ")";
+    StringJoiner joiner = new StringJoiner(", ", "(", ")");
+
+    parameterTypes().stream()
+        .map(TypeDescriptor::toString)
+        .forEach(joiner::add);
+
+    return joiner.toString();
   }
 }

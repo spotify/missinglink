@@ -16,7 +16,7 @@
 package com.spotify.missinglink.datamodel;
 
 
-import com.google.common.base.Preconditions;
+import java.util.Objects;
 
 public class ArrayTypeDescriptor implements TypeDescriptor {
 
@@ -25,7 +25,7 @@ public class ArrayTypeDescriptor implements TypeDescriptor {
 
   public ArrayTypeDescriptor(TypeDescriptor subType, int dimensions) {
     this.dimensions = dimensions;
-    this.subType = Preconditions.checkNotNull(subType);
+    this.subType = Objects.requireNonNull(subType);
   }
 
   @Override

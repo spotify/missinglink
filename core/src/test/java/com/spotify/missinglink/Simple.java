@@ -15,10 +15,6 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.AccessedFieldBuilder;
 import com.spotify.missinglink.datamodel.Artifact;
@@ -37,8 +33,10 @@ import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
-
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -63,28 +61,23 @@ public class Simple {
    */
   public static DeclaredClassBuilder newClass(String className) {
     return new DeclaredClassBuilder()
-        .className(TypeDescriptors.fromClassName(className))
-        .parents(ImmutableSet.of())
-        .loadedClasses(ImmutableSet.of())
-        .methods(ImmutableMap.of())
-        .fields(ImmutableSet.<DeclaredField>of());
+        .className(TypeDescriptors.fromClassName(className));
   }
 
 
   public static DeclaredMethodBuilder newMethod(boolean isStatic, String returnDesc, String name,
                                                 String... parameterDesc) {
-    List<TypeDescriptor> param = ImmutableList.copyOf(parameterDesc).stream()
+    List<TypeDescriptor> param = Arrays.stream(parameterDesc)
         .map(TypeDescriptors::fromRaw)
         .collect(Collectors.toList());
 
     return new DeclaredMethodBuilder()
         .isStatic(isStatic)
-        .fieldAccesses(ImmutableSet.<AccessedField>of())
-        .methodCalls(ImmutableSet.<CalledMethod>of())
         .descriptor(new MethodDescriptorBuilder()
             .name(name)
-        .parameterTypes(ImmutableList.copyOf(param))
-        .returnType(TypeDescriptors.fromRaw(returnDesc)).build());
+            .parameterTypes(param)
+            .returnType(TypeDescriptors.fromRaw(returnDesc)).build()
+        );
   }
 
   public static CalledMethod newCall(
@@ -102,22 +95,20 @@ public class Simple {
         .build();
   }
 
-  public static ImmutableMap<ClassTypeDescriptor, DeclaredClass> classMap(
-      DeclaredClass... classes) {
-    ImmutableMap.Builder<ClassTypeDescriptor, DeclaredClass> builder = ImmutableMap.builder();
+  public static Map<ClassTypeDescriptor, DeclaredClass> classMap(DeclaredClass... classes) {
+    Map<ClassTypeDescriptor, DeclaredClass> map = new HashMap<>();
     for (DeclaredClass clazz : classes) {
-      builder.put(clazz.className(), clazz);
+      map.put(clazz.className(), clazz);
     }
-    return builder.build();
+    return map;
   }
 
-  public static ImmutableMap<MethodDescriptor, DeclaredMethod> methodMap(
-      DeclaredMethod... methods) {
-    ImmutableMap.Builder<MethodDescriptor, DeclaredMethod> builder = ImmutableMap.builder();
+  public static Map<MethodDescriptor, DeclaredMethod> methodMap(DeclaredMethod... methods) {
+    Map<MethodDescriptor, DeclaredMethod> map = new HashMap<>();
     for (DeclaredMethod method: methods) {
-      builder.put(method.descriptor(), method);
+      map.put(method.descriptor(), method);
     }
-    return builder.build();
+    return map;
   }
 
   public static DeclaredField newField(String desc, String name) {
@@ -137,14 +128,14 @@ public class Simple {
   }
 
   public static Artifact newArtifact(String name, DeclaredClass... classes) {
-    final ImmutableMap.Builder<ClassTypeDescriptor, DeclaredClass> builder = ImmutableMap.builder();
+    final Map<ClassTypeDescriptor, DeclaredClass> map = new HashMap<>();
     for (DeclaredClass clazz : classes) {
-      builder.put(clazz.className(), clazz);
+      map.put(clazz.className(), clazz);
     }
 
     return new ArtifactBuilder()
         .name(new ArtifactName(name))
-        .classes(builder.build())
+        .classes(map)
         .build();
   }
 

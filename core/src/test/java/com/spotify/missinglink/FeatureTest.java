@@ -30,9 +30,6 @@ import static com.spotify.missinglink.Simple.newMethod;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
@@ -46,8 +43,10 @@ import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import org.junit.Test;
 
 public class FeatureTest {
@@ -64,7 +63,7 @@ public class FeatureTest {
 
     final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1, false, true);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main")
-        .methodCalls(ImmutableSet.of(methodCall)).build();
+        .methodCalls(Collections.singleton(methodCall)).build();
 
     final DeclaredClass rootClass = newClass("com/Root")
         .methods(methodMap(mainMethod))
@@ -72,7 +71,7 @@ public class FeatureTest {
 
     final Artifact root = newArtifact("root", rootClass);
 
-    final ImmutableList<Artifact> classpath = ImmutableList.of(root, d2);
+    final List<Artifact> classpath = Arrays.asList(root, d2);
 
     final Conflict expectedConflict = new ConflictBuilder()
         .dependency(dependency(rootClass.className(), mainMethod, methodCall))
@@ -84,7 +83,7 @@ public class FeatureTest {
 
     assertThat(conflictChecker
         .check(root, classpath, classpath))
-        .isEqualTo(ImmutableList.of(expectedConflict));
+        .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
   @org.junit.Test
@@ -100,7 +99,7 @@ public class FeatureTest {
 
     final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1, false, true);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(ImmutableSet.of(methodCall))
+        .methodCalls(Collections.singleton(methodCall))
         .build();
 
     final DeclaredClass rootClass = newClass("com/Root")
@@ -109,7 +108,7 @@ public class FeatureTest {
 
     final Artifact root = newArtifact("root", rootClass);
 
-    final ImmutableList<Artifact> classpath = ImmutableList.of(root, d2);
+    final List<Artifact> classpath = Arrays.asList(root, d2);
 
     final Conflict expectedConflict = new ConflictBuilder()
         .dependency(dependency(rootClass.className(), mainMethod, methodCall))
@@ -121,7 +120,7 @@ public class FeatureTest {
 
     assertThat(conflictChecker
         .check(root, classpath, classpath))
-        .isEqualTo(ImmutableList.of(expectedConflict));
+        .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
   @org.junit.Test
@@ -131,8 +130,7 @@ public class FeatureTest {
     final Artifact d2 = newArtifact("D2", d2Class);
 
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(ImmutableSet.of())
-        .fieldAccesses(ImmutableSet.of(
+        .fieldAccesses(Collections.singleton(
             newAccess("I", "foo", "com/d/Foo", 12)
         ))
         .build();
@@ -143,7 +141,7 @@ public class FeatureTest {
 
     final Artifact root = newArtifact("root", rootClass);
 
-    final ImmutableList<Artifact> classpath = ImmutableList.of(root, d2);
+    final List<Artifact> classpath = Arrays.asList(root, d2);
 
     final AccessedField accessed = newAccess(INT, "foo", "com/d/Foo", 12);
 
@@ -157,7 +155,7 @@ public class FeatureTest {
 
     assertThat(conflictChecker
         .check(root, classpath, classpath))
-        .isEqualTo(ImmutableList.of(expectedConflict));
+        .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
   @org.junit.Test
@@ -166,13 +164,12 @@ public class FeatureTest {
     final DeclaredClass superClass =
         newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
     final DeclaredClass subClass = newClass("com/Sub")
-        .parents(ImmutableSet.of(superClass.className()))
+        .parents(Collections.singleton(superClass.className()))
         .build();
 
     final CalledMethod methodCall = newCall(subClass, methodOnlyInSuper, false, true);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(ImmutableSet.of(methodCall))
-        .fieldAccesses(ImmutableSet.of())
+        .methodCalls(Collections.singleton(methodCall))
         .build();
 
     final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
@@ -180,8 +177,8 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
 
     assertThat(conflictChecker.check(artifact,
-        ImmutableList.of(artifact),
-        ImmutableList.of(artifact)
+        Collections.singletonList(artifact),
+        Collections.singletonList(artifact)
     )).isEmpty();
   }
 
@@ -192,12 +189,12 @@ public class FeatureTest {
 
     final DeclaredMethod subMethod = newMethod(false, "Ljava/lang/String;", "foo").build();
     final DeclaredClass subClass = newClass("com/Sub").methods(methodMap(subMethod))
-        .parents(ImmutableSet.of(superClass.className()))
+        .parents(Collections.singleton(superClass.className()))
         .build();
 
     final CalledMethod methodCall = newCall(subClass, superMethod, false, true);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(ImmutableSet.of(methodCall))
+        .methodCalls(Collections.singleton(methodCall))
         .build();
 
     final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
@@ -206,8 +203,8 @@ public class FeatureTest {
 
     assertThat(conflictChecker
         .check(artifact,
-            ImmutableList.of(artifact),
-            ImmutableList.of(artifact)
+            Collections.singletonList(artifact),
+            Collections.singletonList(artifact)
         )).isEmpty();
   }
 
@@ -219,8 +216,7 @@ public class FeatureTest {
 
     final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, true, false);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(ImmutableSet.of(methodCall))
-        .fieldAccesses(ImmutableSet.of())
+        .methodCalls(Collections.singleton(methodCall))
         .build();
 
     final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
@@ -228,8 +224,8 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
     assertThat(conflictChecker.check(artifact,
-        ImmutableList.of(artifact),
-        ImmutableList.of(artifact)
+        Collections.singletonList(artifact),
+        Collections.singletonList(artifact)
     )).isEmpty();
   }
 
@@ -241,8 +237,7 @@ public class FeatureTest {
 
     final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, true, false);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(ImmutableSet.of(methodCall))
-        .fieldAccesses(ImmutableSet.of())
+        .methodCalls(Collections.singleton(methodCall))
         .build();
 
     final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
@@ -257,10 +252,10 @@ public class FeatureTest {
         .existsIn(artifact.name())
         .build();
 
-    assertEquals(Arrays.asList(expectedConflict),
+    assertEquals(Collections.singletonList(expectedConflict),
         conflictChecker.check(artifact,
-            ImmutableList.of(artifact),
-            ImmutableList.of(artifact)
+            Collections.singletonList(artifact),
+            Collections.singletonList(artifact)
         ));
   }
 
@@ -272,12 +267,11 @@ public class FeatureTest {
 
     final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, false, true);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(ImmutableSet.of(methodCall))
-        .fieldAccesses(ImmutableSet.of())
+        .methodCalls(Collections.singleton(methodCall))
         .build();
 
     final DeclaredClass mainClass = newClass("com/Main")
-        .parents(ImmutableSet.of(superClass.className()))
+        .parents(Collections.singleton(superClass.className()))
         .methods(methodMap(mainMethod)).build();
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
@@ -290,10 +284,10 @@ public class FeatureTest {
         .existsIn(artifact.name())
         .build();
 
-    assertEquals(Arrays.asList(expectedConflict),
+    assertEquals(Collections.singletonList(expectedConflict),
         conflictChecker.check(artifact,
-            ImmutableList.of(artifact),
-            ImmutableList.of(artifact)
+            Collections.singletonList(artifact),
+            Collections.singletonList(artifact)
         ));
   }
 
@@ -306,20 +300,19 @@ public class FeatureTest {
     ClassTypeDescriptor mainClassName = TypeDescriptors.fromClassName("com/Main");
     final CalledMethod methodCall = newCall(mainClassName, methodOnlyInSuper, true);
     final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(ImmutableSet.of(methodCall))
-        .fieldAccesses(ImmutableSet.of())
+        .methodCalls(Collections.singleton(methodCall))
         .build();
 
     final DeclaredClass mainClass = newClass("com/Main")
-        .parents(ImmutableSet.of(superClass.className()))
+        .parents(Collections.singleton(superClass.className()))
         .methods(methodMap(mainMethod)).build();
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
     assertEquals(Collections.emptyList(),
         conflictChecker.check(artifact,
-            ImmutableList.of(artifact),
-            ImmutableList.of(artifact)
+            Collections.singletonList(artifact),
+            Collections.singletonList(artifact)
         ));
   }
 
@@ -349,13 +342,11 @@ public class FeatureTest {
 
     final Artifact artifact = newArtifact("art", superDuperClass, superClass, mainClass);
 
-    ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
-        .addAll(ClassLoadingUtil.bootstrapArtifacts())
-        .add(artifact)
-        .build();
+    List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
+    allArtifacts.add(artifact);
 
     assertThat(conflictChecker.check(artifact,
-        ImmutableList.of(artifact),
+        Collections.singletonList(artifact),
         allArtifacts)).isEmpty();
   }
 
@@ -374,10 +365,8 @@ public class FeatureTest {
 
     final Artifact artifact = newArtifact("art", mainClass);
 
-    ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
-        .addAll(ClassLoadingUtil.bootstrapArtifacts())
-        .add(artifact)
-        .build();
+    List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
+    allArtifacts.add(artifact);
 
     DeclaredMethod parentInit = parent.methods().values().stream()
         .filter(declaredMethod -> declaredMethod.descriptor().name().equals("<init>"))
@@ -404,7 +393,7 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker.check(artifact,
-        ImmutableList.of(artifact),
+        Collections.singletonList(artifact),
         allArtifacts))
 
         .containsExactly(expectedConflict);
@@ -434,13 +423,11 @@ public class FeatureTest {
 
     final Artifact artifact = newArtifact("art", catcher);
 
-    ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
-        .addAll(ClassLoadingUtil.bootstrapArtifacts())
-        .add(artifact)
-        .build();
+    List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
+    allArtifacts.add(artifact);
 
     assertThat(conflictChecker.check(artifact,
-        ImmutableList.of(artifact),
+        Collections.singletonList(artifact),
         allArtifacts))
         .isEmpty();
   }
@@ -467,19 +454,17 @@ public class FeatureTest {
 
     DeclaredClass missingMethod = DeclaredClassBuilder
         .from(load(findClass(MissingMethodClass.class)))
-        .methods(ImmutableMap.of()).build();
+        .build();
 
     DeclaredClass catcher = load(findClass(CatchesMissingMethod.class));
 
     final Artifact artifact = newArtifact("art", catcher, missingMethod);
 
-    ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
-        .addAll(ClassLoadingUtil.bootstrapArtifacts())
-        .add(artifact)
-        .build();
+    List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
+    allArtifacts.add(artifact);
 
     assertThat(conflictChecker.check(artifact,
-        ImmutableList.of(artifact),
+        Collections.singletonList(artifact),
         allArtifacts))
         .isEmpty();
   }

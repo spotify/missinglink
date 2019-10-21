@@ -15,12 +15,12 @@
  */
 package com.spotify.missinglink;
 
-import com.google.common.collect.ImmutableMap;
 import com.spotify.missinglink.datamodel.ArrayTypeDescriptor;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.PrimitiveTypeDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
+import java.util.HashMap;
 import org.junit.Test;
 
 import java.util.InputMismatchException;
@@ -55,23 +55,23 @@ public class TypeDescriptorTest {
 
   @Test
   public void testDescriptions() {
-    Map<String, String> desc = ImmutableMap.<String, String>builder()
-        .put("B", "byte")
-        .put("S", "short")
-        .put("I", "int")
-        .put("J", "long")
-        .put("F", "float")
-        .put("D", "double")
-        .put("Z", "boolean")
-        .put("C", "char")
-        .put("[D", "double[]")
-        .put("[[D", "double[][]")
-        .put("[[[D", "double[][][]")
-        .put("LFoo;", "Foo")
-        .put("[LFoo;", "Foo[]")
-        .put("[[LFoo;", "Foo[][]")
-        .put("Lfoo/bar/Baz;", "foo.bar.Baz")
-        .build();
+    Map<String, String> desc = new HashMap<>();
+    desc.put("B", "byte");
+    desc.put("S", "short");
+    desc.put("I", "int");
+    desc.put("J", "long");
+    desc.put("F", "float");
+    desc.put("D", "double");
+    desc.put("Z", "boolean");
+    desc.put("C", "char");
+    desc.put("[D", "double[]");
+    desc.put("[[D", "double[][]");
+    desc.put("[[[D", "double[][][]");
+    desc.put("LFoo;", "Foo");
+    desc.put("[LFoo;", "Foo[]");
+    desc.put("[[LFoo;", "Foo[][]");
+    desc.put("Lfoo/bar/Baz;", "foo.bar.Baz");
+
     for (Map.Entry<String, String> entry : desc.entrySet()) {
       assertEquals(entry.getValue(), TypeDescriptors.fromRaw(entry.getKey()).toString());
     }
@@ -80,20 +80,20 @@ public class TypeDescriptorTest {
 
   @Test
   public void testTypes() {
-    Map<String, Class> desc = ImmutableMap.<String, Class>builder()
-        .put("B", PrimitiveTypeDescriptor.class)
-        .put("S", PrimitiveTypeDescriptor.class)
-        .put("I", PrimitiveTypeDescriptor.class)
-        .put("J", PrimitiveTypeDescriptor.class)
-        .put("F", PrimitiveTypeDescriptor.class)
-        .put("D", PrimitiveTypeDescriptor.class)
-        .put("Z", PrimitiveTypeDescriptor.class)
-        .put("C", PrimitiveTypeDescriptor.class)
-        .put("[D", ArrayTypeDescriptor.class)
-        .put("LFoo;", ClassTypeDescriptor.class)
-        .put("[LFoo;", ArrayTypeDescriptor.class)
-        .put("Lfoo/bar/Baz;", ClassTypeDescriptor.class)
-        .build();
+    Map<String, Class> desc = new HashMap<>();
+    desc.put("B", PrimitiveTypeDescriptor.class);
+    desc.put("S", PrimitiveTypeDescriptor.class);
+    desc.put("I", PrimitiveTypeDescriptor.class);
+    desc.put("J", PrimitiveTypeDescriptor.class);
+    desc.put("F", PrimitiveTypeDescriptor.class);
+    desc.put("D", PrimitiveTypeDescriptor.class);
+    desc.put("Z", PrimitiveTypeDescriptor.class);
+    desc.put("C", PrimitiveTypeDescriptor.class);
+    desc.put("[D", ArrayTypeDescriptor.class);
+    desc.put("LFoo;", ClassTypeDescriptor.class);
+    desc.put("[LFoo;", ArrayTypeDescriptor.class);
+    desc.put("Lfoo/bar/Baz;", ClassTypeDescriptor.class);
+
     for (Map.Entry<String, Class> entry : desc.entrySet()) {
       assertEquals(entry.getValue(), TypeDescriptors.fromRaw(entry.getKey()).getClass());
     }

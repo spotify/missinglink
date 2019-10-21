@@ -15,9 +15,8 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import com.google.common.collect.ImmutableMap;
-
 import io.norberg.automatter.AutoMatter;
+import java.util.Map;
 
 @AutoMatter
 public interface Artifact {
@@ -26,7 +25,7 @@ public interface Artifact {
   ArtifactName name();
 
   /**
-   * Map of classname to class object. Names are com/foo/bar/Baz
+   * Map of classname to class object. Names are com/foo/bar/Baz. Returned map is immutable.
    */
-  ImmutableMap<ClassTypeDescriptor, DeclaredClass> classes();
+  Map<ClassTypeDescriptor, DeclaredClass> classes();
 }

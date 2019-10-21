@@ -15,16 +15,15 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import com.google.common.base.Preconditions;
-
 import java.util.InputMismatchException;
+import java.util.Objects;
 
 public class ClassTypeDescriptor implements TypeDescriptor {
 
   private final String className;
 
   ClassTypeDescriptor(String className) {
-    this.className = Preconditions.checkNotNull(className).replace('/', '.');
+    this.className = Objects.requireNonNull(className).replace('/', '.');
     if (className.endsWith(";")) {
       throw new InputMismatchException(
           "Got a signature where a class name was expected: " + className);

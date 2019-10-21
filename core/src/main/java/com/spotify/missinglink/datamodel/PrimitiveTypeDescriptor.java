@@ -15,7 +15,9 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import com.google.common.collect.ImmutableMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public enum PrimitiveTypeDescriptor implements TypeDescriptor {
 
@@ -39,14 +41,14 @@ public enum PrimitiveTypeDescriptor implements TypeDescriptor {
     return Character.toString(raw);
   }
 
-  private static final ImmutableMap<String, PrimitiveTypeDescriptor> mapping = createMapping();
+  private static final Map<String, PrimitiveTypeDescriptor> mapping = createMapping();
 
-  private static ImmutableMap<String, PrimitiveTypeDescriptor> createMapping() {
-    ImmutableMap.Builder<String, PrimitiveTypeDescriptor> bob = ImmutableMap.builder();
+  private static Map<String, PrimitiveTypeDescriptor> createMapping() {
+    final Map<String, PrimitiveTypeDescriptor> map = new HashMap<>();
     for (PrimitiveTypeDescriptor type : PrimitiveTypeDescriptor.values()) {
-      bob.put(Character.toString(type.raw), type);
+      map.put(Character.toString(type.raw), type);
     }
-    return bob.build();
+    return Collections.unmodifiableMap(map);
   }
 
   public static PrimitiveTypeDescriptor fromRaw(String typeDescriptor) {
