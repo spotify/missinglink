@@ -36,4 +36,10 @@ public class MethodDescriptorsTest {
         .build();
     assertEquals("Method descriptors should be identical", desc1, desc2);
   }
+
+  @Test
+  public void testPrettyParameters() {
+    MethodDescriptor desc = MethodDescriptors.fromDesc("([I[[Lfoo/Bar;Z)V", "baz");
+    assertEquals("(int[], foo.Bar[][], boolean)", desc.prettyParameters());
+  }
 }
