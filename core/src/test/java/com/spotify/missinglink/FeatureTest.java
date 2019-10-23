@@ -43,6 +43,8 @@ import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
+
+import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,7 +55,7 @@ public class FeatureTest {
 
   private final ConflictChecker conflictChecker = new ConflictChecker();
 
-  @org.junit.Test
+  @Test
   public void testSimpleConflict() throws Exception {
 
     final DeclaredMethod methodOnlyInD1 = newMethod(false, INT, "foo").build();
@@ -86,7 +88,7 @@ public class FeatureTest {
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
-  @org.junit.Test
+  @Test
   public void testSimpleConflict2() throws Exception {
 
     final DeclaredMethod methodOnlyInD1 = newMethod(false, INT, "foo").build();
@@ -123,7 +125,7 @@ public class FeatureTest {
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
-  @org.junit.Test
+  @Test
   public void testMissingField() throws Exception {
 
     final DeclaredClass d2Class = newClass("com/d/Foo").build();
@@ -158,7 +160,7 @@ public class FeatureTest {
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
-  @org.junit.Test
+  @Test
   public void testNoConflictWithInheritedMethodCall() throws Exception {
     final DeclaredMethod methodOnlyInSuper = newMethod(false, INT, "foo").build();
     final DeclaredClass superClass =
@@ -182,7 +184,7 @@ public class FeatureTest {
     )).isEmpty();
   }
 
-  @org.junit.Test
+  @Test
   public void testNoConflictWithCovariantReturnType() throws Exception {
     final DeclaredMethod superMethod = newMethod(false, "Ljava/lang/CharSequence;", "foo").build();
     final DeclaredClass superClass = newClass("com/Super").methods(methodMap(superMethod)).build();
@@ -208,7 +210,7 @@ public class FeatureTest {
         )).isEmpty();
   }
 
-  @org.junit.Test
+  @Test
   public void testNoConflictWithStaticCall() throws Exception {
     final DeclaredMethod methodOnlyInSuper = newMethod(true, INT, "foo").build();
     final DeclaredClass superClass =
@@ -229,7 +231,7 @@ public class FeatureTest {
     )).isEmpty();
   }
 
-  @org.junit.Test
+  @Test
   public void testConflictWithStaticToVirtualCall() throws Exception {
     final DeclaredMethod methodOnlyInSuper = newMethod(false, INT, "foo").build();
     final DeclaredClass superClass =
@@ -259,7 +261,7 @@ public class FeatureTest {
         ));
   }
 
-  @org.junit.Test
+  @Test
   public void testConflictWithVirtualToStaticCall() throws Exception {
     final DeclaredMethod methodOnlyInSuper = newMethod(true, INT, "foo").build();
     final DeclaredClass superClass =
@@ -291,7 +293,7 @@ public class FeatureTest {
         ));
   }
 
-  @org.junit.Test
+  @Test
   public void testNoConflictWithStaticCallInSuper() throws Exception {
     final DeclaredMethod methodOnlyInSuper = newMethod(true, INT, "foo").build();
     final DeclaredClass superClass =
@@ -316,7 +318,7 @@ public class FeatureTest {
         ));
   }
 
-  @org.junit.Test
+  @Test
   public void testNoConflictWithSpecialCallToSuper() throws Exception {
     class SuperDuperClass {
 
@@ -347,6 +349,42 @@ public class FeatureTest {
 
     assertThat(conflictChecker.check(artifact,
         Collections.singletonList(artifact),
+        allArtifacts)).isEmpty();
+  }
+
+  @Test
+  public void testNoConflictWithVarargCall() throws Exception {
+    class HasVararg {
+      public final native Object invoke(Object... args);
+    }
+    class MainClass {
+      void main(HasVararg hasVararg) {
+        hasVararg.invoke();
+      }
+    }
+
+    DeclaredClass hasVararg = load(findClass(HasVararg.class));
+    DeclaredClass mainClass = load(findClass(MainClass.class));
+
+    final Artifact art = newArtifact("root", mainClass, hasVararg);
+
+    List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
+    allArtifacts.add(art);
+
+    assertThat(conflictChecker.check(art,
+        Collections.singletonList(art),
+        allArtifacts)).isEmpty();
+  }
+
+  @Test
+  public void testNoConflictWithMethodHandlerInvoke() throws Exception {
+    final Artifact art = newArtifact("root", load(findClass(ClassWithMethodHandleInvoke.class)));
+
+    List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
+    allArtifacts.add(art);
+
+    assertThat(conflictChecker.check(art,
+        Collections.singletonList(art),
         allArtifacts)).isEmpty();
   }
 
@@ -490,5 +528,11 @@ public class FeatureTest {
         .fieldName(field.name())
         .fieldType(field.descriptor())
         .build();
+  }
+
+  static class ClassWithMethodHandleInvoke {
+    static void func(MethodHandle handle) throws Throwable {
+      handle.invoke();
+    }
   }
 }

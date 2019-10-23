@@ -32,6 +32,7 @@ import com.spotify.missinglink.datamodel.TypeDescriptors;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,6 +57,13 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
  * Loads a single class from an input stream.
  */
 public final class ClassLoader {
+
+  // This is a set of classes that is using @HotSpotIntrinsicCandidate
+  // and thus define native methods that don't actually exist in the class file
+  // This could be removed if we stop loading the full JDK
+  private static final Set<String> BLACKLIST = new HashSet<>(Arrays.asList(
+      "java/lang/invoke/MethodHandle"
+  ));
 
   private ClassLoader() {
     // prevent instantiation
@@ -209,7 +217,7 @@ public final class ClassLoader {
       default:
         throw new RuntimeException("Unexpected method call opcode: " + insn.getOpcode());
     }
-    if (insn.owner.charAt(0) != '[') {
+    if (isArray(insn.owner) && !BLACKLIST.contains(insn.owner)) {
       thisCalls.add(new CalledMethodBuilder()
           .owner(TypeDescriptors.fromClassName(insn.owner))
           .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
@@ -224,7 +232,7 @@ public final class ClassLoader {
   private static void handleFieldAccess(Set<AccessedField> thisFields, int lineNumber,
                                         FieldInsnNode insn,
                                         final List<TryCatchBlockNode> tryCatchBlocksProtecting) {
-    if (insn.owner.charAt(0) != '[') {
+    if (isArray(insn.owner)) {
       thisFields.add(
           new AccessedFieldBuilder()
               .name(insn.name)
@@ -236,6 +244,10 @@ public final class ClassLoader {
                   .collect(Collectors.toList()))
               .build());
     }
+  }
+
+  private static boolean isArray(String owner) {
+    return owner.charAt(0) != '[';
   }
 
   private static void handleLdc(Set<ClassTypeDescriptor> loadedClasses, LdcInsnNode insn) {

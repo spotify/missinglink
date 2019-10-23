@@ -34,15 +34,21 @@ public class ClassLoadingUtil {
       new AtomicReference<>();
 
   public static FileInputStream findClass(Class<?> aClass) throws Exception {
+    final String name = aClass.getName().replace('.', '/') + ".class";
     final File outputDir = FilePathHelper.getPath("target/test-classes");
-    File someClass = Files.walk(outputDir.toPath())
-        .map(Path::toFile)
-        .filter(file -> file.isFile() && file.getName().endsWith(aClass.getSimpleName() + ".class"))
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("no file matching " + aClass + " found in " +
-                                                     outputDir + " ?"));
-
-    return new FileInputStream(someClass);
+    List<File> files = Files.walk(outputDir.toPath())
+            .map(Path::toFile)
+            .filter(file -> file.isFile() && file.getAbsolutePath().endsWith(name))
+            .collect(Collectors.toList());
+    if (files.isEmpty()) {
+      throw new IllegalStateException("no file matching " + aClass + " found in "
+              + outputDir + " ?");
+    }
+    if (files.size() >= 2) {
+      throw new IllegalStateException("too many files matching " + aClass + " found in "
+              + outputDir + ": " + files);
+    }
+    return new FileInputStream(files.get(0));
   }
 
   public static List<Artifact> bootstrapArtifacts() {
