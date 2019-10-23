@@ -48,9 +48,9 @@ public class Resolver {
 
   private final ArtifactCache artifactCache = ArtifactCache.getDefault();
 
-  public static Resolver createFromPomfile(String filename) {
-    System.out.println("Resolving artifacts from pomfile: " + filename);
-    List<MavenResolvedArtifact> artifacts = Maven.resolver().loadPomFromFile(filename)
+  public static Resolver createFromPomfile(File file) {
+    System.out.println("Resolving artifacts from pomfile: " + file);
+    List<MavenResolvedArtifact> artifacts = Maven.resolver().loadPomFromFile(file)
             .importDependencies(ScopeType.COMPILE, ScopeType.PROVIDED)
             .resolve().withTransitivity().asList(MavenResolvedArtifact.class);
 

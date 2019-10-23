@@ -104,7 +104,9 @@ public class ConflictCheckerTest {
   public void shouldSupportInvocationsOnArrayTypes() throws Exception {
     ConflictChecker checker = new ConflictChecker();
 
-    final List<Conflict> conflicts = checker.check(projectArtifact,
+    final List<Conflict> conflicts = checker.check(
+        EmptyConflictFilter.INSTANCE,
+        projectArtifact,
         Arrays.asList(projectArtifact, rt),
         Arrays.asList(projectArtifact, rt)
     );
@@ -117,6 +119,11 @@ public class ConflictCheckerTest {
 
     ConflictChecker checker = new ConflictChecker();
 
-    assertThat(checker.check(projectArtifact, artifacts, artifacts)).isEmpty();
+    final List<Conflict> conflicts = checker.check(
+            EmptyConflictFilter.INSTANCE,
+            projectArtifact,
+            artifacts,
+            artifacts);
+    assertThat(conflicts).isEmpty();
   }
 }
