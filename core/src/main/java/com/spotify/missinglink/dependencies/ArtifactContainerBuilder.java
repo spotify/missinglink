@@ -142,7 +142,8 @@ class ArtifactContainerBuilder {
             unusedDependencies,
             definedClasses,
             mappings,
-            undeclared);
+            undeclared,
+            file);
   }
 
   private boolean isUsed(ArtifactContainer container, Set<String> allUsed) {

@@ -32,6 +32,10 @@ public interface Conflict {
 
   String reason();
 
+  default String describe() {
+    return category().name() + "\n  " + reason() + "\n  " + dependency().describe() + "\n  used by " + usedBy()  + " (exists in " + existsIn() + ")";
+  }
+
   enum ConflictCategory {
     CLASS_NOT_FOUND,
     METHOD_SIGNATURE_NOT_FOUND,

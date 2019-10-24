@@ -18,6 +18,7 @@ package com.spotify.missinglink.dependencies;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,13 +38,16 @@ class JsonReader {
 
     Set<Coordinate> dependencies = readDependencies(object.getJSONArray("dependencies"));
 
+    File file = new File(object.getString("filename"));
+
     return new IncompleteArtifact(
             coordinate,
             dependencies,
             definedClasses,
             mappings,
             unused,
-            undeclared);
+            undeclared,
+            file);
   }
 
   private static Set<Coordinate> readDependencies(JSONArray dependencies) {

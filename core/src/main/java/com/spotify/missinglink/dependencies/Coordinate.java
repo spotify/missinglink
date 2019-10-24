@@ -21,6 +21,7 @@ import org.jboss.shrinkwrap.resolver.api.maven.PackagingType;
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
 import org.json.JSONObject;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 public class Coordinate {
@@ -71,6 +72,16 @@ public class Coordinate {
             dependency.getGroupId(),
             dependency.getArtifactId(),
             dependency.getVersion());
+  }
+
+  public static Comparator<? super Coordinate> comparator() {
+    return (Comparator<Coordinate>) (o1, o2) -> {
+      if (!o1.getArtifactName().equals(o2.getArtifactName())) {
+        throw new IllegalArgumentException("Can't compare artifacts: " + o1 + " and " + o2);
+      }
+
+      return VersionComparator.INSTANCE.compare(o1.getVersion(), o2.getVersion());
+    };
   }
 
   public String getGroupId() {

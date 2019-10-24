@@ -52,10 +52,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,9 +123,7 @@ public class CheckMojoTest {
   }
 
   private void setMockConflictResults(ImmutableList<Conflict> results) {
-    when(conflictChecker.check(any(ConflictFilter.class), any(Artifact.class),
-            anyListOf(Artifact.class),
-            anyListOf(Artifact.class))
+    when(conflictChecker.check(any(ConflictFilter.class), Collections.singletonList(any(Artifact.class)), anyListOf(Artifact.class), anyListOf(Artifact.class))
     ).thenReturn(results);
   }
 
@@ -232,9 +232,7 @@ public class CheckMojoTest {
    */
   @Test
   public void testBadValuesForIncludeCategories() throws Exception {
-    when(conflictChecker.check(any(ConflictFilter.class), any(Artifact.class),
-            anyListOf(Artifact.class),
-            anyListOf(Artifact.class))
+    when(conflictChecker.check(any(ConflictFilter.class), Collections.singletonList(any(Artifact.class)), anyListOf(Artifact.class), anyListOf(Artifact.class))
     ).thenThrow(new RuntimeException("Mojo should not get as far as checking conflicts if the "
                                      + "configuration is bad!"));
 
@@ -270,11 +268,8 @@ public class CheckMojoTest {
 
     ArgumentCaptor<ImmutableList> toCheck = ArgumentCaptor.forClass(ImmutableList.class);
 
-    verify(conflictChecker).check(
-            any(ConflictFilter.class), any(Artifact.class),
-        toCheck.capture(),
-        anyListOf(Artifact.class)
-    );
+    verify(conflictChecker);
+    check(Matchers.<ConflictFilter>any(ConflictFilter.class), Collections.singletonList(Matchers.<Artifact>any(Artifact.class)), toCheck.capture(), anyListOf(Artifact.class));
 
     assertThat(toCheck.getValue()).isEmpty();
   }

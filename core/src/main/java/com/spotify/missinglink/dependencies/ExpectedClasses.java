@@ -13,37 +13,28 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.spotify.missinglink.maven;
+package com.spotify.missinglink.dependencies;
 
 import com.spotify.missinglink.ConflictFilter;
-import com.spotify.missinglink.dependencies.Resolver;
-import org.apache.maven.artifact.Artifact;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class ExpectedClasses implements ConflictFilter {
   private final HashMap<String, Set<String>> expectedClasses;
 
-  ExpectedClasses(Resolver resolver, List<Artifact> projectDeps) {
-    Set<String> runtimeArtifacts = projectDeps.stream()
-            .map(artifact -> artifact.getGroupId() + ":" + artifact.getArtifactId())
-            .collect(Collectors.toSet());
-
+  ExpectedClasses(Collection<ArtifactContainer> usedArtifacts) {
     expectedClasses = new HashMap<>();
-    resolver.getArtifacts().forEach((coordinate, artifactContainer) -> {
-      String artifactName = coordinate.getArtifactName();
-      if (runtimeArtifacts.contains(artifactName)) {
-        artifactContainer.getDefinedClasses().forEach(className -> {
-          expectedClasses
-                  .computeIfAbsent(artifactName, x -> new HashSet<>())
-                  .add(artifactName);
-        });
-      }
+    usedArtifacts.forEach(artifactContainer -> {
+      String artifactName = artifactContainer.getArtifactName();
+      artifactContainer.getDefinedClasses().forEach(className -> {
+        expectedClasses
+                .computeIfAbsent(artifactName, x -> new HashSet<>())
+                .add(artifactName);
+      });
     });
   }
 

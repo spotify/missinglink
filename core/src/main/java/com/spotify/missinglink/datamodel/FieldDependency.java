@@ -34,6 +34,7 @@ public interface FieldDependency extends Dependency {
 
   @Override
   default String describe() {
-    return "Access to: " + targetClass().toString() + "." + fieldName();
+    return "Access to: " + targetClass().toString() + "." + fieldName() +
+            " from " + fromClass().getClassName() + "." + fromMethod().prettyWithoutReturnType() + ":" + fromLineNumber();
   }
 }

@@ -25,7 +25,7 @@ public class EmptyConflictFilter implements ConflictFilter {
   }
 
   @Override
-  public boolean filterMissingClass(String className) {
+  public boolean expectedToExist(String className) {
     return true;
   }
 

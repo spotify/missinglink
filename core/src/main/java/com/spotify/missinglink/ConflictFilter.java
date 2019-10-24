@@ -24,7 +24,7 @@ public interface ConflictFilter {
    * @param className class to test
    * @return true if a missing class should trigger a conflict, otherwise false
    */
-  boolean filterMissingClass(String className);
+  boolean expectedToExist(String className);
 
   /**
    *

@@ -35,6 +35,17 @@ import com.spotify.missinglink.datamodel.ArtifactName;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
 import com.spotify.missinglink.datamodel.Dependency;
+import com.spotify.missinglink.dependencies.Resolver;
+import org.apache.maven.model.Exclusion;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -46,23 +57,13 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import com.spotify.missinglink.dependencies.Resolver;
-import org.apache.maven.model.Exclusion;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
 
 @Mojo(name = "check", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
     defaultPhase = LifecyclePhase.PROCESS_CLASSES)
@@ -379,8 +380,7 @@ public class CheckMojo extends AbstractMojo {
       conflictFilter = EmptyConflictFilter.INSTANCE;
     }
 
-    final Collection<Conflict> conflicts = conflictChecker.check(conflictFilter,
-        projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts);
+    final Collection<Conflict> conflicts = conflictChecker.check(conflictFilter, Collections.singletonList(projectArtifact), runtimeArtifactsAfterExclusions, allArtifacts);
 
     stopwatch.stop();
     getLog().debug("conflict checking took: " + asMillis(stopwatch) + " ms");
@@ -494,12 +494,14 @@ public class CheckMojo extends AbstractMojo {
   }
 
   private Artifact toArtifact(String outputDirectory) {
+    final Spliterator<File> files = Files.fileTraverser()
+            .breadthFirst(new File(outputDirectory)).spliterator();
     return new ArtifactBuilder()
         .name(new ArtifactName("project"))
-        .classes(Files.fileTreeTraverser().breadthFirstTraversal(new File(outputDirectory))
-            .filter(f -> f.getName().endsWith(".class"))
-            .transform(this::loadClass)
-            .uniqueIndex(DeclaredClass::className))
+        .classes(StreamSupport.stream(files, false)
+             .filter(f -> f.getName().endsWith(".class"))
+             .map(this::loadClass)
+             .collect(Collectors.toMap(DeclaredClass::className, Function.identity())))
         .build();
   }
 

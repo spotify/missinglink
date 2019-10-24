@@ -15,12 +15,17 @@
  */
 package com.spotify.missinglink.dependencies;
 
+import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
 import org.jboss.shrinkwrap.resolver.api.maven.ScopeType;
 import org.jboss.shrinkwrap.resolver.api.maven.embedded.BuiltProject;
 import org.jboss.shrinkwrap.resolver.api.maven.embedded.EmbeddedMaven;
+import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenChecksumPolicy;
+import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenRemoteRepositories;
+import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenRemoteRepository;
+import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenUpdatePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Resolver {
   private static final Logger logger = LoggerFactory.getLogger(Resolver.class);
@@ -50,12 +56,13 @@ public class Resolver {
 
   public static Resolver createFromPomfile(File file) {
     System.out.println("Resolving artifacts from pomfile: " + file);
-    List<MavenResolvedArtifact> artifacts = Maven.resolver().loadPomFromFile(file)
+    List<MavenResolvedArtifact> artifacts = Maven.configureResolver().fromFile("/home/krka/.m2/settings-spotify.xml")
+            .loadPomFromFile(file)
             .importDependencies(ScopeType.COMPILE, ScopeType.PROVIDED)
-            .resolve().withTransitivity().asList(MavenResolvedArtifact.class);
+            .resolve().withoutTransitivity().asList(MavenResolvedArtifact.class);
 
     Resolver resolver = new Resolver();
-    for (MavenResolvedArtifact artifact : artifacts) {
+    for (MavenArtifactInfo artifact : artifacts) {
       resolver.roots.add(resolver.resolve(Coordinate.fromMaven(artifact.getCoordinate())));
     }
     return resolver;
@@ -65,6 +72,8 @@ public class Resolver {
     BuiltProject builtProject = EmbeddedMaven.forProject(filename)
             .setGoals("clean", "package")
             .build();
+
+    List<Archive> archives = builtProject.getArchives();
 
     Resolver resolver = new Resolver();
     addModules(resolver, builtProject);
@@ -240,5 +249,17 @@ public class Resolver {
       System.out.println("Undeclared dependencies:");
       undeclared.forEach(ArtifactContainer::printUndeclaredDependencies);
     }
+  }
+
+  public Set<ArtifactContainer> getLatestArtifacts() {
+    Map<String, List<Coordinate>> map = new HashMap<>();
+    artifacts.keySet().forEach(coordinate ->
+            map.computeIfAbsent(coordinate.getArtifactName(), s -> new ArrayList<>()).add(coordinate));
+    return map.values().stream()
+            .map(coordinates -> coordinates.stream().max(Coordinate.comparator()).get())
+            .flatMap(Stream::of)
+            .map(this::resolve)
+            .collect(Collectors.toSet());
+
   }
 }

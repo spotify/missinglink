@@ -30,6 +30,7 @@ class JsonWriter {
     object.put("classes", getClasses(container));
     object.put("unused", getUnused(container));
     object.put("undeclared", getUndeclared(container));
+    object.put("filename", container.getFile().getAbsolutePath());
     return object;
   }
 

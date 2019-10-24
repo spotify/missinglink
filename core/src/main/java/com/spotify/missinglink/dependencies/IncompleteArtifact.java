@@ -15,6 +15,7 @@
  */
 package com.spotify.missinglink.dependencies;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,7 @@ class IncompleteArtifact {
   private final Map<String, Set<String>> mappings;
   private final Set<String> unused;
   private final Set<String> undeclared;
+  private final File file;
 
   IncompleteArtifact(
           Coordinate coordinate,
@@ -34,7 +36,8 @@ class IncompleteArtifact {
           Set<String> definedClasses,
           Map<String, Set<String>> mappings,
           Set<String> unused,
-          Set<String> undeclared) {
+          Set<String> undeclared,
+          File file) {
 
     this.coordinate = coordinate;
     this.dependencies = dependencies;
@@ -42,6 +45,7 @@ class IncompleteArtifact {
     this.mappings = mappings;
     this.unused = unused;
     this.undeclared = undeclared;
+    this.file = file;
   }
 
   Set<Coordinate> getDependencies() {
@@ -58,7 +62,7 @@ class IncompleteArtifact {
     Set<ArtifactContainer> unusedDependencies = filter(dependencies, unused);
     Set<ArtifactContainer> undeclaredDependencies = filter(dependencies, undeclared);
     return new ArtifactContainer(coordinate, dependencies, flattenedDependencies,
-            unusedDependencies, definedClasses, mappings, undeclaredDependencies);
+            unusedDependencies, definedClasses, mappings, undeclaredDependencies, file);
   }
 
   private static Set<ArtifactContainer> filter(

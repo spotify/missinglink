@@ -33,6 +33,7 @@ public interface MethodDependency extends Dependency {
 
   @Override
   default String describe() {
-    return "Call to: " + targetClass().toString() + "." + targetMethod().prettyWithoutReturnType();
+    return "Call to: " + targetClass().toString() + "." + targetMethod().prettyWithoutReturnType() +
+            " from " + fromClass().getClassName() + "." + fromMethod().prettyWithoutReturnType() + ":" + fromLineNumber();
   }
 }

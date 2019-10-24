@@ -96,27 +96,31 @@ public class ConflictChecker {
   public static final ArtifactName UNKNOWN_ARTIFACT_NAME = new ArtifactName("<unknown>");
 
   /**
-   *
-   * @param conflictFilter
-   * @param projectArtifact  the main artifact of the project we're verifying
-   *                         (this is considered the entry point for reachability)
-   * @param artifactsToCheck all artifacts that are on the runtime classpath
-   * @param allArtifacts     all artifacts, including implicit artifacts (runtime provided
-   *                         artifacts)
-   * @return a list of conflicts
-   */
-  public List<Conflict> check(ConflictFilter conflictFilter, Artifact projectArtifact,
-                              List<Artifact> artifactsToCheck,
-                              List<Artifact> allArtifacts) {
+     *
+     * @param conflictFilter
+     * @param seedArtifacts    the main artifacts of the project we're verifying
+     *                         (these are the entry points for reachability)
+     * @param artifactsToCheck all artifacts that are on the runtime classpath
+     * @param allArtifacts     all artifacts, including implicit artifacts (runtime provided
+     *                         artifacts)
+     * @return a list of conflicts
+     */
+  public List<Conflict> check(ConflictFilter conflictFilter,
+                              Collection<Artifact> seedArtifacts,
+                              Collection<Artifact> artifactsToCheck,
+                              Collection<Artifact> allArtifacts) {
 
     final CheckerStateBuilder stateBuilder = new CheckerStateBuilder();
 
     createCanonicalClassMapping(stateBuilder, allArtifacts);
     CheckerState state = stateBuilder.build();
 
+    List<DeclaredClass> seeds = seedArtifacts.stream()
+            .flatMap(artifact -> artifact.classes().values().stream())
+            .collect(toList());
     // brute-force reachability analysis
     Set<TypeDescriptor> reachableClasses =
-        reachableFrom(projectArtifact.classes().values(), state.knownClasses());
+        reachableFrom(seeds, state.knownClasses());
 
     final List<Conflict> conflicts = new ArrayList<>();
 
@@ -146,7 +150,7 @@ public class ConflictChecker {
    * @param allArtifacts maven artifacts to populate checker state with
    */
   private void createCanonicalClassMapping(CheckerStateBuilder stateBuilder,
-                                           List<Artifact> allArtifacts) {
+                                           Collection<Artifact> allArtifacts) {
     for (Artifact artifact : allArtifacts) {
       for (DeclaredClass clazz : artifact.classes().values()) {
         if (stateBuilder.knownClasses().putIfAbsent(clazz.className(), clazz) == null) {
@@ -172,7 +176,7 @@ public class ConflictChecker {
             .caughtExceptions()
             .stream()
             .anyMatch(c -> c.getClassName().equals("java.lang.NoClassDefFoundError"));
-        if (!catchesNoClassDef && conflictFilter.filterMissingClass(owningClass.getClassName())) {
+        if (!catchesNoClassDef && conflictFilter.expectedToExist(owningClass.getClassName())) {
           conflicts.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
               "Class not found: " + owningClass,
               dependency(clazz, method, calledMethod),
@@ -216,7 +220,7 @@ public class ConflictChecker {
           .build();
 
       if (calledClass == null) {
-        if (conflictFilter.filterMissingClass(owningClass.getClassName())) {
+        if (conflictFilter.expectedToExist(owningClass.getClassName())) {
           conflicts.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
                   "Class not found: " + owningClass,
                   dependency(clazz, method, field),
@@ -224,7 +228,7 @@ public class ConflictChecker {
                   state.sourceMappings().get(owningClass)
           ));
         }
-      } else if (missingField(declaredField, calledClass, state.knownClasses())) {
+      } else if (missingField(declaredField, calledClass, state.knownClasses(), conflictFilter)) {
         conflicts.add(conflict(ConflictCategory.FIELD_NOT_FOUND,
             "Field not found: " + field.name(),
             dependency(clazz, method, field),
@@ -356,7 +360,8 @@ public class ConflictChecker {
   }
 
   private boolean missingField(DeclaredField field, DeclaredClass calledClass,
-                               Map<ClassTypeDescriptor, DeclaredClass> classMap) {
+                               Map<ClassTypeDescriptor, DeclaredClass> classMap,
+                               ConflictFilter conflictFilter) {
 
     if (calledClass.fields().contains(field)) {
       // TODO: also validate return type
@@ -368,10 +373,12 @@ public class ConflictChecker {
       final DeclaredClass declaredClass = classMap.get(parentClass);
       // TODO 6/2/15 mbrown -- treat properly, by flagging as a different type of Conflict
       if (declaredClass == null) {
-        System.out.printf("Warning: Cannot find parent %s of class %s%n",
-            parentClass,
-            calledClass.className());
-      } else if (!missingField(field, declaredClass, classMap)) {
+        if (conflictFilter.expectedToExist(parentClass.getClassName())) {
+          System.out.printf("Warning: Cannot find parent %s of class %s%n",
+                  parentClass,
+                  calledClass.className());
+        }
+      } else if (!missingField(field, declaredClass, classMap, conflictFilter)) {
         return false;
       }
     }

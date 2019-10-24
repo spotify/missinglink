@@ -104,12 +104,7 @@ public class ConflictCheckerTest {
   public void shouldSupportInvocationsOnArrayTypes() throws Exception {
     ConflictChecker checker = new ConflictChecker();
 
-    final List<Conflict> conflicts = checker.check(
-        EmptyConflictFilter.INSTANCE,
-        projectArtifact,
-        Arrays.asList(projectArtifact, rt),
-        Arrays.asList(projectArtifact, rt)
-    );
+    final List<Conflict> conflicts = checker.check(EmptyConflictFilter.INSTANCE, Collections.singletonList(projectArtifact), Arrays.asList(projectArtifact, rt), Arrays.asList(projectArtifact, rt));
     assertThat(conflicts).isEmpty();
   }
 
@@ -119,11 +114,7 @@ public class ConflictCheckerTest {
 
     ConflictChecker checker = new ConflictChecker();
 
-    final List<Conflict> conflicts = checker.check(
-            EmptyConflictFilter.INSTANCE,
-            projectArtifact,
-            artifacts,
-            artifacts);
+    final List<Conflict> conflicts = checker.check(EmptyConflictFilter.INSTANCE, Collections.singletonList(projectArtifact), artifacts, artifacts);
     assertThat(conflicts).isEmpty();
   }
 }

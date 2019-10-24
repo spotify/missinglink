@@ -15,6 +15,7 @@
  */
 package com.spotify.missinglink.dependencies;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,8 @@ public class ArtifactContainer {
   // Set of dependencies that are used, but not explicitly declared
   private final Set<ArtifactContainer> undeclared;
 
+  private final File file;
+
 
   public ArtifactContainer(
           Coordinate coordinate,
@@ -50,7 +53,7 @@ public class ArtifactContainer {
           Set<ArtifactContainer> unusedDependencies,
           Set<String> definedClasses,
           Map<String, Set<String>> mappings,
-          Set<ArtifactContainer> undeclared) {
+          Set<ArtifactContainer> undeclared, File file) {
     this.coordinate = coordinate;
     this.dependencies = dependencies;
     this.flattenedDependencies = flattenedDependencies;
@@ -58,6 +61,7 @@ public class ArtifactContainer {
     this.definedClasses = definedClasses;
     this.mappings = mappings;
     this.undeclared = undeclared;
+    this.file = file;
   }
 
   public boolean definesClass(String className) {
@@ -166,5 +170,9 @@ public class ArtifactContainer {
 
   public Set<ArtifactContainer> getUndeclared() {
     return undeclared;
+  }
+
+  public File getFile() {
+    return file;
   }
 }
