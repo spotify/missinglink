@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.spotify</groupId>
     <artifactId>missinglink-parent</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>missinglink-core</artifactId>
