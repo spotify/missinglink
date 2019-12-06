@@ -16,7 +16,7 @@ Add the following plugin to pom.xml:
 <plugin>
   <groupId>com.spotify</groupId>
   <artifactId>missinglink-maven-plugin</artifactId>
-  <version>0.1.1</version>
+  <version>0.2.1</version>
   <executions>
     <execution>
       <goals><goal>check</goal></goals>
@@ -82,7 +82,7 @@ This problem finder can be executed against your Maven project from the
 command-line like:
 
 ```
-$ mvn com.spotify:missinglink-maven-plugin:0.1.1:check
+$ mvn com.spotify:missinglink-maven-plugin:0.2.1:check
 ```
 
 The plugin will scan the source code of the current project, the runtime

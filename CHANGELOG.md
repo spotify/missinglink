@@ -1,3 +1,9 @@
+### 0.2.1
+- Fix bug with false positives for calls to MethodHandle.invoke()
+
+### 0.2.0
+- Remove dependencies on Guava
+
 ### 0.1.3
 - Plugin now checks if exceptions that would get thrown are explicitly caught to avoid false positives
 
