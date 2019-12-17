@@ -168,7 +168,7 @@ like:
     <groupId>ch.qos.logback</groupId>
     <artifactId>logback-classic</artifactId>
   </excludeDependency>
-</excludeDependency>
+</excludeDependencies>
 ```
 
 ### Ignore conflicts in certain packages
