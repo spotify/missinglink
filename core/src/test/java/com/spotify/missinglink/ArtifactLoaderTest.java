@@ -182,6 +182,14 @@ public class ArtifactLoaderTest {
     assertThat(artifact.classes()).hasSize(25);
   }
 
+  @Test
+  public void testLoadBouncyCastleJar() throws Exception {
+    final Artifact artifact = loader.load(FilePathHelper.getPath("src/test/resources/bcprov-jdk15on-1.68.jar"));
+
+    // bcprov-jdk15on-1.68.jar is known to have 3607 classes in it when run on JVM 11
+    assertThat(artifact.classes()).hasSizeGreaterThan(1);
+  }
+
   private Artifact loadAsmJar() throws IOException {
     return loader.load(FilePathHelper.getPath("src/test/resources/asm-5.0.4.jar"));
   }
