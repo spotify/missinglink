@@ -187,8 +187,22 @@ public class ArtifactLoaderTest {
     final Artifact artifact =
             loader.load(FilePathHelper.getPath("src/test/resources/bcprov-jdk15on-1.68.jar"));
 
-    // bcprov-jdk15on-1.68.jar is known to have 3607 classes in it when run on JVM 11
-    assertThat(artifact.classes()).hasSizeGreaterThan(1);
+    int currentJavaVersion;
+    String[] javaVersionElements = System.getProperty("java.version").split("\\.");
+    if (javaVersionElements[0].equals("1")) {
+      currentJavaVersion = Integer.parseInt(javaVersionElements[1]);
+    } else {
+      currentJavaVersion = Integer.parseInt(javaVersionElements[0]);
+    }
+    if(currentJavaVersion == 8) {
+      assertThat(artifact.classes()).hasSize(3604);
+    }
+    else if(currentJavaVersion == 11) {
+      assertThat(artifact.classes()).hasSize(3607);
+    }
+    else {
+      assertThat(artifact.classes()).hasSizeGreaterThan(0);
+    }
   }
 
   private Artifact loadAsmJar() throws IOException {
