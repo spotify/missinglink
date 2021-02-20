@@ -50,7 +50,8 @@ public final class MethodDescriptors {
         .build();
   }
 
-  private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache = new ConcurrentHashMap<>();
+  private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache =
+          new ConcurrentHashMap<>();
 
   private static class MethodKey {
     private final String name;
