@@ -194,13 +194,11 @@ public class ArtifactLoaderTest {
     } else {
       currentJavaVersion = Integer.parseInt(javaVersionElements[0]);
     }
-    if(currentJavaVersion == 8) {
+    if (currentJavaVersion == 8) {
       assertThat(artifact.classes()).hasSize(3604);
-    }
-    else if(currentJavaVersion == 11) {
+    } else if (currentJavaVersion == 11) {
       assertThat(artifact.classes()).hasSize(3607);
-    }
-    else {
+    } else {
       assertThat(artifact.classes()).hasSizeGreaterThan(0);
     }
   }
