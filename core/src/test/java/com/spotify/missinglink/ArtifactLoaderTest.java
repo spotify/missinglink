@@ -187,16 +187,10 @@ public class ArtifactLoaderTest {
     final Artifact artifact =
             loader.load(FilePathHelper.getPath("src/test/resources/bcprov-jdk15on-1.68.jar"));
 
-    int currentJavaVersion;
-    String[] javaVersionElements = System.getProperty("java.version").split("\\.");
-    if (javaVersionElements[0].equals("1")) {
-      currentJavaVersion = Integer.parseInt(javaVersionElements[1]);
-    } else {
-      currentJavaVersion = Integer.parseInt(javaVersionElements[0]);
-    }
-    if (currentJavaVersion == 8) {
+    String currentJavaVersion = System.getProperty("java.version");
+    if (currentJavaVersion.startsWith("1.8.")) {
       assertThat(artifact.classes()).hasSize(3604);
-    } else if (currentJavaVersion == 11) {
+    } else if (currentJavaVersion.startsWith("11.")) {
       assertThat(artifact.classes()).hasSize(3607);
     } else {
       assertThat(artifact.classes()).hasSizeGreaterThan(0);
