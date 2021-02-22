@@ -182,6 +182,21 @@ public class ArtifactLoaderTest {
     assertThat(artifact.classes()).hasSize(25);
   }
 
+  @Test
+  public void testLoadBouncyCastleJar() throws Exception {
+    final Artifact artifact =
+            loader.load(FilePathHelper.getPath("src/test/resources/bcprov-jdk15on-1.68.jar"));
+
+    String currentJavaVersion = System.getProperty("java.version");
+    if (currentJavaVersion.startsWith("1.8.")) {
+      assertThat(artifact.classes()).hasSize(3604);
+    } else if (currentJavaVersion.startsWith("11.")) {
+      assertThat(artifact.classes()).hasSize(3607);
+    } else {
+      assertThat(artifact.classes()).hasSizeGreaterThan(0);
+    }
+  }
+
   private Artifact loadAsmJar() throws IOException {
     return loader.load(FilePathHelper.getPath("src/test/resources/asm-5.0.4.jar"));
   }
