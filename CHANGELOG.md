@@ -1,3 +1,7 @@
+### 0.2.2
+- Handle Multi-Release JARs
+- Use thread-safe caches to enable using Missinglink on multiple projects concurrently
+
 ### 0.2.1
 - Fix bug with false positives for calls to MethodHandle.invoke()
 
