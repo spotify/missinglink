@@ -18,10 +18,11 @@ package com.spotify.missinglink.datamodel;
 import static java.util.stream.Collectors.toList;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.objectweb.asm.Type;
 
 public final class MethodDescriptors {
@@ -49,7 +50,8 @@ public final class MethodDescriptors {
         .build();
   }
 
-  private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache = new HashMap<>();
+  private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache =
+          new ConcurrentHashMap<>();
 
   private static class MethodKey {
     private final String name;

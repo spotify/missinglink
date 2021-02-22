@@ -15,9 +15,9 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TypeDescriptors {
 
@@ -29,7 +29,8 @@ public class TypeDescriptors {
   // Since the CTD constructor involves string replacement, and there are several places where we
   // want to turn a String into a ClassTypeDescriptor, we can optimize how many strings are
   // created/replaced with this map.
-  private static Map<String, ClassTypeDescriptor> classTypeDescriptorCache = new HashMap<>();
+  private static Map<String, ClassTypeDescriptor> classTypeDescriptorCache =
+          new ConcurrentHashMap<>();
 
   public static ClassTypeDescriptor fromClassName(String className) {
     return classTypeDescriptorCache.computeIfAbsent(className, ClassTypeDescriptor::new);
