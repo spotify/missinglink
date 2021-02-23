@@ -169,7 +169,8 @@
       <plugin>
         <groupId>com.coveo</groupId>
         <artifactId>fmt-maven-plugin</artifactId>
-        <version>2.10</version>
+        <!-- 2.9.1 is the last version that can run on Java 8 -->
+        <version>2.9.1</version>
         <executions>
           <execution>
             <goals>
