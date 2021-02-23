@@ -26,7 +26,11 @@ weren't.
 With Java 8+ and Maven 3+, simply run `mvn install` in the project directory.
 
 For any patches, please make sure that they pass all tests (and that new tests
-are added), and that no Checkstyle rules are violated.
+are added).
+
+Code will be automatically formatted by <https://github.com/coveooss/fmt-maven-plugin>
+when you run `mvn compile`. The CI build will fail if any code is not formatted
+according to the plugin's rules.
 
 New code should be accompanied by tests that increase the overall code coverage
 of the project.
