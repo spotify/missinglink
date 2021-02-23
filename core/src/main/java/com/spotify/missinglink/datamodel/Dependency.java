@@ -42,7 +42,9 @@ package com.spotify.missinglink.datamodel;
 public interface Dependency {
 
   ClassTypeDescriptor fromClass();
+
   MethodDescriptor fromMethod();
+
   int fromLineNumber();
 
   ClassTypeDescriptor targetClass();

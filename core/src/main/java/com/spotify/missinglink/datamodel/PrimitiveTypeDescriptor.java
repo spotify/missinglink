@@ -40,9 +40,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum PrimitiveTypeDescriptor implements TypeDescriptor {
-
-  BYTE('B', "byte"), SHORT('S', "short"), INT('I', "int"), LONG('J', "long"),
-  FLOAT('F', "float"), DOUBLE('D', "double"), BOOLEAN('Z', "boolean"), CHAR('C', "char");
+  BYTE('B', "byte"),
+  SHORT('S', "short"),
+  INT('I', "int"),
+  LONG('J', "long"),
+  FLOAT('F', "float"),
+  DOUBLE('D', "double"),
+  BOOLEAN('Z', "boolean"),
+  CHAR('C', "char");
 
   private final char raw;
   private final String pretty;
@@ -78,5 +83,4 @@ public enum PrimitiveTypeDescriptor implements TypeDescriptor {
     }
     return descriptor;
   }
-
 }

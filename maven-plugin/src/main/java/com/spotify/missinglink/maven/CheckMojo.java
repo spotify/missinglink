@@ -80,7 +80,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 
-@Mojo(name = "check", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
+@Mojo(
+    name = "check",
+    requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
     defaultPhase = LifecyclePhase.PROCESS_CLASSES)
 public class CheckMojo extends AbstractMojo {
 
@@ -118,57 +120,53 @@ public class CheckMojo extends AbstractMojo {
   protected List<Scope> includeScopes = new ArrayList<>();
 
   /**
-   * Dependencies of the project to exclude from analysis. Defaults to an empty list. The
-   * dependency should be specified as an {@link Exclusion} containing a groupId and artifactId.
-   * Classes in these artifacts will not be checked for conflicts.
+   * Dependencies of the project to exclude from analysis. Defaults to an empty list. The dependency
+   * should be specified as an {@link Exclusion} containing a groupId and artifactId. Classes in
+   * these artifacts will not be checked for conflicts.
    */
-  @Parameter
-  protected List<Exclusion> excludeDependencies = new ArrayList<>();
+  @Parameter protected List<Exclusion> excludeDependencies = new ArrayList<>();
 
   /**
    * Optional list of packages to ignore conflicts in where the source of the conflict is in one of
    * the specified packages.
-   * <p>
-   * This parameter does not exclude those packages from analysis, but the plugin will not
-   * output the conflicts that are found in those packages when the caller side of the conflict is
-   * in this package, and they will not count against the {@link #failOnConflicts} setting.</p>
-   * <p>
-   * For example, if the package "javax.foo" is in ignoreSourcePackages, then any conflict
-   * found originating in a javax.foo class is ignored. This is mostly the same behavior as {@link
+   *
+   * <p>This parameter does not exclude those packages from analysis, but the plugin will not output
+   * the conflicts that are found in those packages when the caller side of the conflict is in this
+   * package, and they will not count against the {@link #failOnConflicts} setting.
+   *
+   * <p>For example, if the package "javax.foo" is in ignoreSourcePackages, then any conflict found
+   * originating in a javax.foo class is ignored. This is mostly the same behavior as {@link
    * #excludeDependencies} but operates at a package name level instead of a groupId/artifactId
-   * level. </p>
+   * level.
    */
-  @Parameter
-  protected List<IgnoredPackage> ignoreSourcePackages = new ArrayList<>();
+  @Parameter protected List<IgnoredPackage> ignoreSourcePackages = new ArrayList<>();
 
   /**
    * Optional list of packages to ignore conflicts in where the destination/called-side of the
    * conflict is in one of the specified packages.
-   * <p>
-   * This parameter does not exclude those packages from analysis, but the plugin will not output
+   *
+   * <p>This parameter does not exclude those packages from analysis, but the plugin will not output
    * the conflicts that are found in those packages when the called side of the conflict is in this
-   * package, and they will not count against the {@link #failOnConflicts} setting.</p>
-   * <p>
-   * For example, if the package "javax.bar" is in ignoreDestinationPackages, then any conflict
-   * found having to do with calling a method in a class in javax.bar is ignored.</p>
+   * package, and they will not count against the {@link #failOnConflicts} setting.
+   *
+   * <p>For example, if the package "javax.bar" is in ignoreDestinationPackages, then any conflict
+   * found having to do with calling a method in a class in javax.bar is ignored.
    */
-  @Parameter
-  protected List<IgnoredPackage> ignoreDestinationPackages = new ArrayList<>();
+  @Parameter protected List<IgnoredPackage> ignoreDestinationPackages = new ArrayList<>();
 
   /**
-   * Optional: can be set to explicitly define the path to use for the bootclasspath
-   * containing the java.* / standard library classes. Note that this value is expected to look like
-   * a classpath - various file paths separated by the path separator.
-   * <p>
-   * When not set, the bootclasspath is determined by examining the "sun.boot.class.path" system
-   * on java 8 and below. On java 9 and above will use the modules.
-   * property.</p>
+   * Optional: can be set to explicitly define the path to use for the bootclasspath containing the
+   * java.* / standard library classes. Note that this value is expected to look like a classpath -
+   * various file paths separated by the path separator.
+   *
+   * <p>When not set, the bootclasspath is determined by examining the "sun.boot.class.path" system
+   * on java 8 and below. On java 9 and above will use the modules. property.
    */
   @Parameter(property = "misslink.bootClasspath")
   protected String bootClasspath;
 
-
-  // TODO 6/1/15 mbrown -- how to hook into the Plexus container for proper DI lookups and the conventional maven plugin way of how to set up things like this
+  // TODO 6/1/15 mbrown -- how to hook into the Plexus container for proper DI lookups and the
+  // conventional maven plugin way of how to set up things like this
   protected ArtifactLoader artifactLoader = new ArtifactLoader();
   protected ConflictChecker conflictChecker = new ConflictChecker();
 
@@ -181,20 +179,21 @@ public class CheckMojo extends AbstractMojo {
 
     // when verbose flag is set, log detailed messages to info log. otherwise log to debug. This is
     // so that verbose output from this plugin can be seen easily without having to specify mvn -X.
-    final Consumer<String> log = verbose ? msg -> getLog().info(msg)
-                                         : msg -> getLog().debug(msg);
+    final Consumer<String> log = verbose ? msg -> getLog().info(msg) : msg -> getLog().debug(msg);
     logDependencies(log);
 
     final Set<ConflictCategory> categoriesToInclude;
     try {
-      categoriesToInclude = includeCategories.stream()
-          .map(ConflictCategory::valueOf)
-          .collect(Collectors.toSet());
+      categoriesToInclude =
+          includeCategories.stream().map(ConflictCategory::valueOf).collect(Collectors.toSet());
     } catch (IllegalArgumentException e) {
       getLog().error(e);
       throw new MojoExecutionException(
-          "Invalid value(s) for 'includeCategories': " + includeCategories + ". "
-          + "Valid choices are: " + Joiner.on(", ").join(ConflictCategory.values()));
+          "Invalid value(s) for 'includeCategories': "
+              + includeCategories
+              + ". "
+              + "Valid choices are: "
+              + Joiner.on(", ").join(ConflictCategory.values()));
     }
 
     Collection<Conflict> conflicts = loadArtifactsAndCheckConflicts();
@@ -214,9 +213,11 @@ public class CheckMojo extends AbstractMojo {
       outputConflicts(conflicts);
 
       if (failOnConflicts) {
-        final String message = conflicts.size() + " class/method conflicts found between source "
-                               + "code in this project and the runtime dependencies from the Maven"
-                               + " project. Look above for specific descriptions of each conflict";
+        final String message =
+            conflicts.size()
+                + " class/method conflicts found between source "
+                + "code in this project and the runtime dependencies from the Maven"
+                + " project. Look above for specific descriptions of each conflict";
         throw new MojoFailureException(message);
       }
     }
@@ -225,53 +226,70 @@ public class CheckMojo extends AbstractMojo {
   private void logDependencies(Consumer<String> log) {
     // project.getDependencies() only lists the declared dependencies, use .getArtifacts for
     // the transitive dependencies as well
-    final ArrayList<org.apache.maven.artifact.Artifact>
-        mavenDependencies = Lists.newArrayList(project.getArtifacts());
+    final ArrayList<org.apache.maven.artifact.Artifact> mavenDependencies =
+        Lists.newArrayList(project.getArtifacts());
     Collections.sort(mavenDependencies, Ordering.usingToString());
     log.accept("Project has " + mavenDependencies.size() + " dependencies");
-    mavenDependencies.stream()
-        .map(art -> "Dependency: " + art.toString())
-        .forEach(log);
+    mavenDependencies.stream().map(art -> "Dependency: " + art.toString()).forEach(log);
   }
 
-  private Collection<Conflict> filterConflicts(Collection<Conflict> conflicts,
-                                               Set<ConflictCategory> categoriesToInclude) {
+  private Collection<Conflict> filterConflicts(
+      Collection<Conflict> conflicts, Set<ConflictCategory> categoriesToInclude) {
 
     if (!categoriesToInclude.isEmpty()) {
-      getLog().debug("Only including conflicts from categories: "
-                     + Joiner.on(", ").join(categoriesToInclude));
+      getLog()
+          .debug(
+              "Only including conflicts from categories: "
+                  + Joiner.on(", ").join(categoriesToInclude));
 
-      conflicts = filterConflictsBy(conflicts, categoriesToInclude::contains,
-          num -> num + " conflicts removed based on includeCategories="
-                 + Joiner.on(", ").join(includeCategories) + ". "
-                 + "Run plugin again without the 'includeCategories' parameter to see "
-                 + "all conflicts that were found.");
+      conflicts =
+          filterConflictsBy(
+              conflicts,
+              categoriesToInclude::contains,
+              num ->
+                  num
+                      + " conflicts removed based on includeCategories="
+                      + Joiner.on(", ").join(includeCategories)
+                      + ". "
+                      + "Run plugin again without the 'includeCategories' parameter to see "
+                      + "all conflicts that were found.");
     }
 
     if (!ignoreSourcePackages.isEmpty()) {
       getLog().debug("Ignoring source packages: " + Joiner.on(", ").join(ignoreSourcePackages));
 
-      final Predicate<Conflict> predicate = conflict -> !packageIsIgnored(ignoreSourcePackages,
-          conflict.dependency().fromClass());
+      final Predicate<Conflict> predicate =
+          conflict -> !packageIsIgnored(ignoreSourcePackages, conflict.dependency().fromClass());
 
-      conflicts = filterConflictsBy(conflicts, predicate,
-          num -> num + " conflicts found in ignored source packages. "
-                 + "Run plugin again without the 'ignoreSourcePackages' parameter to see "
-                 + "all conflicts that were found.");
+      conflicts =
+          filterConflictsBy(
+              conflicts,
+              predicate,
+              num ->
+                  num
+                      + " conflicts found in ignored source packages. "
+                      + "Run plugin again without the 'ignoreSourcePackages' parameter to see "
+                      + "all conflicts that were found.");
     }
 
     if (!ignoreDestinationPackages.isEmpty()) {
-      getLog().debug(
-          "Ignoring destination packages: " + Joiner.on(", ").join(ignoreDestinationPackages));
+      getLog()
+          .debug(
+              "Ignoring destination packages: " + Joiner.on(", ").join(ignoreDestinationPackages));
 
-      final Predicate<Conflict> predicate = conflict -> !packageIsIgnored(ignoreDestinationPackages,
-          conflict.dependency().targetClass());
+      final Predicate<Conflict> predicate =
+          conflict ->
+              !packageIsIgnored(ignoreDestinationPackages, conflict.dependency().targetClass());
 
-      conflicts = filterConflictsBy(conflicts, predicate,
-          num -> num + " conflicts found in ignored destination packages. "
-                 + "Run plugin again without the 'ignoreDestinationPackages' parameter to see "
-                 + "all conflicts that were found."
-      );
+      conflicts =
+          filterConflictsBy(
+              conflicts,
+              predicate,
+              num ->
+                  num
+                      + " conflicts found in ignored destination packages. "
+                      + "Run plugin again without the 'ignoreDestinationPackages' parameter to see "
+                      + "all conflicts that were found.");
     }
 
     return conflicts;
@@ -280,20 +298,20 @@ public class CheckMojo extends AbstractMojo {
   /**
    * Repeated logic for filtering the collection of Conflicts based on a predicate.
    *
-   * @param conflicts  conflicts to filter
-   * @param predicate  predicate to filter by
+   * @param conflicts conflicts to filter
+   * @param predicate predicate to filter by
    * @param logMessage a function that when give the difference in size between the original
-   *                   collection and filtered collection, produces a message that will be logged
-   *                   as a warning to the user.
+   *     collection and filtered collection, produces a message that will be logged as a warning to
+   *     the user.
    * @return filtered conflicts
    */
-  private Collection<Conflict> filterConflictsBy(Collection<Conflict> conflicts,
-                                                 Predicate<Conflict> predicate,
-                                                 Function<Integer, String> logMessage) {
+  private Collection<Conflict> filterConflictsBy(
+      Collection<Conflict> conflicts,
+      Predicate<Conflict> predicate,
+      Function<Integer, String> logMessage) {
 
-    final Set<Conflict> filteredConflicts = conflicts.stream()
-        .filter(predicate)
-        .collect(Collectors.toSet());
+    final Set<Conflict> filteredConflicts =
+        conflicts.stream().filter(predicate).collect(Collectors.toSet());
 
     if (filteredConflicts.size() != conflicts.size()) {
       final int diff = conflicts.size() - filteredConflicts.size();
@@ -305,24 +323,24 @@ public class CheckMojo extends AbstractMojo {
 
   /**
    * Tests if the Conflict represented by this ClassTypeDescriptor (whether on the source-side or
-   * destination-side) is ignored based on the collection of IgnoredPackages. Reusable logic
-   * between
+   * destination-side) is ignored based on the collection of IgnoredPackages. Reusable logic between
    * ignoring source/destination packages.
    */
-  private boolean packageIsIgnored(Collection<IgnoredPackage> ignoredPackages,
-                                   ClassTypeDescriptor classTypeDescriptor) {
+  private boolean packageIsIgnored(
+      Collection<IgnoredPackage> ignoredPackages, ClassTypeDescriptor classTypeDescriptor) {
 
     final String className = classTypeDescriptor.getClassName().replace('/', '.');
     // this might be missing some corner-cases on naming rules:
     final String conflictPackageName = className.substring(0, className.lastIndexOf('.'));
 
     return ignoredPackages.stream()
-        .anyMatch(p -> {
-          final String ignoredPackageName = p.getPackage();
-          return conflictPackageName.equals(ignoredPackageName) ||
-                 (p.isIgnoreSubpackages() && conflictPackageName
-                     .startsWith(ignoredPackageName + "."));
-        });
+        .anyMatch(
+            p -> {
+              final String ignoredPackageName = p.getPackage();
+              return conflictPackageName.equals(ignoredPackageName)
+                  || (p.isIgnoreSubpackages()
+                      && conflictPackageName.startsWith(ignoredPackageName + "."));
+            });
   }
 
   private Collection<Conflict> loadArtifactsAndCheckConflicts() {
@@ -333,10 +351,10 @@ public class CheckMojo extends AbstractMojo {
             .filter(artifact -> includeScopes.contains(Scope.valueOf(artifact.getScope())))
             .collect(Collectors.toList());
 
-    getLog().debug("project dependencies: " + projectDeps.stream()
-        .map(this::mavenCoordinates)
-        .collect(Collectors.toList())
-    );
+    getLog()
+        .debug(
+            "project dependencies: "
+                + projectDeps.stream().map(this::mavenCoordinates).collect(Collectors.toList()));
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     // artifacts in runtime scope from the maven project (including transitives)
@@ -354,22 +372,25 @@ public class CheckMojo extends AbstractMojo {
     stopwatch.stop();
     getLog().debug("constructing bootstrap artifacts took: " + asMillis(stopwatch) + " ms");
 
-    final ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
-        .addAll(runtimeProjectArtifacts)
-        .addAll(bootstrapArtifacts)
-        .build();
+    final ImmutableList<Artifact> allArtifacts =
+        ImmutableList.<Artifact>builder()
+            .addAll(runtimeProjectArtifacts)
+            .addAll(bootstrapArtifacts)
+            .build();
 
-    final ImmutableList<Artifact> runtimeArtifactsAfterExclusions = ImmutableList.copyOf(
-        runtimeProjectArtifacts.stream()
-            .filter(artifact -> !isExcluded(artifact))
-            .collect(Collectors.toSet())
-    );
+    final ImmutableList<Artifact> runtimeArtifactsAfterExclusions =
+        ImmutableList.copyOf(
+            runtimeProjectArtifacts.stream()
+                .filter(artifact -> !isExcluded(artifact))
+                .collect(Collectors.toSet()));
 
     final Artifact projectArtifact = toArtifact(project.getBuild().getOutputDirectory());
 
     if (projectArtifact.classes().isEmpty()) {
-      getLog().warn("No classes found in project build directory"
-                    + " - did you run 'mvn compile' first?");
+      getLog()
+          .warn(
+              "No classes found in project build directory"
+                  + " - did you run 'mvn compile' first?");
     }
 
     stopwatch.reset().start();
@@ -380,8 +401,8 @@ public class CheckMojo extends AbstractMojo {
       getLog().debug("    " + artifact.name().name());
     }
 
-    final Collection<Conflict> conflicts = conflictChecker.check(
-        projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts);
+    final Collection<Conflict> conflicts =
+        conflictChecker.check(projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts);
 
     stopwatch.stop();
     getLog().debug("conflict checking took: " + asMillis(stopwatch) + " ms");
@@ -390,16 +411,14 @@ public class CheckMojo extends AbstractMojo {
     return conflicts;
   }
 
-
   private List<Artifact> loadBootstrapArtifacts(final String bootstrapClasspath) {
     if (bootstrapClasspath == null) {
       return Java9ModuleLoader.getJava9ModuleArtifacts((s, ex) -> getLog().warn(s, ex));
     } else {
-      return constructArtifacts(Arrays.<String>asList(
-          bootstrapClasspath.split(System.getProperty("path.separator"))));
+      return constructArtifacts(
+          Arrays.<String>asList(bootstrapClasspath.split(System.getProperty("path.separator"))));
     }
   }
-
 
   private String bootClassPathToUse() {
     if (this.bootClasspath != null) {
@@ -415,16 +434,21 @@ public class CheckMojo extends AbstractMojo {
     // To be able to load the Java platform classes (i.e. java.util.*), we have to look at the
     // bootstrap class path - not sure about the standard way to find this.
     // (http://docs.oracle.com/javase/7/docs/technotes/tools/findingclasses.html)
-    // TODO 6/4/15 mbrown -- warn users that bootclasspath might be a different version (JAVA_HOME probably) than what they use for javac
+    // TODO 6/4/15 mbrown -- warn users that bootclasspath might be a different version (JAVA_HOME
+    // probably) than what they use for javac
     final String bootClasspath = System.getProperty("sun.boot.class.path");
     getLog().debug("derived bootclasspath: " + bootClasspath);
     return bootClasspath;
   }
 
   private String mavenCoordinates(org.apache.maven.artifact.Artifact dep) {
-    return
-        dep.getGroupId() + ":" + dep.getArtifactId() + ":" + dep.getVersion() + ":" + dep
-            .getScope();
+    return dep.getGroupId()
+        + ":"
+        + dep.getArtifactId()
+        + ":"
+        + dep.getVersion()
+        + ":"
+        + dep.getScope();
   }
 
   private boolean isExcluded(Artifact artifact) {
@@ -432,8 +456,10 @@ public class CheckMojo extends AbstractMojo {
       MavenArtifactName name = (MavenArtifactName) artifact.name();
       // excluded if the exclusions lists contains a match
       return excludeDependencies.stream()
-          .anyMatch(excl -> excl.getGroupId().equals(name.groupId())
-                            && excl.getArtifactId().equals(name.artifactId()));
+          .anyMatch(
+              excl ->
+                  excl.getGroupId().equals(name.groupId())
+                      && excl.getArtifactId().equals(name.artifactId()));
     }
     return false;
   }
@@ -448,46 +474,55 @@ public class CheckMojo extends AbstractMojo {
     descriptions.put(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND, "Method being called not found");
 
     // group conflict by category
-    final Map<ConflictCategory, List<Conflict>> byCategory = conflicts.stream()
-        .collect(Collectors.groupingBy(Conflict::category));
+    final Map<ConflictCategory, List<Conflict>> byCategory =
+        conflicts.stream().collect(Collectors.groupingBy(Conflict::category));
 
-    byCategory.forEach((category, conflictsInCategory) -> {
-      final String desc = descriptions.getOrDefault(category, category.name().replace('_', ' '));
-      getLog().warn("");
-      getLog().warn("Category: " + desc);
+    byCategory.forEach(
+        (category, conflictsInCategory) -> {
+          final String desc =
+              descriptions.getOrDefault(category, category.name().replace('_', ' '));
+          getLog().warn("");
+          getLog().warn("Category: " + desc);
 
-      // next group by artifact containing the conflict
-      final Map<ArtifactName, List<Conflict>> byArtifact = conflictsInCategory.stream()
-          .collect(Collectors.groupingBy(Conflict::usedBy));
+          // next group by artifact containing the conflict
+          final Map<ArtifactName, List<Conflict>> byArtifact =
+              conflictsInCategory.stream().collect(Collectors.groupingBy(Conflict::usedBy));
 
-      byArtifact.forEach((artifactName, conflictsInArtifact) -> {
-        getLog().warn("  In artifact: " + artifactName.name());
+          byArtifact.forEach(
+              (artifactName, conflictsInArtifact) -> {
+                getLog().warn("  In artifact: " + artifactName.name());
 
-        // next group by class containing the conflict
-        final Map<ClassTypeDescriptor, List<Conflict>> byClassName =
-            conflictsInArtifact.stream()
-                .collect(Collectors.groupingBy(c -> c.dependency().fromClass()));
+                // next group by class containing the conflict
+                final Map<ClassTypeDescriptor, List<Conflict>> byClassName =
+                    conflictsInArtifact.stream()
+                        .collect(Collectors.groupingBy(c -> c.dependency().fromClass()));
 
-        byClassName.forEach((classDesc, conflictsInClass) -> {
-          getLog().warn("    In class: " + classDesc.toString());
+                byClassName.forEach(
+                    (classDesc, conflictsInClass) -> {
+                      getLog().warn("    In class: " + classDesc.toString());
 
-          conflictsInClass.stream()
-              .forEach(c -> {
-                final Dependency dep = c.dependency();
-                getLog().warn("      In method:  " + dep.fromMethod().prettyWithoutReturnType()
-                              + optionalLineNumber(dep.fromLineNumber()));
-                getLog().warn("      " + dep.describe());
-                getLog().warn("      Problem: " + c.reason());
-                if (c.existsIn() != ConflictChecker.UNKNOWN_ARTIFACT_NAME) {
-                  getLog().warn("      Found in: " + c.existsIn().name());
-                }
-                // this could be smarter about separating each blob of warnings by method, but for
-                // now just output a bunch of dashes always
-                getLog().warn("      --------");
+                      conflictsInClass.stream()
+                          .forEach(
+                              c -> {
+                                final Dependency dep = c.dependency();
+                                getLog()
+                                    .warn(
+                                        "      In method:  "
+                                            + dep.fromMethod().prettyWithoutReturnType()
+                                            + optionalLineNumber(dep.fromLineNumber()));
+                                getLog().warn("      " + dep.describe());
+                                getLog().warn("      Problem: " + c.reason());
+                                if (c.existsIn() != ConflictChecker.UNKNOWN_ARTIFACT_NAME) {
+                                  getLog().warn("      Found in: " + c.existsIn().name());
+                                }
+                                // this could be smarter about separating each blob of warnings by
+                                // method, but for
+                                // now just output a bunch of dashes always
+                                getLog().warn("      --------");
+                              });
+                    });
               });
         });
-      });
-    });
   }
 
   private String optionalLineNumber(int lineNumber) {
@@ -497,10 +532,12 @@ public class CheckMojo extends AbstractMojo {
   private Artifact toArtifact(String outputDirectory) {
     return new ArtifactBuilder()
         .name(new ArtifactName("project"))
-        .classes(Files.fileTreeTraverser().breadthFirstTraversal(new File(outputDirectory))
-            .filter(f -> f.getName().endsWith(".class"))
-            .transform(this::loadClass)
-            .uniqueIndex(DeclaredClass::className))
+        .classes(
+            Files.fileTreeTraverser()
+                .breadthFirstTraversal(new File(outputDirectory))
+                .filter(f -> f.getName().endsWith(".class"))
+                .transform(this::loadClass)
+                .uniqueIndex(DeclaredClass::className))
         .build();
   }
 
@@ -513,14 +550,15 @@ public class CheckMojo extends AbstractMojo {
   }
 
   private ImmutableList<Artifact> constructArtifacts(Iterable<String> entries) {
-    final List<Artifact> list = StreamSupport.stream(entries.spliterator(), false)
-        // don't inspect paths that don't exist.
-        // some bootclasspath entries, like sunrsasign.jar, are reported even if they
-        // don't exist on disk - ¯\_(ツ)_/¯
-        .distinct()
-        .filter(this::filterValidClasspathEntries)
-        .map(this::filepathToArtifact)
-        .collect(Collectors.toList());
+    final List<Artifact> list =
+        StreamSupport.stream(entries.spliterator(), false)
+            // don't inspect paths that don't exist.
+            // some bootclasspath entries, like sunrsasign.jar, are reported even if they
+            // don't exist on disk - ¯\_(ツ)_/¯
+            .distinct()
+            .filter(this::filterValidClasspathEntries)
+            .map(this::filepathToArtifact)
+            .collect(Collectors.toList());
     return ImmutableList.copyOf(list);
   }
 
@@ -539,16 +577,16 @@ public class CheckMojo extends AbstractMojo {
 
   private boolean filterValidClasspathEntries(org.apache.maven.artifact.Artifact artifact) {
     return filterValid(artifact.getFile());
-
   }
 
   private ImmutableList<Artifact> constructArtifacts(
       List<org.apache.maven.artifact.Artifact> mavenDeps) {
 
-    final List<Artifact> list = mavenDeps.stream()
-        .filter(this::filterValidClasspathEntries)
-        .map(this::mavenDepToArtifact)
-        .collect(Collectors.toList());
+    final List<Artifact> list =
+        mavenDeps.stream()
+            .filter(this::filterValidClasspathEntries)
+            .map(this::mavenDepToArtifact)
+            .collect(Collectors.toList());
     return ImmutableList.copyOf(list);
   }
 
@@ -561,11 +599,8 @@ public class CheckMojo extends AbstractMojo {
     final File path = dep.getFile();
     getLog().debug("loading artifact for path: " + path);
 
-    final MavenArtifactName name = new MavenArtifactName(
-        dep.getGroupId(),
-        dep.getArtifactId(),
-        dep.getVersion()
-    );
+    final MavenArtifactName name =
+        new MavenArtifactName(dep.getGroupId(), dep.getArtifactId(), dep.getVersion());
 
     return doArtifactLoad(() -> artifactLoader.load(name, path));
   }

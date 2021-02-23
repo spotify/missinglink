@@ -45,11 +45,15 @@ import io.norberg.automatter.AutoMatter;
 public interface FieldDependency extends Dependency {
 
   ClassTypeDescriptor fromClass();
+
   MethodDescriptor fromMethod();
+
   int fromLineNumber();
 
   ClassTypeDescriptor targetClass();
+
   TypeDescriptor fieldType();
+
   String fieldName();
 
   @Override

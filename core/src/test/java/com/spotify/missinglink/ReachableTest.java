@@ -35,7 +35,6 @@
  */
 package com.spotify.missinglink;
 
-
 import static com.spotify.missinglink.Simple.INT;
 import static com.spotify.missinglink.Simple.VOID;
 import static com.spotify.missinglink.Simple.classMap;
@@ -74,76 +73,73 @@ public class ReachableTest {
   @Test
   public void testReachableViaCall() {
     DeclaredMethod remoteMethod = newMethod(false, VOID, "called").build();
-    DeclaredClass remote = newClass("other/Unknown")
-        .methods(methodMap(remoteMethod))
-        .build();
-    DeclaredClass root = newClass("my/Root")
-        .methods(methodMap(
-            newMethod(false, VOID, "foo")
-                .methodCalls(
-                    Collections.singleton(newCall(remote, remoteMethod, false, true))).build()))
-        .build();
+    DeclaredClass remote = newClass("other/Unknown").methods(methodMap(remoteMethod)).build();
+    DeclaredClass root =
+        newClass("my/Root")
+            .methods(
+                methodMap(
+                    newMethod(false, VOID, "foo")
+                        .methodCalls(
+                            Collections.singleton(newCall(remote, remoteMethod, false, true)))
+                        .build()))
+            .build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
     Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
-        root.className(), remote.className()
-    ));
+    Set<ClassTypeDescriptor> expected =
+        new HashSet<>(Arrays.asList(root.className(), remote.className()));
     assertEquals(expected, reachable);
   }
 
   @Test
   public void testReachableViaInheritance() {
-    DeclaredClass remote = newClass("other/Unknown")
-        .build();
-    DeclaredClass root = newClass("my/Root")
-        .parents(Collections.singleton(TypeDescriptors.fromClassName("other/Unknown")))
-        .build();
+    DeclaredClass remote = newClass("other/Unknown").build();
+    DeclaredClass root =
+        newClass("my/Root")
+            .parents(Collections.singleton(TypeDescriptors.fromClassName("other/Unknown")))
+            .build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
     Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
-        root.className(), remote.className()
-    ));
+    Set<ClassTypeDescriptor> expected =
+        new HashSet<>(Arrays.asList(root.className(), remote.className()));
     assertEquals(expected, reachable);
   }
 
   @Test
   public void testReachableViaLdcLoad() {
-    DeclaredClass remote = newClass("other/Unknown")
-        .build();
-    DeclaredClass root = newClass("my/Root")
-        .loadedClasses(Collections.singleton(TypeDescriptors.fromClassName("other/Unknown")))
-        .build();
+    DeclaredClass remote = newClass("other/Unknown").build();
+    DeclaredClass root =
+        newClass("my/Root")
+            .loadedClasses(Collections.singleton(TypeDescriptors.fromClassName("other/Unknown")))
+            .build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
     Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
-        root.className(), remote.className()
-    ));
+    Set<ClassTypeDescriptor> expected =
+        new HashSet<>(Arrays.asList(root.className(), remote.className()));
     assertEquals(expected, reachable);
   }
 
   @Test
   public void testReachableViaField() {
-    DeclaredClass remote = newClass("other/Unknown")
-        .fields(Collections.singleton(newField(INT, "remoteField")))
-        .build();
-    Map<MethodDescriptor, DeclaredMethod> methods = methodMap(
-        newMethod(false, VOID, "foo")
-            .fieldAccesses(
-                Collections.singleton(Simple.newAccess(INT, "remoteField", "other/Unknown", 12)))
-            .build());
-    DeclaredClass root = newClass("my/Root")
-        .methods(methods)
-        .build();
+    DeclaredClass remote =
+        newClass("other/Unknown")
+            .fields(Collections.singleton(newField(INT, "remoteField")))
+            .build();
+    Map<MethodDescriptor, DeclaredMethod> methods =
+        methodMap(
+            newMethod(false, VOID, "foo")
+                .fieldAccesses(
+                    Collections.singleton(
+                        Simple.newAccess(INT, "remoteField", "other/Unknown", 12)))
+                .build());
+    DeclaredClass root = newClass("my/Root").methods(methods).build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
     Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
-    Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
-        root.className(), remote.className()
-    ));
+    Set<ClassTypeDescriptor> expected =
+        new HashSet<>(Arrays.asList(root.className(), remote.className()));
     assertEquals(expected, reachable);
   }
-
 }

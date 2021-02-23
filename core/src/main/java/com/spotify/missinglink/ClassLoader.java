@@ -73,17 +73,14 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-/**
- * Loads a single class from an input stream.
- */
+/** Loads a single class from an input stream. */
 public final class ClassLoader {
 
   // This is a set of classes that is using @HotSpotIntrinsicCandidate
   // and thus define native methods that don't actually exist in the class file
   // This could be removed if we stop loading the full JDK
-  private static final Set<String> BLACKLIST = new HashSet<>(Arrays.asList(
-      "java/lang/invoke/MethodHandle"
-  ));
+  private static final Set<String> BLACKLIST =
+      new HashSet<>(Arrays.asList("java/lang/invoke/MethodHandle"));
 
   private ClassLoader() {
     // prevent instantiation
@@ -120,8 +117,7 @@ public final class ClassLoader {
 
   private static Set<ClassTypeDescriptor> readParents(ClassNode classNode) {
     final Set<ClassTypeDescriptor> parents =
-        classNode.interfaces
-            .stream()
+        classNode.interfaces.stream()
             .map(TypeDescriptors::fromClassName)
             .collect(Collectors.toSet());
     // java/lang/Object has no superclass
@@ -136,18 +132,20 @@ public final class ClassLoader {
 
     final Iterable<FieldNode> classFields = classNode.fields;
     for (FieldNode field : classFields) {
-      fields.add(new DeclaredFieldBuilder()
-          .name(field.name)
-          .descriptor(TypeDescriptors.fromRaw(field.desc))
-          .build());
+      fields.add(
+          new DeclaredFieldBuilder()
+              .name(field.name)
+              .descriptor(TypeDescriptors.fromRaw(field.desc))
+              .build());
     }
     return fields;
   }
 
-  private static void analyseMethod(String className,
-                                    MethodNode method,
-                                    Map<MethodDescriptor, DeclaredMethod> declaredMethods,
-                                    Set<ClassTypeDescriptor> loadedClasses) {
+  private static void analyseMethod(
+      String className,
+      MethodNode method,
+      Map<MethodDescriptor, DeclaredMethod> declaredMethods,
+      Set<ClassTypeDescriptor> loadedClasses) {
     final Set<CalledMethod> thisCalls = new HashSet<>();
     final Set<AccessedField> thisFields = new HashSet<>();
 
@@ -160,29 +158,36 @@ public final class ClassLoader {
           lineNumber = ((LineNumberNode) insn).line;
         }
         if (insn instanceof MethodInsnNode) {
-          handleMethodCall(thisCalls, lineNumber, (MethodInsnNode) insn,
+          handleMethodCall(
+              thisCalls,
+              lineNumber,
+              (MethodInsnNode) insn,
               getTryCatchBlocksProtecting(instructions, insn, method));
         }
         if (insn instanceof FieldInsnNode) {
-          handleFieldAccess(thisFields, lineNumber, (FieldInsnNode) insn,
+          handleFieldAccess(
+              thisFields,
+              lineNumber,
+              (FieldInsnNode) insn,
               getTryCatchBlocksProtecting(instructions, insn, method));
         }
         if (insn instanceof LdcInsnNode) {
           handleLdc(loadedClasses, (LdcInsnNode) insn);
         }
       } catch (Exception e) {
-        throw new MissingLinkException("Error analysing " + className + "." + method.name +
-                                       ", line: " + lineNumber, e);
+        throw new MissingLinkException(
+            "Error analysing " + className + "." + method.name + ", line: " + lineNumber, e);
       }
     }
 
-    final DeclaredMethod declaredMethod = new DeclaredMethodBuilder()
-        .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
-        .lineNumber(lineNumber)
-        .methodCalls(thisCalls)
-        .fieldAccesses(thisFields)
-        .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
-        .build();
+    final DeclaredMethod declaredMethod =
+        new DeclaredMethodBuilder()
+            .descriptor(MethodDescriptors.fromDesc(method.desc, method.name))
+            .lineNumber(lineNumber)
+            .methodCalls(thisCalls)
+            .fieldAccesses(thisFields)
+            .isStatic((method.access & Opcodes.ACC_STATIC) != 0)
+            .build();
 
     if (declaredMethods.put(declaredMethod.descriptor(), declaredMethod) != null) {
       throw new RuntimeException(
@@ -218,10 +223,11 @@ public final class ClassLoader {
     return protectedByTryCatches;
   }
 
-  private static void handleMethodCall(final Set<CalledMethod> thisCalls,
-                                       final int lineNumber,
-                                       final MethodInsnNode insn,
-                                       final List<TryCatchBlockNode> tryCatchBlocksProtecting) {
+  private static void handleMethodCall(
+      final Set<CalledMethod> thisCalls,
+      final int lineNumber,
+      final MethodInsnNode insn,
+      final List<TryCatchBlockNode> tryCatchBlocksProtecting) {
     boolean isStatic;
     switch (insn.getOpcode()) {
       case Opcodes.INVOKEVIRTUAL:
@@ -238,20 +244,25 @@ public final class ClassLoader {
         throw new RuntimeException("Unexpected method call opcode: " + insn.getOpcode());
     }
     if (isArray(insn.owner) && !BLACKLIST.contains(insn.owner)) {
-      thisCalls.add(new CalledMethodBuilder()
-          .owner(TypeDescriptors.fromClassName(insn.owner))
-          .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
-          .isStatic(isStatic)
-          .lineNumber(lineNumber)
-          .caughtExceptions(tryCatchBlocksProtecting.stream()
-              .map(node -> TypeDescriptors.fromClassName(node.type)).collect(Collectors.toList()))
-          .build());
+      thisCalls.add(
+          new CalledMethodBuilder()
+              .owner(TypeDescriptors.fromClassName(insn.owner))
+              .descriptor(MethodDescriptors.fromDesc(insn.desc, insn.name))
+              .isStatic(isStatic)
+              .lineNumber(lineNumber)
+              .caughtExceptions(
+                  tryCatchBlocksProtecting.stream()
+                      .map(node -> TypeDescriptors.fromClassName(node.type))
+                      .collect(Collectors.toList()))
+              .build());
     }
   }
 
-  private static void handleFieldAccess(Set<AccessedField> thisFields, int lineNumber,
-                                        FieldInsnNode insn,
-                                        final List<TryCatchBlockNode> tryCatchBlocksProtecting) {
+  private static void handleFieldAccess(
+      Set<AccessedField> thisFields,
+      int lineNumber,
+      FieldInsnNode insn,
+      final List<TryCatchBlockNode> tryCatchBlocksProtecting) {
     if (isArray(insn.owner)) {
       thisFields.add(
           new AccessedFieldBuilder()
@@ -259,9 +270,10 @@ public final class ClassLoader {
               .descriptor(TypeDescriptors.fromRaw(insn.desc))
               .owner(TypeDescriptors.fromClassName(insn.owner))
               .lineNumber(lineNumber)
-              .caughtExceptions(tryCatchBlocksProtecting.stream()
-                  .map(node -> TypeDescriptors.fromClassName(node.type))
-                  .collect(Collectors.toList()))
+              .caughtExceptions(
+                  tryCatchBlocksProtecting.stream()
+                      .map(node -> TypeDescriptors.fromClassName(node.type))
+                      .collect(Collectors.toList()))
               .build());
     }
   }

@@ -39,8 +39,7 @@ public class VoidTypeDescriptor implements TypeDescriptor {
 
   public static final VoidTypeDescriptor voidTypeDescriptor = new VoidTypeDescriptor();
 
-  private VoidTypeDescriptor() {
-  }
+  private VoidTypeDescriptor() {}
 
   @Override
   public String toString() {

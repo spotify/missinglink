@@ -59,9 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Created by axel on 04/06/15.
- */
+/** Created by axel on 04/06/15. */
 public class Simple {
 
   public static final String INT = "I";
@@ -73,41 +71,38 @@ public class Simple {
     return "[" + of;
   }
 
-
   /**
    * Empty new DeclaredClass, all collections filled in with empty values
+   *
    * @param className
    * @return
    */
   public static DeclaredClassBuilder newClass(String className) {
-    return new DeclaredClassBuilder()
-        .className(TypeDescriptors.fromClassName(className));
+    return new DeclaredClassBuilder().className(TypeDescriptors.fromClassName(className));
   }
 
-
-  public static DeclaredMethodBuilder newMethod(boolean isStatic, String returnDesc, String name,
-                                                String... parameterDesc) {
-    List<TypeDescriptor> param = Arrays.stream(parameterDesc)
-        .map(TypeDescriptors::fromRaw)
-        .collect(Collectors.toList());
+  public static DeclaredMethodBuilder newMethod(
+      boolean isStatic, String returnDesc, String name, String... parameterDesc) {
+    List<TypeDescriptor> param =
+        Arrays.stream(parameterDesc).map(TypeDescriptors::fromRaw).collect(Collectors.toList());
 
     return new DeclaredMethodBuilder()
         .isStatic(isStatic)
-        .descriptor(new MethodDescriptorBuilder()
-            .name(name)
-            .parameterTypes(param)
-            .returnType(TypeDescriptors.fromRaw(returnDesc)).build()
-        );
+        .descriptor(
+            new MethodDescriptorBuilder()
+                .name(name)
+                .parameterTypes(param)
+                .returnType(TypeDescriptors.fromRaw(returnDesc))
+                .build());
   }
 
   public static CalledMethod newCall(
-          DeclaredClass owner, DeclaredMethod method,
-          boolean isStatic, boolean isVirtual) {
+      DeclaredClass owner, DeclaredMethod method, boolean isStatic, boolean isVirtual) {
     return newCall(owner.className(), method, isStatic);
   }
 
-  public static CalledMethod newCall(ClassTypeDescriptor owner, DeclaredMethod method,
-                                     boolean isStatic) {
+  public static CalledMethod newCall(
+      ClassTypeDescriptor owner, DeclaredMethod method, boolean isStatic) {
     return new CalledMethodBuilder()
         .owner(owner)
         .descriptor(method.descriptor())
@@ -125,17 +120,14 @@ public class Simple {
 
   public static Map<MethodDescriptor, DeclaredMethod> methodMap(DeclaredMethod... methods) {
     Map<MethodDescriptor, DeclaredMethod> map = new HashMap<>();
-    for (DeclaredMethod method: methods) {
+    for (DeclaredMethod method : methods) {
       map.put(method.descriptor(), method);
     }
     return map;
   }
 
   public static DeclaredField newField(String desc, String name) {
-    return new DeclaredFieldBuilder()
-        .name(name)
-        .descriptor(TypeDescriptors.fromRaw(desc))
-        .build();
+    return new DeclaredFieldBuilder().name(name).descriptor(TypeDescriptors.fromRaw(desc)).build();
   }
 
   public static AccessedField newAccess(String desc, String name, String owner, int lineNumber) {
@@ -153,10 +145,6 @@ public class Simple {
       map.put(clazz.className(), clazz);
     }
 
-    return new ArtifactBuilder()
-        .name(new ArtifactName(name))
-        .classes(map)
-        .build();
+    return new ArtifactBuilder().name(new ArtifactName(name)).classes(map).build();
   }
-
 }

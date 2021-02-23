@@ -35,9 +35,9 @@
  */
 package com.spotify.missinglink;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 
 public class PrettyPrinterTest {
 

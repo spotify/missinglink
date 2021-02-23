@@ -45,10 +45,13 @@ import io.norberg.automatter.AutoMatter;
 public interface MethodDependency extends Dependency {
 
   ClassTypeDescriptor fromClass();
+
   MethodDescriptor fromMethod();
+
   int fromLineNumber();
 
   ClassTypeDescriptor targetClass();
+
   MethodDescriptor targetMethod();
 
   @Override

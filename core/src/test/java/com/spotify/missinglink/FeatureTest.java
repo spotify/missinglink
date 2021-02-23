@@ -63,7 +63,6 @@ import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
-
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,27 +83,25 @@ public class FeatureTest {
     final Artifact d2 = newArtifact("empty");
 
     final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1, false, true);
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main")
-        .methodCalls(Collections.singleton(methodCall)).build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main").methodCalls(Collections.singleton(methodCall)).build();
 
-    final DeclaredClass rootClass = newClass("com/Root")
-        .methods(methodMap(mainMethod))
-        .build();
+    final DeclaredClass rootClass = newClass("com/Root").methods(methodMap(mainMethod)).build();
 
     final Artifact root = newArtifact("root", rootClass);
 
     final List<Artifact> classpath = Arrays.asList(root, d2);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(rootClass.className(), mainMethod, methodCall))
-        .reason("Class not found: com.d.Foo")
-        .category(ConflictCategory.CLASS_NOT_FOUND)
-        .usedBy(root.name())
-        .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
-        .build();
+    final Conflict expectedConflict =
+        new ConflictBuilder()
+            .dependency(dependency(rootClass.className(), mainMethod, methodCall))
+            .reason("Class not found: com.d.Foo")
+            .category(ConflictCategory.CLASS_NOT_FOUND)
+            .usedBy(root.name())
+            .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
+            .build();
 
-    assertThat(conflictChecker
-        .check(root, classpath, classpath))
+    assertThat(conflictChecker.check(root, classpath, classpath))
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
@@ -112,36 +109,33 @@ public class FeatureTest {
   public void testSimpleConflict2() throws Exception {
 
     final DeclaredMethod methodOnlyInD1 = newMethod(false, INT, "foo").build();
-    final DeclaredClass fooClass = newClass("com/d/Foo")
-        .methods(methodMap(methodOnlyInD1))
-        .build();
+    final DeclaredClass fooClass = newClass("com/d/Foo").methods(methodMap(methodOnlyInD1)).build();
 
     final DeclaredClass d2Class = newClass("com/d/Foo").build();
     final Artifact d2 = newArtifact("D2", d2Class);
 
     final CalledMethod methodCall = newCall(fooClass, methodOnlyInD1, false, true);
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(Collections.singleton(methodCall))
-        .build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(Collections.singleton(methodCall))
+            .build();
 
-    final DeclaredClass rootClass = newClass("com/Root")
-        .methods(methodMap(mainMethod))
-        .build();
+    final DeclaredClass rootClass = newClass("com/Root").methods(methodMap(mainMethod)).build();
 
     final Artifact root = newArtifact("root", rootClass);
 
     final List<Artifact> classpath = Arrays.asList(root, d2);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(rootClass.className(), mainMethod, methodCall))
-        .reason("Method not found: com.d.Foo.foo()")
-        .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
-        .usedBy(root.name())
-        .existsIn(d2.name())
-        .build();
+    final Conflict expectedConflict =
+        new ConflictBuilder()
+            .dependency(dependency(rootClass.className(), mainMethod, methodCall))
+            .reason("Method not found: com.d.Foo.foo()")
+            .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
+            .usedBy(root.name())
+            .existsIn(d2.name())
+            .build();
 
-    assertThat(conflictChecker
-        .check(root, classpath, classpath))
+    assertThat(conflictChecker.check(root, classpath, classpath))
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
@@ -151,15 +145,12 @@ public class FeatureTest {
     final DeclaredClass d2Class = newClass("com/d/Foo").build();
     final Artifact d2 = newArtifact("D2", d2Class);
 
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .fieldAccesses(Collections.singleton(
-            newAccess("I", "foo", "com/d/Foo", 12)
-        ))
-        .build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main", array(STRING))
+            .fieldAccesses(Collections.singleton(newAccess("I", "foo", "com/d/Foo", 12)))
+            .build();
 
-    final DeclaredClass rootClass = newClass("com/Root")
-        .methods(methodMap(mainMethod))
-        .build();
+    final DeclaredClass rootClass = newClass("com/Root").methods(methodMap(mainMethod)).build();
 
     final Artifact root = newArtifact("root", rootClass);
 
@@ -167,16 +158,16 @@ public class FeatureTest {
 
     final AccessedField accessed = newAccess(INT, "foo", "com/d/Foo", 12);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(rootClass.className(), mainMethod, accessed))
-        .reason("Field not found: foo")
-        .category(ConflictCategory.FIELD_NOT_FOUND)
-        .usedBy(root.name())
-        .existsIn(d2.name())
-        .build();
+    final Conflict expectedConflict =
+        new ConflictBuilder()
+            .dependency(dependency(rootClass.className(), mainMethod, accessed))
+            .reason("Field not found: foo")
+            .category(ConflictCategory.FIELD_NOT_FOUND)
+            .usedBy(root.name())
+            .existsIn(d2.name())
+            .build();
 
-    assertThat(conflictChecker
-        .check(root, classpath, classpath))
+    assertThat(conflictChecker.check(root, classpath, classpath))
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
@@ -185,23 +176,23 @@ public class FeatureTest {
     final DeclaredMethod methodOnlyInSuper = newMethod(false, INT, "foo").build();
     final DeclaredClass superClass =
         newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
-    final DeclaredClass subClass = newClass("com/Sub")
-        .parents(Collections.singleton(superClass.className()))
-        .build();
+    final DeclaredClass subClass =
+        newClass("com/Sub").parents(Collections.singleton(superClass.className())).build();
 
     final CalledMethod methodCall = newCall(subClass, methodOnlyInSuper, false, true);
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(Collections.singleton(methodCall))
-        .build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(Collections.singleton(methodCall))
+            .build();
 
     final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
 
     final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
 
-    assertThat(conflictChecker.check(artifact,
-        Collections.singletonList(artifact),
-        Collections.singletonList(artifact)
-    )).isEmpty();
+    assertThat(
+            conflictChecker.check(
+                artifact, Collections.singletonList(artifact), Collections.singletonList(artifact)))
+        .isEmpty();
   }
 
   @Test
@@ -210,24 +201,26 @@ public class FeatureTest {
     final DeclaredClass superClass = newClass("com/Super").methods(methodMap(superMethod)).build();
 
     final DeclaredMethod subMethod = newMethod(false, "Ljava/lang/String;", "foo").build();
-    final DeclaredClass subClass = newClass("com/Sub").methods(methodMap(subMethod))
-        .parents(Collections.singleton(superClass.className()))
-        .build();
+    final DeclaredClass subClass =
+        newClass("com/Sub")
+            .methods(methodMap(subMethod))
+            .parents(Collections.singleton(superClass.className()))
+            .build();
 
     final CalledMethod methodCall = newCall(subClass, superMethod, false, true);
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(Collections.singleton(methodCall))
-        .build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(Collections.singleton(methodCall))
+            .build();
 
     final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
 
     final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
 
-    assertThat(conflictChecker
-        .check(artifact,
-            Collections.singletonList(artifact),
-            Collections.singletonList(artifact)
-        )).isEmpty();
+    assertThat(
+            conflictChecker.check(
+                artifact, Collections.singletonList(artifact), Collections.singletonList(artifact)))
+        .isEmpty();
   }
 
   @Test
@@ -237,18 +230,19 @@ public class FeatureTest {
         newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
 
     final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, true, false);
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(Collections.singleton(methodCall))
-        .build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(Collections.singleton(methodCall))
+            .build();
 
     final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
-    assertThat(conflictChecker.check(artifact,
-        Collections.singletonList(artifact),
-        Collections.singletonList(artifact)
-    )).isEmpty();
+    assertThat(
+            conflictChecker.check(
+                artifact, Collections.singletonList(artifact), Collections.singletonList(artifact)))
+        .isEmpty();
   }
 
   @Test
@@ -258,27 +252,28 @@ public class FeatureTest {
         newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
 
     final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, true, false);
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(Collections.singleton(methodCall))
-        .build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(Collections.singleton(methodCall))
+            .build();
 
     final DeclaredClass mainClass = newClass("com/Main").methods(methodMap(mainMethod)).build();
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(mainClass.className(), mainMethod, methodCall))
-        .reason("Method not found: com.super.foo()")
-        .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
-        .usedBy(artifact.name())
-        .existsIn(artifact.name())
-        .build();
+    final Conflict expectedConflict =
+        new ConflictBuilder()
+            .dependency(dependency(mainClass.className(), mainMethod, methodCall))
+            .reason("Method not found: com.super.foo()")
+            .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
+            .usedBy(artifact.name())
+            .existsIn(artifact.name())
+            .build();
 
-    assertEquals(Collections.singletonList(expectedConflict),
-        conflictChecker.check(artifact,
-            Collections.singletonList(artifact),
-            Collections.singletonList(artifact)
-        ));
+    assertEquals(
+        Collections.singletonList(expectedConflict),
+        conflictChecker.check(
+            artifact, Collections.singletonList(artifact), Collections.singletonList(artifact)));
   }
 
   @Test
@@ -288,29 +283,32 @@ public class FeatureTest {
         newClass("com/super").methods(methodMap(methodOnlyInSuper)).build();
 
     final CalledMethod methodCall = newCall(superClass, methodOnlyInSuper, false, true);
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(Collections.singleton(methodCall))
-        .build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(Collections.singleton(methodCall))
+            .build();
 
-    final DeclaredClass mainClass = newClass("com/Main")
-        .parents(Collections.singleton(superClass.className()))
-        .methods(methodMap(mainMethod)).build();
+    final DeclaredClass mainClass =
+        newClass("com/Main")
+            .parents(Collections.singleton(superClass.className()))
+            .methods(methodMap(mainMethod))
+            .build();
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
-    final Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(mainClass.className(), mainMethod, methodCall))
-        .reason("Method not found: com.super.foo()")
-        .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
-        .usedBy(artifact.name())
-        .existsIn(artifact.name())
-        .build();
+    final Conflict expectedConflict =
+        new ConflictBuilder()
+            .dependency(dependency(mainClass.className(), mainMethod, methodCall))
+            .reason("Method not found: com.super.foo()")
+            .category(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND)
+            .usedBy(artifact.name())
+            .existsIn(artifact.name())
+            .build();
 
-    assertEquals(Collections.singletonList(expectedConflict),
-        conflictChecker.check(artifact,
-            Collections.singletonList(artifact),
-            Collections.singletonList(artifact)
-        ));
+    assertEquals(
+        Collections.singletonList(expectedConflict),
+        conflictChecker.check(
+            artifact, Collections.singletonList(artifact), Collections.singletonList(artifact)));
   }
 
   @Test
@@ -321,21 +319,23 @@ public class FeatureTest {
 
     ClassTypeDescriptor mainClassName = TypeDescriptors.fromClassName("com/Main");
     final CalledMethod methodCall = newCall(mainClassName, methodOnlyInSuper, true);
-    final DeclaredMethod mainMethod = newMethod(true, VOID, "main", array(STRING))
-        .methodCalls(Collections.singleton(methodCall))
-        .build();
+    final DeclaredMethod mainMethod =
+        newMethod(true, VOID, "main", array(STRING))
+            .methodCalls(Collections.singleton(methodCall))
+            .build();
 
-    final DeclaredClass mainClass = newClass("com/Main")
-        .parents(Collections.singleton(superClass.className()))
-        .methods(methodMap(mainMethod)).build();
+    final DeclaredClass mainClass =
+        newClass("com/Main")
+            .parents(Collections.singleton(superClass.className()))
+            .methods(methodMap(mainMethod))
+            .build();
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
-    assertEquals(Collections.emptyList(),
-        conflictChecker.check(artifact,
-            Collections.singletonList(artifact),
-            Collections.singletonList(artifact)
-        ));
+    assertEquals(
+        Collections.emptyList(),
+        conflictChecker.check(
+            artifact, Collections.singletonList(artifact), Collections.singletonList(artifact)));
   }
 
   @Test
@@ -367,9 +367,8 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(artifact);
 
-    assertThat(conflictChecker.check(artifact,
-        Collections.singletonList(artifact),
-        allArtifacts)).isEmpty();
+    assertThat(conflictChecker.check(artifact, Collections.singletonList(artifact), allArtifacts))
+        .isEmpty();
   }
 
   @Test
@@ -391,9 +390,7 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(art);
 
-    assertThat(conflictChecker.check(art,
-        Collections.singletonList(art),
-        allArtifacts)).isEmpty();
+    assertThat(conflictChecker.check(art, Collections.singletonList(art), allArtifacts)).isEmpty();
   }
 
   @Test
@@ -403,20 +400,14 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(art);
 
-    assertThat(conflictChecker.check(art,
-        Collections.singletonList(art),
-        allArtifacts)).isEmpty();
+    assertThat(conflictChecker.check(art, Collections.singletonList(art), allArtifacts)).isEmpty();
   }
 
   @Test
   public void shouldReportMissingParent() throws Exception {
-    class LostParent {
+    class LostParent {}
 
-    }
-
-    class LacksParent extends LostParent {
-
-    }
+    class LacksParent extends LostParent {}
 
     DeclaredClass parent = load(findClass(LostParent.class));
     DeclaredClass mainClass = load(findClass(LacksParent.class));
@@ -426,34 +417,35 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(artifact);
 
-    DeclaredMethod parentInit = parent.methods().values().stream()
-        .filter(declaredMethod -> declaredMethod.descriptor().name().equals("<init>"))
-        .findFirst()
-        .get();
-    DeclaredMethod init = mainClass.methods().values().stream()
-        .filter(declaredMethod -> declaredMethod.descriptor().name().equals("<init>"))
-        .findFirst()
-        .get();
+    DeclaredMethod parentInit =
+        parent.methods().values().stream()
+            .filter(declaredMethod -> declaredMethod.descriptor().name().equals("<init>"))
+            .findFirst()
+            .get();
+    DeclaredMethod init =
+        mainClass.methods().values().stream()
+            .filter(declaredMethod -> declaredMethod.descriptor().name().equals("<init>"))
+            .findFirst()
+            .get();
 
-    CalledMethod calledMethod = new CalledMethodBuilder()
-        .descriptor(parentInit.descriptor())
-        .isStatic(parentInit.isStatic())
-        .lineNumber(init.lineNumber())
-        .owner(parent.className())
-        .build();
+    CalledMethod calledMethod =
+        new CalledMethodBuilder()
+            .descriptor(parentInit.descriptor())
+            .isStatic(parentInit.isStatic())
+            .lineNumber(init.lineNumber())
+            .owner(parent.className())
+            .build();
 
-    Conflict expectedConflict = new ConflictBuilder()
-        .dependency(dependency(mainClass.className(), init, calledMethod))
-        .reason("Class not found: com.spotify.missinglink.FeatureTest$1LostParent")
-        .category(ConflictCategory.CLASS_NOT_FOUND)
-        .usedBy(artifact.name())
-        .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
-        .build();
+    Conflict expectedConflict =
+        new ConflictBuilder()
+            .dependency(dependency(mainClass.className(), init, calledMethod))
+            .reason("Class not found: com.spotify.missinglink.FeatureTest$1LostParent")
+            .category(ConflictCategory.CLASS_NOT_FOUND)
+            .usedBy(artifact.name())
+            .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
+            .build();
 
-    assertThat(conflictChecker.check(artifact,
-        Collections.singletonList(artifact),
-        allArtifacts))
-
+    assertThat(conflictChecker.check(artifact, Collections.singletonList(artifact), allArtifacts))
         .containsExactly(expectedConflict);
   }
 
@@ -461,9 +453,7 @@ public class FeatureTest {
   public void shouldNotReportConflictIfCatchingNoClassDefFoundError() throws Exception {
     class MissingClass {
 
-      public void foo() {
-
-      }
+      public void foo() {}
     }
 
     class CatchesMissingClass {
@@ -484,9 +474,7 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(artifact);
 
-    assertThat(conflictChecker.check(artifact,
-        Collections.singletonList(artifact),
-        allArtifacts))
+    assertThat(conflictChecker.check(artifact, Collections.singletonList(artifact), allArtifacts))
         .isEmpty();
   }
 
@@ -494,9 +482,7 @@ public class FeatureTest {
   public void shouldNotReportConflictIfCatchingNoSuchMethodError() throws Exception {
     class MissingMethodClass {
 
-      public void foo() {
-
-      }
+      public void foo() {}
     }
 
     class CatchesMissingMethod {
@@ -510,9 +496,8 @@ public class FeatureTest {
       }
     }
 
-    DeclaredClass missingMethod = DeclaredClassBuilder
-        .from(load(findClass(MissingMethodClass.class)))
-        .build();
+    DeclaredClass missingMethod =
+        DeclaredClassBuilder.from(load(findClass(MissingMethodClass.class))).build();
 
     DeclaredClass catcher = load(findClass(CatchesMissingMethod.class));
 
@@ -521,14 +506,12 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(artifact);
 
-    assertThat(conflictChecker.check(artifact,
-        Collections.singletonList(artifact),
-        allArtifacts))
+    assertThat(conflictChecker.check(artifact, Collections.singletonList(artifact), allArtifacts))
         .isEmpty();
   }
 
-  private static Dependency dependency(ClassTypeDescriptor className,
-                                       DeclaredMethod declaredMethod, CalledMethod methodCall) {
+  private static Dependency dependency(
+      ClassTypeDescriptor className, DeclaredMethod declaredMethod, CalledMethod methodCall) {
     return new MethodDependencyBuilder()
         .fromClass(className)
         .fromMethod(declaredMethod.descriptor())
@@ -538,8 +521,8 @@ public class FeatureTest {
         .build();
   }
 
-  private static Dependency dependency(ClassTypeDescriptor className,
-                                       DeclaredMethod declaredMethod, AccessedField field) {
+  private static Dependency dependency(
+      ClassTypeDescriptor className, DeclaredMethod declaredMethod, AccessedField field) {
     return new FieldDependencyBuilder()
         .fromClass(className)
         .fromMethod(declaredMethod.descriptor())

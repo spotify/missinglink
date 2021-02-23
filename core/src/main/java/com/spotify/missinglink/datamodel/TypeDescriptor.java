@@ -35,5 +35,4 @@
  */
 package com.spotify.missinglink.datamodel;
 
-public interface TypeDescriptor {
-}
+public interface TypeDescriptor {}

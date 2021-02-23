@@ -38,10 +38,8 @@ package com.spotify.missinglink;
 import com.spotify.missinglink.datamodel.ArtifactName;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
-
-import java.util.Map;
-
 import io.norberg.automatter.AutoMatter;
+import java.util.Map;
 
 @AutoMatter
 interface CheckerState {

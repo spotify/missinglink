@@ -61,9 +61,7 @@ public interface MethodDescriptor {
   default String prettyParameters() {
     StringJoiner joiner = new StringJoiner(", ", "(", ")");
 
-    parameterTypes().stream()
-        .map(TypeDescriptor::toString)
-        .forEach(joiner::add);
+    parameterTypes().stream().map(TypeDescriptor::toString).forEach(joiner::add);
 
     return joiner.toString();
   }

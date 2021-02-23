@@ -35,20 +35,18 @@
  */
 package com.spotify.missinglink;
 
+import static com.spotify.missinglink.ClassLoadingUtil.findClass;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.spotify.missinglink.datamodel.DeclaredClass;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static com.spotify.missinglink.ClassLoadingUtil.findClass;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ClassLoaderTest {
 
@@ -57,11 +55,12 @@ public class ClassLoaderTest {
   @Before
   public void setUp() throws Exception {
     final File outputDir = FilePathHelper.getPath("target/classes");
-    File someClass = Files.walk(outputDir.toPath())
-        .map(Path::toFile)
-        .filter(file -> file.isFile() && file.getName().endsWith(".class"))
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("no classfiles in " + outputDir + " ?"));
+    File someClass =
+        Files.walk(outputDir.toPath())
+            .map(Path::toFile)
+            .filter(file -> file.isFile() && file.getName().endsWith(".class"))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("no classfiles in " + outputDir + " ?"));
 
     inputStream = new FileInputStream(someClass);
   }

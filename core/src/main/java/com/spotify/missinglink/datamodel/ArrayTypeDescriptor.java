@@ -35,7 +35,6 @@
  */
 package com.spotify.missinglink.datamodel;
 
-
 import java.util.Objects;
 
 public class ArrayTypeDescriptor implements TypeDescriptor {

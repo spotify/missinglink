@@ -35,9 +35,9 @@
  */
 package com.spotify.missinglink.maven;
 
-import com.spotify.missinglink.datamodel.ArtifactName;
-
 import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.spotify.missinglink.datamodel.ArtifactName;
 
 public class MavenArtifactName extends ArtifactName {
 
@@ -85,7 +85,6 @@ public class MavenArtifactName extends ArtifactName {
       return false;
     }
     return version.equals(that.version);
-
   }
 
   @Override
@@ -99,7 +98,16 @@ public class MavenArtifactName extends ArtifactName {
 
   @Override
   public String toString() {
-    return "MavenArtifactName{" + "groupId='" + groupId + '\'' + ", artifactId='" + artifactId
-           + '\'' + ", version='" + version + '\'' + '}';
+    return "MavenArtifactName{"
+        + "groupId='"
+        + groupId
+        + '\''
+        + ", artifactId='"
+        + artifactId
+        + '\''
+        + ", version='"
+        + version
+        + '\''
+        + '}';
   }
 }

@@ -35,9 +35,9 @@
  */
 package com.spotify.missinglink.maven;
 
-import com.google.common.base.Preconditions;
-
 import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.common.base.Preconditions;
 
 /**
  * Package names to be ignored when reporting conflicts. A package name is a String like
@@ -52,8 +52,7 @@ public class IgnoredPackage {
   private String name;
   private boolean ignoreSubpackages = true;
 
-  public IgnoredPackage() {
-  }
+  public IgnoredPackage() {}
 
   public IgnoredPackage(String name, boolean ignoreSubpackages) {
     this.name = checkNotNull(name);
@@ -93,7 +92,6 @@ public class IgnoredPackage {
       return false;
     }
     return name.equals(that.name);
-
   }
 
   @Override
@@ -105,9 +103,12 @@ public class IgnoredPackage {
 
   @Override
   public String toString() {
-    return "IgnoredPackage{" +
-           "name='" + name + '\'' +
-           ", ignoreSubpackages=" + ignoreSubpackages +
-           '}';
+    return "IgnoredPackage{"
+        + "name='"
+        + name
+        + '\''
+        + ", ignoreSubpackages="
+        + ignoreSubpackages
+        + '}';
   }
 }

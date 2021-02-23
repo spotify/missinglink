@@ -35,39 +35,49 @@
  */
 package com.spotify.missinglink;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import com.spotify.missinglink.datamodel.ArrayTypeDescriptor;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.PrimitiveTypeDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
 import java.util.HashMap;
-import org.junit.Test;
-
 import java.util.InputMismatchException;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import org.junit.Test;
 
 public class TypeDescriptorTest {
 
   @Test
   public void testEquality() {
     String[] signatures = {
-            "B", "S", "I", "J", "F", "D", "Z", "C",
-            "[D", "[[D", "[[[D",
-            "LFoo;", "LBar;", "[LFoo;", "Lfoo/bar/Baz;"
+      "B",
+      "S",
+      "I",
+      "J",
+      "F",
+      "D",
+      "Z",
+      "C",
+      "[D",
+      "[[D",
+      "[[[D",
+      "LFoo;",
+      "LBar;",
+      "[LFoo;",
+      "Lfoo/bar/Baz;"
     };
     for (String signature1 : signatures) {
       for (String signature2 : signatures) {
         if (signature1.equals(signature2)) {
-          assertEquals(TypeDescriptors.fromRaw(signature1),
-                       TypeDescriptors.fromRaw(signature2));
-          assertEquals(TypeDescriptors.fromRaw(signature1).hashCode(),
-                       TypeDescriptors.fromRaw(signature2).hashCode());
+          assertEquals(TypeDescriptors.fromRaw(signature1), TypeDescriptors.fromRaw(signature2));
+          assertEquals(
+              TypeDescriptors.fromRaw(signature1).hashCode(),
+              TypeDescriptors.fromRaw(signature2).hashCode());
         } else {
-          assertNotEquals(TypeDescriptors.fromRaw(signature1),
-                          TypeDescriptors.fromRaw(signature2));
+          assertNotEquals(TypeDescriptors.fromRaw(signature1), TypeDescriptors.fromRaw(signature2));
         }
       }
     }
@@ -96,7 +106,6 @@ public class TypeDescriptorTest {
       assertEquals(entry.getValue(), TypeDescriptors.fromRaw(entry.getKey()).toString());
     }
   }
-
 
   @Test
   public void testTypes() {

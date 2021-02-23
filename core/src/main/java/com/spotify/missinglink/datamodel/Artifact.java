@@ -44,8 +44,6 @@ public interface Artifact {
   /** "Name" of artifact, for example a directory path or jar file or something else symbolic. */
   ArtifactName name();
 
-  /**
-   * Map of classname to class object. Names are com/foo/bar/Baz. Returned map is immutable.
-   */
+  /** Map of classname to class object. Names are com/foo/bar/Baz. Returned map is immutable. */
   Map<ClassTypeDescriptor, DeclaredClass> classes();
 }

@@ -41,5 +41,6 @@ import io.norberg.automatter.AutoMatter;
 /** Represents field in a class */
 public interface DeclaredField {
   String name();
+
   TypeDescriptor descriptor();
 }

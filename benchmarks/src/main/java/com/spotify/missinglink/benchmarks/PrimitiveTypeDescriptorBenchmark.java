@@ -37,26 +37,23 @@
 package com.spotify.missinglink.benchmarks;
 
 import com.spotify.missinglink.datamodel.PrimitiveTypeDescriptor;
-
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-
-
 @State(Scope.Benchmark)
 public class PrimitiveTypeDescriptorBenchmark {
 
   /**
-   * This class holds the raw String value to use to pass to
-   * {@link PrimitiveTypeDescriptor#fromRaw(String)}. The annotations used set up JMH to use the
-   * one holder per test thread, and set up a new value for each iteration of the benchmark (not
-   * each invocation).
+   * This class holds the raw String value to use to pass to {@link
+   * PrimitiveTypeDescriptor#fromRaw(String)}. The annotations used set up JMH to use the one holder
+   * per test thread, and set up a new value for each iteration of the benchmark (not each
+   * invocation).
    */
   @State(Scope.Thread)
   public static class RawStringHolder {

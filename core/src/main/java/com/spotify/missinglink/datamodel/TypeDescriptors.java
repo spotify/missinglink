@@ -41,8 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TypeDescriptors {
 
-  private TypeDescriptors() {
-  }
+  private TypeDescriptors() {}
 
   // Keep a cache of all the created ClassTypeDescriptor instances to prevent unnecessary
   // duplication of instances. ClassTypeDescriptor is immutable once constructed.
@@ -50,7 +49,7 @@ public class TypeDescriptors {
   // want to turn a String into a ClassTypeDescriptor, we can optimize how many strings are
   // created/replaced with this map.
   private static Map<String, ClassTypeDescriptor> classTypeDescriptorCache =
-          new ConcurrentHashMap<>();
+      new ConcurrentHashMap<>();
 
   public static ClassTypeDescriptor fromClassName(String className) {
     return classTypeDescriptorCache.computeIfAbsent(className, ClassTypeDescriptor::new);

@@ -35,10 +35,19 @@
  */
 package com.spotify.missinglink.maven;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
 import com.spotify.missinglink.ArtifactLoader;
 import com.spotify.missinglink.Conflict;
 import com.spotify.missinglink.Conflict.ConflictCategory;
@@ -57,7 +66,8 @@ import com.spotify.missinglink.datamodel.Dependency;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
-
+import java.io.File;
+import java.util.List;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -74,98 +84,86 @@ import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
 /**
  * A note on the maven plugin testing harness:
- * <p>
- * The MojoRule class (and AbstractMojoTestCase) use pom.xml files in the src/test/project folder
+ *
+ * <p>The MojoRule class (and AbstractMojoTestCase) use pom.xml files in the src/test/project folder
  * to test constructing and invoking an instance of a plugin from the Maven pom.xml format.
- * <p>
- * However these pom.xml files used for testing *the Mojo* do not load a real MavenProject -
+ *
+ * <p>However these pom.xml files used for testing *the Mojo* do not load a real MavenProject -
  * nothing in the pom.xml files used for testing is used to construct a real project, i.e. there is
- * no
- * dependency resolution, etc.
- * </p><p>
- * So inside the CheckDependencyConflictsMojo class, calls to things like project.getArtifacts()
+ * no dependency resolution, etc.
+ *
+ * <p>So inside the CheckDependencyConflictsMojo class, calls to things like project.getArtifacts()
  * to look at the resolved transitive dependencies will always return an empty list.
- * <p>
- * The only real value of testing the Mojo using this method is to test how the fields of the Mojo
- * are set based on the POM XML file.
- * </p>
+ *
+ * <p>The only real value of testing the Mojo using this method is to test how the fields of the
+ * Mojo are set based on the POM XML file.
  */
 public class CheckMojoTest {
 
   private static final Logger log = LoggerFactory.getLogger(CheckMojoTest.class);
 
-  @Rule
-  public MojoRule rule = new MojoRule();
+  @Rule public MojoRule rule = new MojoRule();
 
-  @Rule
-  public TestResources resources = new TestResources();
+  @Rule public TestResources resources = new TestResources();
 
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
+  @Rule public ExpectedException exception = ExpectedException.none();
 
   private final ArtifactLoader artifactLoader = mock(ArtifactLoader.class);
   private final ConflictChecker conflictChecker = mock(ConflictChecker.class);
 
   @Before
   public void setUp() throws Exception {
-    //default behavior for mocks
+    // default behavior for mocks
 
-    final Artifact emptyArtifact = new ArtifactBuilder()
-        .name(new ArtifactName("empty"))
-        .classes(ImmutableMap.<ClassTypeDescriptor, DeclaredClass>of())
-        .build();
+    final Artifact emptyArtifact =
+        new ArtifactBuilder()
+            .name(new ArtifactName("empty"))
+            .classes(ImmutableMap.<ClassTypeDescriptor, DeclaredClass>of())
+            .build();
     when(artifactLoader.load(any(File.class))).thenReturn(emptyArtifact);
 
-    when(artifactLoader.load(any(ArtifactName.class), any(File.class))).thenAnswer(invocation ->
-        ArtifactBuilder.from(emptyArtifact)
-            .name((ArtifactName) invocation.getArguments()[0])
-            .build());
+    when(artifactLoader.load(any(ArtifactName.class), any(File.class)))
+        .thenAnswer(
+            invocation ->
+                ArtifactBuilder.from(emptyArtifact)
+                    .name((ArtifactName) invocation.getArguments()[0])
+                    .build());
 
     setMockConflictResults(ImmutableList.of());
   }
 
   private void setMockConflictResults(ImmutableList<Conflict> results) {
-    when(conflictChecker.check(any(Artifact.class),
-            anyListOf(Artifact.class),
-            anyListOf(Artifact.class))
-    ).thenReturn(results);
+    when(conflictChecker.check(
+            any(Artifact.class), anyListOf(Artifact.class), anyListOf(Artifact.class)))
+        .thenReturn(results);
   }
 
   private CheckMojo getMojo(String dirName) throws Exception {
     final File basedir = resources.getBasedir(dirName);
     log.debug("Constructing Mojo against test basedir {}", basedir);
-    final CheckMojo mojo =
-        (CheckMojo) rule.lookupConfiguredMojo(basedir, "check");
+    final CheckMojo mojo = (CheckMojo) rule.lookupConfiguredMojo(basedir, "check");
     mojo.artifactLoader = artifactLoader;
     mojo.conflictChecker = conflictChecker;
     return mojo;
   }
 
-  private static Conflict conflict(ConflictCategory category, ClassTypeDescriptor inClass,
-                                   DeclaredMethod caller, CalledMethod callee, String reason) {
+  private static Conflict conflict(
+      ConflictCategory category,
+      ClassTypeDescriptor inClass,
+      DeclaredMethod caller,
+      CalledMethod callee,
+      String reason) {
 
-    final Dependency dep = new MethodDependencyBuilder()
-        .fromClass(inClass)
-        .fromMethod(caller.descriptor())
-        .fromLineNumber(callee.lineNumber())
-        .targetClass(callee.owner())
-        .targetMethod(callee.descriptor())
-        .build();
+    final Dependency dep =
+        new MethodDependencyBuilder()
+            .fromClass(inClass)
+            .fromMethod(caller.descriptor())
+            .fromLineNumber(callee.lineNumber())
+            .targetClass(callee.owner())
+            .targetMethod(callee.descriptor())
+            .build();
 
     return new ConflictBuilder()
         .category(category)
@@ -176,35 +174,39 @@ public class CheckMojoTest {
         .build();
   }
 
-  private ImmutableList<Conflict> mockConflicts(ConflictCategory category,
-                                                ConflictCategory... additionalCategories) {
+  private ImmutableList<Conflict> mockConflicts(
+      ConflictCategory category, ConflictCategory... additionalCategories) {
     final ClassTypeDescriptor ctd = TypeDescriptors.fromClassName("com/foo/Whatever");
     return mockConflicts(ctd, category, additionalCategories);
-
   }
 
-  private ImmutableList<Conflict> mockConflicts(ClassTypeDescriptor ctd,
-                                                ConflictCategory category,
-                                                ConflictCategory... additionalCategories) {
+  private ImmutableList<Conflict> mockConflicts(
+      ClassTypeDescriptor ctd,
+      ConflictCategory category,
+      ConflictCategory... additionalCategories) {
 
-    final CalledMethod callee = new CalledMethodBuilder()
-        .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
-        .descriptor(new MethodDescriptorBuilder()
-                        .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
-                        .name("bat")
-                        .parameterTypes(ImmutableList.of())
-                        .build())
-        .build();
+    final CalledMethod callee =
+        new CalledMethodBuilder()
+            .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
+            .descriptor(
+                new MethodDescriptorBuilder()
+                    .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+                    .name("bat")
+                    .parameterTypes(ImmutableList.of())
+                    .build())
+            .build();
 
-    final DeclaredMethod caller = new DeclaredMethodBuilder()
-        .methodCalls(ImmutableSet.of())
-        .fieldAccesses(ImmutableSet.of())
-        .descriptor(new MethodDescriptorBuilder()
-            .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
-            .name("bat")
-            .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("I")))
-            .build())
-        .build();
+    final DeclaredMethod caller =
+        new DeclaredMethodBuilder()
+            .methodCalls(ImmutableSet.of())
+            .fieldAccesses(ImmutableSet.of())
+            .descriptor(
+                new MethodDescriptorBuilder()
+                    .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+                    .name("bat")
+                    .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("I")))
+                    .build())
+            .build();
 
     ImmutableList.Builder<Conflict> builder = ImmutableList.builder();
     builder.add(conflict(category, ctd, caller, callee, "reasons!"));
@@ -231,13 +233,14 @@ public class CheckMojoTest {
   }
 
   /**
-   * Tests that when {@link CheckMojo#failOnConflicts} is set to true, then the
-   * build is failed if ConflictChecker returns conflicts.
+   * Tests that when {@link CheckMojo#failOnConflicts} is set to true, then the build is failed if
+   * ConflictChecker returns conflicts.
    */
   @Test
   public void failsOnConflictWhenOptionIsSet() throws Exception {
-    setMockConflictResults(mockConflicts(
-        ConflictCategory.CLASS_NOT_FOUND, ConflictCategory.METHOD_SIGNATURE_NOT_FOUND));
+    setMockConflictResults(
+        mockConflicts(
+            ConflictCategory.CLASS_NOT_FOUND, ConflictCategory.METHOD_SIGNATURE_NOT_FOUND));
 
     exception.expect(MojoFailureException.class);
     exception.expectMessage("conflicts found");
@@ -251,11 +254,12 @@ public class CheckMojoTest {
    */
   @Test
   public void testBadValuesForIncludeCategories() throws Exception {
-    when(conflictChecker.check(any(Artifact.class),
-            anyListOf(Artifact.class),
-            anyListOf(Artifact.class))
-    ).thenThrow(new RuntimeException("Mojo should not get as far as checking conflicts if the "
-                                     + "configuration is bad!"));
+    when(conflictChecker.check(
+            any(Artifact.class), anyListOf(Artifact.class), anyListOf(Artifact.class)))
+        .thenThrow(
+            new RuntimeException(
+                "Mojo should not get as far as checking conflicts if the "
+                    + "configuration is bad!"));
 
     exception.expect(MojoExecutionException.class);
     exception.expectMessage("Invalid value(s) for 'includeCategories'");
@@ -281,19 +285,16 @@ public class CheckMojoTest {
     final CheckMojo mojo = getMojo("exclude-dependencies");
 
     // inject some dependencies to exclude later
-    mojo.project.setArtifacts(ImmutableSet.of(
-        new DefaultArtifact("com.foobar", "bizbat", "1.2.3", "compile", "jar", "", null)
-    ));
+    mojo.project.setArtifacts(
+        ImmutableSet.of(
+            new DefaultArtifact("com.foobar", "bizbat", "1.2.3", "compile", "jar", "", null)));
 
     mojo.execute();
 
     ArgumentCaptor<ImmutableList> toCheck = ArgumentCaptor.forClass(ImmutableList.class);
 
-    verify(conflictChecker).check(
-        any(Artifact.class),
-        toCheck.capture(),
-        anyListOf(Artifact.class)
-    );
+    verify(conflictChecker)
+        .check(any(Artifact.class), toCheck.capture(), anyListOf(Artifact.class));
 
     assertThat(toCheck.getValue()).isEmpty();
   }
@@ -312,43 +313,50 @@ public class CheckMojoTest {
         .hasSize(2)
         .contains(
             new IgnoredPackage("groovy.lang", true),
-            new IgnoredPackage("org.codehaus.janino", false)
-        );
+            new IgnoredPackage("org.codehaus.janino", false));
 
     setMockConflictResults(
-        mockConflicts(TypeDescriptors.fromClassName("groovy.lang.foo.Bar"),
-                      ConflictCategory.CLASS_NOT_FOUND)
-    );
+        mockConflicts(
+            TypeDescriptors.fromClassName("groovy.lang.foo.Bar"),
+            ConflictCategory.CLASS_NOT_FOUND));
 
     mojo.execute();
   }
 
   @Test
   public void testIgnoreDestinationPackages() throws Exception {
-    final CalledMethod callee = new CalledMethodBuilder()
-        .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
-        .descriptor(new MethodDescriptorBuilder()
-            .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
-            .name("bat")
-            .parameterTypes(ImmutableList.of())
-            .build())
-        .build();
+    final CalledMethod callee =
+        new CalledMethodBuilder()
+            .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
+            .descriptor(
+                new MethodDescriptorBuilder()
+                    .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+                    .name("bat")
+                    .parameterTypes(ImmutableList.of())
+                    .build())
+            .build();
 
-    final DeclaredMethod caller = new DeclaredMethodBuilder()
-        .methodCalls(ImmutableSet.of())
-        .fieldAccesses(ImmutableSet.of())
-        .descriptor(new MethodDescriptorBuilder()
-            .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
-            .name("bat")
-            .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("I")))
-            .build())
-        .build();
+    final DeclaredMethod caller =
+        new DeclaredMethodBuilder()
+            .methodCalls(ImmutableSet.of())
+            .fieldAccesses(ImmutableSet.of())
+            .descriptor(
+                new MethodDescriptorBuilder()
+                    .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+                    .name("bat")
+                    .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("I")))
+                    .build())
+            .build();
 
     // a conflict from com/Whatever => com/foo/Bar.bat where the latter class cannot be found
-    setMockConflictResults(ImmutableList.of(
-        conflict(ConflictCategory.CLASS_NOT_FOUND, TypeDescriptors.fromClassName("com/Whatever"),
-                 caller, callee, "class com/foo/Bar not found")
-    ));
+    setMockConflictResults(
+        ImmutableList.of(
+            conflict(
+                ConflictCategory.CLASS_NOT_FOUND,
+                TypeDescriptors.fromClassName("com/Whatever"),
+                caller,
+                callee,
+                "class com/foo/Bar not found")));
 
     final CheckMojo mojo = getMojo("ignore-destination-packages");
 
@@ -406,16 +414,15 @@ public class CheckMojoTest {
   }
 
   private void setupProvidedArtifact(CheckMojo mojo) {
-    ImmutableSet<org.apache.maven.artifact.Artifact> artifacts = ImmutableSet.of(
-        new DefaultArtifact("com.foobar", "bizbat", "1.2.3", "compile", "jar", "", null),
-        new DefaultArtifact("com.foobar", "boobaz", "1.2.3", "provided", "jar", "", null)
-    );
+    ImmutableSet<org.apache.maven.artifact.Artifact> artifacts =
+        ImmutableSet.of(
+            new DefaultArtifact("com.foobar", "bizbat", "1.2.3", "compile", "jar", "", null),
+            new DefaultArtifact("com.foobar", "boobaz", "1.2.3", "provided", "jar", "", null));
 
     // use '.' as the file so as to pretend that the artifacts are class file dependencies
     artifacts.stream().forEach(artifact -> artifact.setFile(new File(".")));
 
     mojo.project.setArtifacts(artifacts);
-
   }
 
   private Matcher<ArtifactName> hasId(String artifactId) {
@@ -438,7 +445,8 @@ public class CheckMojoTest {
       protected boolean matchesSafely(List<Artifact> item) {
         return item.stream()
             .filter(artifact -> "boobaz".equals(artifact.name().name()))
-            .findFirst().isPresent();
+            .findFirst()
+            .isPresent();
       }
 
       @Override

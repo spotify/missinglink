@@ -54,5 +54,4 @@ public interface DeclaredClass {
   Map<MethodDescriptor, DeclaredMethod> methods();
 
   Set<DeclaredField> fields();
-
 }

@@ -65,17 +65,31 @@ public class PrettyPrinter {
             sb.append(c);
           }
           break;
-        case 'V': sb.append("void"); break;
-        case 'I': sb.append("int"); break;
-        case 'S': sb.append("short"); break;
-        case 'Z': sb.append("long"); break;
-        case 'B': sb.append("boolean"); break;
-        case 'D': sb.append("double"); break;
-        case 'F': sb.append("float"); break;
+        case 'V':
+          sb.append("void");
+          break;
+        case 'I':
+          sb.append("int");
+          break;
+        case 'S':
+          sb.append("short");
+          break;
+        case 'Z':
+          sb.append("long");
+          break;
+        case 'B':
+          sb.append("boolean");
+          break;
+        case 'D':
+          sb.append("double");
+          break;
+        case 'F':
+          sb.append("float");
+          break;
         default:
           // TODO: remove this once we have fixed the semantics for classname vs type descriptor
           return className(typeDescriptor);
-          //throw new RuntimeException("Unhandled type: " + typeDescriptor);
+          // throw new RuntimeException("Unhandled type: " + typeDescriptor);
       }
     }
     for (int j = 0; j < arrayLevels; j++) {

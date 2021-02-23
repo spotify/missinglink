@@ -51,7 +51,7 @@ public interface CalledMethod {
 
   int lineNumber();
 
-  /** List of exception classes that protect this method call **/
+  /** List of exception classes that protect this method call * */
   List<ClassTypeDescriptor> caughtExceptions();
 
   default String pretty() {

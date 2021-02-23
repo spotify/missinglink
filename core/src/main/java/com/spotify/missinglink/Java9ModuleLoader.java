@@ -61,19 +61,15 @@ public class Java9ModuleLoader {
 
       final Class moduleFinderClass = Class.forName("java.lang.module.ModuleFinder");
       final Object systemModuleFinder = moduleFinderClass.getMethod("ofSystem").invoke(null);
-      final Set moduleReferences = (Set) moduleFinderClass.getMethod("findAll")
-          .invoke(systemModuleFinder);
+      final Set moduleReferences =
+          (Set) moduleFinderClass.getMethod("findAll").invoke(systemModuleFinder);
       final Class moduleReferenceClass = Class.forName("java.lang.module.ModuleReference");
       final Class moduleReaderClass = Class.forName("java.lang.module.ModuleReader");
       for (final Object moduleReference : moduleReferences) {
-        final Object descriptor = moduleReferenceClass.getMethod("descriptor")
-            .invoke(moduleReference);
+        final Object descriptor =
+            moduleReferenceClass.getMethod("descriptor").invoke(moduleReference);
         final String moduleName =
-            String.valueOf(
-                descriptor
-                    .getClass()
-                    .getMethod("name")
-                    .invoke(descriptor));
+            String.valueOf(descriptor.getClass().getMethod("name").invoke(descriptor));
         Object reader = moduleReferenceClass.getMethod("open").invoke(moduleReference);
         try {
           final ArtifactName name = new ArtifactName(moduleName);
@@ -85,8 +81,8 @@ public class Java9ModuleLoader {
 
           for (String className : readerList) {
             final Optional<InputStream> opened =
-                (Optional<InputStream>) moduleReaderClass.getMethod("open", String.class)
-                    .invoke(reader, className);
+                (Optional<InputStream>)
+                    moduleReaderClass.getMethod("open", String.class).invoke(reader, className);
             if (!opened.isPresent()) {
               continue;
             }
@@ -101,14 +97,18 @@ public class Java9ModuleLoader {
         } finally {
           try {
             moduleReaderClass.getMethod("close").invoke(reader);
-          } catch (InvocationTargetException | NoSuchMethodException | SecurityException |
-              IllegalAccessException e) {
+          } catch (InvocationTargetException
+              | NoSuchMethodException
+              | SecurityException
+              | IllegalAccessException e) {
             log.accept("Could not close reader", e);
           }
         }
       }
-    } catch (InvocationTargetException | NoSuchMethodException |
-        IllegalAccessException | ClassNotFoundException e) {
+    } catch (InvocationTargetException
+        | NoSuchMethodException
+        | IllegalAccessException
+        | ClassNotFoundException e) {
       log.accept("Could not read java 9 modules", e);
     }
     return artifacts;

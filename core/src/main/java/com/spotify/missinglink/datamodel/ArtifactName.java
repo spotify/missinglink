@@ -63,7 +63,6 @@ public class ArtifactName {
     ArtifactName that = (ArtifactName) o;
 
     return name.equals(that.name);
-
   }
 
   @Override

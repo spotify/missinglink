@@ -35,9 +35,9 @@
  */
 package com.spotify.missinglink.maven;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 
 public class MavenArtifactNameTest {
 
@@ -46,5 +46,4 @@ public class MavenArtifactNameTest {
     final MavenArtifactName name = new MavenArtifactName("com.spotify", "secret-project", "1.2.3");
     assertEquals("com.spotify:secret-project:1.2.3", name.name());
   }
-
 }

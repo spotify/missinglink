@@ -42,13 +42,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.objectweb.asm.Type;
 
 public final class MethodDescriptors {
 
-  private MethodDescriptors() {
-  }
+  private MethodDescriptors() {}
 
   public static MethodDescriptor fromDesc(String desc, String name) {
     final MethodKey key = new MethodKey(name, desc);
@@ -58,10 +56,11 @@ public final class MethodDescriptors {
   private static MethodDescriptor newDescriptor(MethodKey key) {
     Type type = Type.getMethodType(key.desc);
 
-    List<TypeDescriptor> params = Arrays.stream(type.getArgumentTypes())
-        .map(Type::getDescriptor)
-        .map(TypeDescriptors::fromRaw)
-        .collect(toList());
+    List<TypeDescriptor> params =
+        Arrays.stream(type.getArgumentTypes())
+            .map(Type::getDescriptor)
+            .map(TypeDescriptors::fromRaw)
+            .collect(toList());
 
     return new MethodDescriptorBuilder()
         .returnType(TypeDescriptors.fromRaw(type.getReturnType().getDescriptor()))
@@ -71,7 +70,7 @@ public final class MethodDescriptors {
   }
 
   private static final Map<MethodKey, MethodDescriptor> methodDescriptorCache =
-          new ConcurrentHashMap<>();
+      new ConcurrentHashMap<>();
 
   private static class MethodKey {
     private final String name;
@@ -97,7 +96,6 @@ public final class MethodDescriptors {
         return false;
       }
       return desc.equals(key.desc);
-
     }
 
     @Override

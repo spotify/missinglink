@@ -35,12 +35,13 @@
  */
 package com.spotify.missinglink;
 
+import static java.util.stream.Collectors.toList;
+
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
 import com.spotify.missinglink.datamodel.ClassTypeDescriptor;
 import com.spotify.missinglink.datamodel.DeclaredClass;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -57,8 +58,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static java.util.stream.Collectors.toList;
 
 public class ArtifactLoader {
 
@@ -81,7 +80,8 @@ public class ArtifactLoader {
     return loadFromDirectory(artifactName, path);
   }
 
-  // This is designed to handle Multi-Release JAR files, where there are class files for multiple versions of JVM in one jar.
+  // This is designed to handle Multi-Release JAR files, where there are class files for multiple
+  // versions of JVM in one jar.
   // You don't want to end up trying to parse a new class file when running on an old JVM.
   // https://openjdk.java.net/jeps/238
   private Collection<JarEntry> getClassesForCurrentJavaVersion(Iterable<JarEntry> entries) {
@@ -90,7 +90,7 @@ public class ArtifactLoader {
     SortedMap<Integer, Map<String, JarEntry>> classFilesPerJavaVersion = new TreeMap<>();
     String patternString = "META-INF/versions/(\\d+)/";
     Pattern pattern = Pattern.compile(patternString);
-    for (JarEntry entry: entries) {
+    for (JarEntry entry : entries) {
       String fileFullName = entry.getName();
       if (fileFullName.endsWith(".class")) {
         Matcher m = pattern.matcher(fileFullName);
@@ -105,7 +105,7 @@ public class ArtifactLoader {
         } else {
           Integer withoutVersion = 0;
           if (!classFilesPerJavaVersion.containsKey(withoutVersion)) {
-              classFilesPerJavaVersion.put(withoutVersion, new HashMap<>());
+            classFilesPerJavaVersion.put(withoutVersion, new HashMap<>());
           }
           classFilesPerJavaVersion.get(withoutVersion).put(fileFullName, entry);
         }
@@ -121,15 +121,16 @@ public class ArtifactLoader {
       currentJavaVersion = Integer.parseInt(javaVersionElements[0]);
     }
 
-    // Start layering the class files from old JVM version to new and thus effectively override the old files by the new ones.
+    // Start layering the class files from old JVM version to new and thus effectively override the
+    // old files by the new ones.
     Map<String, JarEntry> selectedClassFiles = new HashMap<>();
     for (Map.Entry<Integer, Map<String, JarEntry>> entry : classFilesPerJavaVersion.entrySet()) {
-        Integer targetJavaVersion = entry.getKey();
-        if (targetJavaVersion > currentJavaVersion) {
-          break;
-        }
-        Map<String, JarEntry> pathToClassfile = entry.getValue();
-        selectedClassFiles.putAll(pathToClassfile);
+      Integer targetJavaVersion = entry.getKey();
+      if (targetJavaVersion > currentJavaVersion) {
+        break;
+      }
+      Map<String, JarEntry> pathToClassfile = entry.getValue();
+      selectedClassFiles.putAll(pathToClassfile);
     }
 
     return selectedClassFiles.values();
@@ -139,18 +140,17 @@ public class ArtifactLoader {
     try (JarFile jarFile = new JarFile(path)) {
       Map<ClassTypeDescriptor, DeclaredClass> classes = new HashMap<>();
       Iterable<JarEntry> classFiles =
-              getClassesForCurrentJavaVersion(Collections.list(jarFile.entries()));
-      for (JarEntry entry: classFiles) {
-          try {
-            DeclaredClass cl = ClassLoader.load(jarFile.getInputStream(entry));
-            classes.put(cl.className(), cl);
-          } catch (MissingLinkException e) {
-            throw e;
-          } catch (Exception e) {
-            throw new MissingLinkException("Could not load " + entry.getName() + " from " + path,
-                                           e);
-          }
+          getClassesForCurrentJavaVersion(Collections.list(jarFile.entries()));
+      for (JarEntry entry : classFiles) {
+        try {
+          DeclaredClass cl = ClassLoader.load(jarFile.getInputStream(entry));
+          classes.put(cl.className(), cl);
+        } catch (MissingLinkException e) {
+          throw e;
+        } catch (Exception e) {
+          throw new MissingLinkException("Could not load " + entry.getName() + " from " + path, e);
         }
+      }
       return artifact(artifactName, classes);
     } catch (IOException e) {
       throw new RuntimeException("Could not load " + path, e);
@@ -160,10 +160,11 @@ public class ArtifactLoader {
   private Artifact loadFromDirectory(ArtifactName artifactName, File dir) throws IOException {
     Map<ClassTypeDescriptor, DeclaredClass> classes = new HashMap<>();
 
-    List<File> classFilesInDir = Files.walk(dir.toPath())
-        .map(Path::toFile)
-        .filter(file -> file.isFile() && file.getName().endsWith(".class"))
-        .collect(toList());
+    List<File> classFilesInDir =
+        Files.walk(dir.toPath())
+            .map(Path::toFile)
+            .filter(file -> file.isFile() && file.getName().endsWith(".class"))
+            .collect(toList());
 
     for (File file : classFilesInDir) {
       try (FileInputStream fis = new FileInputStream(file)) {
@@ -174,17 +175,13 @@ public class ArtifactLoader {
     return artifact(artifactName, classes);
   }
 
-  private static Artifact artifact(ArtifactName name,
-                                   Map<ClassTypeDescriptor, DeclaredClass> classes) {
-    return new ArtifactBuilder()
-        .name(name)
-        .classes(classes)
-        .build();
+  private static Artifact artifact(
+      ArtifactName name, Map<ClassTypeDescriptor, DeclaredClass> classes) {
+    return new ArtifactBuilder().name(name).classes(classes).build();
   }
 
   public static void main(String[] args) throws Exception {
     ArtifactLoader l = new ArtifactLoader();
     System.out.println(l.load(new File("core/src/test/resources/ArtifactLoaderTest.jar")));
   }
-
 }

@@ -35,6 +35,11 @@
  */
 package com.spotify.missinglink;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.spotify.missinglink.datamodel.AccessedField;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.CalledMethod;
@@ -48,24 +53,17 @@ import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
-
-import java.util.Collections;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ArtifactLoaderTest {
 
@@ -81,40 +79,47 @@ public class ArtifactLoaderTest {
   public void setUp() throws IOException {
     artifact = loader.load(FilePathHelper.getPath("src/test/resources/ArtifactLoaderTest.jar"));
 
-    methodOneDescriptor = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
-        .name("methodOne")
-        .parameterTypes(Collections.singletonList(TypeDescriptors.fromRaw("Ljava/lang/String;")))
-        .build();
+    methodOneDescriptor =
+        new MethodDescriptorBuilder()
+            .returnType(TypeDescriptors.fromRaw("V"))
+            .name("methodOne")
+            .parameterTypes(
+                Collections.singletonList(TypeDescriptors.fromRaw("Ljava/lang/String;")))
+            .build();
 
-    internalStaticFieldAccessDescriptor = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
-        .name("internalStaticFieldAccess")
-        .build();
+    internalStaticFieldAccessDescriptor =
+        new MethodDescriptorBuilder()
+            .returnType(TypeDescriptors.fromRaw("V"))
+            .name("internalStaticFieldAccess")
+            .build();
 
-    internalFieldAccessDescriptor = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
-        .name("internalFieldAccess")
-        .build();
+    internalFieldAccessDescriptor =
+        new MethodDescriptorBuilder()
+            .returnType(TypeDescriptors.fromRaw("V"))
+            .name("internalFieldAccess")
+            .build();
 
-    printlnDescriptor = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
-        .name("println")
-        .parameterTypes(Collections.singletonList(TypeDescriptors.fromRaw("Ljava/lang/String;")))
-        .build();
+    printlnDescriptor =
+        new MethodDescriptorBuilder()
+            .returnType(TypeDescriptors.fromRaw("V"))
+            .name("println")
+            .parameterTypes(
+                Collections.singletonList(TypeDescriptors.fromRaw("Ljava/lang/String;")))
+            .build();
   }
 
   /**
-   * verify that the DeclaredClass.parents() set is actually populated with
-   * ClassTypeDescriptor instances - other types might leak through due to asm's use of raw lists.
+   * verify that the DeclaredClass.parents() set is actually populated with ClassTypeDescriptor
+   * instances - other types might leak through due to asm's use of raw lists.
    */
   @Test
   @SuppressWarnings("rawtypes")
   public void testTypeOfClassParentsWhenInterfaces() throws IOException {
     final Artifact artifact = loadTestClassesAsArtifact();
 
-    final DeclaredClass classThatImplementsInterfaces = getDeclaredClass(artifact,
-        "com/spotify/missinglink/ArtifactLoaderTest$ExampleClassWithInterfaces");
+    final DeclaredClass classThatImplementsInterfaces =
+        getDeclaredClass(
+            artifact, "com/spotify/missinglink/ArtifactLoaderTest$ExampleClassWithInterfaces");
 
     Set parents = classThatImplementsInterfaces.parents();
     for (Object key : parents) {
@@ -129,70 +134,97 @@ public class ArtifactLoaderTest {
 
   @Test
   public void testLoadClass() throws Exception {
-    assertNotNull("Artifact must contain class 'A'",
+    assertNotNull(
+        "Artifact must contain class 'A'",
         artifact.classes().get(TypeDescriptors.fromClassName("A")));
   }
 
   @Test
   public void testLoadMethod() throws Exception {
-    assertTrue("Class must contain method with hairy signature", artifact.classes().get(
-        TypeDescriptors.fromClassName("A")).methods().containsKey(methodOneDescriptor));
+    assertTrue(
+        "Class must contain method with hairy signature",
+        artifact
+            .classes()
+            .get(TypeDescriptors.fromClassName("A"))
+            .methods()
+            .containsKey(methodOneDescriptor));
   }
 
   @Test
   public void testLoadCall() throws Exception {
     final DeclaredClass declaredClass = artifact.classes().get(TypeDescriptors.fromClassName("A"));
     DeclaredMethod method = declaredClass.methods().get(methodOneDescriptor);
-    CalledMethod call = new CalledMethodBuilder()
-        .owner(TypeDescriptors.fromClassName("java/io/PrintStream"))
-        .lineNumber(15)
-        .isStatic(false)
-        .descriptor(printlnDescriptor).build();
-    assertTrue("Method must contain call to other method with hairy signature",
+    CalledMethod call =
+        new CalledMethodBuilder()
+            .owner(TypeDescriptors.fromClassName("java/io/PrintStream"))
+            .lineNumber(15)
+            .isStatic(false)
+            .descriptor(printlnDescriptor)
+            .build();
+    assertTrue(
+        "Method must contain call to other method with hairy signature",
         method.methodCalls().contains(call));
   }
 
   @Test
   public void testLoadField() throws Exception {
     DeclaredClass loadedClass = artifact.classes().get(TypeDescriptors.fromClassName("A"));
-    DeclaredField myField = new DeclaredFieldBuilder().name("publicFieldOne")
-        .descriptor(TypeDescriptors.fromRaw("Ljava/lang/Object;")).build();
-    assertTrue("Class must contain field with hairy signature",
-        loadedClass.fields().contains(myField));
+    DeclaredField myField =
+        new DeclaredFieldBuilder()
+            .name("publicFieldOne")
+            .descriptor(TypeDescriptors.fromRaw("Ljava/lang/Object;"))
+            .build();
+    assertTrue(
+        "Class must contain field with hairy signature", loadedClass.fields().contains(myField));
   }
 
   @Test
   public void testLoadStaticFieldAccess() throws Exception {
-    DeclaredMethod method = artifact.classes().get(TypeDescriptors.fromClassName("A")).methods()
-        .get(internalStaticFieldAccessDescriptor);
+    DeclaredMethod method =
+        artifact
+            .classes()
+            .get(TypeDescriptors.fromClassName("A"))
+            .methods()
+            .get(internalStaticFieldAccessDescriptor);
     AccessedField access = Simple.newAccess("Ljava/lang/Object;", "staticFieldOne", "A", 11);
-    assertTrue("Method must contain access to staticFieldOne: " + method.fieldAccesses()
-               + " does not contain " + access, method.fieldAccesses().contains(access));
+    assertTrue(
+        "Method must contain access to staticFieldOne: "
+            + method.fieldAccesses()
+            + " does not contain "
+            + access,
+        method.fieldAccesses().contains(access));
   }
 
   @Test
   public void testLoadFieldAccess() throws Exception {
-    DeclaredMethod method = artifact.classes().get(TypeDescriptors.fromClassName("A")).methods()
-        .get(internalFieldAccessDescriptor);
+    DeclaredMethod method =
+        artifact
+            .classes()
+            .get(TypeDescriptors.fromClassName("A"))
+            .methods()
+            .get(internalFieldAccessDescriptor);
     AccessedField access = Simple.newAccess("Ljava/lang/Object;", "publicFieldOne", "A", 12);
-    assertTrue("Method must contain access to staticFieldOne: " + method.fieldAccesses()
-               + " does not contain " + access, method.fieldAccesses().contains(access));
+    assertTrue(
+        "Method must contain access to staticFieldOne: "
+            + method.fieldAccesses()
+            + " does not contain "
+            + access,
+        method.fieldAccesses().contains(access));
   }
 
   @Test
   public void testLoadParent() throws Exception {
-    assertEquals(artifact.classes().get(TypeDescriptors.fromClassName("A")).parents(),
+    assertEquals(
+        artifact.classes().get(TypeDescriptors.fromClassName("A")).parents(),
         Collections.singleton(TypeDescriptors.fromClassName("java/lang/Object")));
   }
 
   /**
    * Verify that the asm jar can be loaded without exceptions by ArtifactLoader.
-   * <p>
-   * This test caught bugs where ArtifactLoader treated MethodSignature as the thing that was
-   * unique
-   * within a classfile, whereas the actually unique thing is the MethodDescriptor (combining the
-   * ReturnDescriptor and ParameterDescriptor list).
-   * </p>
+   *
+   * <p>This test caught bugs where ArtifactLoader treated MethodSignature as the thing that was
+   * unique within a classfile, whereas the actually unique thing is the MethodDescriptor (combining
+   * the ReturnDescriptor and ParameterDescriptor list).
    */
   @Test
   public void testLoadAsmJar() throws Exception {
@@ -205,7 +237,7 @@ public class ArtifactLoaderTest {
   @Test
   public void testLoadBouncyCastleJar() throws Exception {
     final Artifact artifact =
-            loader.load(FilePathHelper.getPath("src/test/resources/bcprov-jdk15on-1.68.jar"));
+        loader.load(FilePathHelper.getPath("src/test/resources/bcprov-jdk15on-1.68.jar"));
 
     String currentJavaVersion = System.getProperty("java.version");
     if (currentJavaVersion.startsWith("1.8.")) {
@@ -222,8 +254,7 @@ public class ArtifactLoaderTest {
   }
 
   /**
-   * Attempt to find rt.jar from the Java installation on the classpath, and verify it can be
-   * loaded
+   * Attempt to find rt.jar from the Java installation on the classpath, and verify it can be loaded
    * by ArtifactLoader without exception
    */
   @Test
@@ -233,8 +264,8 @@ public class ArtifactLoaderTest {
     final Collection<File> files =
         Arrays.stream(classPath.split(System.getProperty("path.separator")))
             .map(File::new)
-                // TODO 6/2/15 mbrown -- is every Java installation required to have a rt.jar?
-                // maybe just parse all jars on the classpath instead?
+            // TODO 6/2/15 mbrown -- is every Java installation required to have a rt.jar?
+            // maybe just parse all jars on the classpath instead?
             .filter(file -> file.isFile() && file.getName().equals("rt.jar"))
             .collect(Collectors.toList());
 
@@ -254,7 +285,7 @@ public class ArtifactLoaderTest {
     assertThat(artifact.classes())
         .overridingErrorMessage("Loading classes from a directory should be supported")
         .isNotEmpty()
-            // test that a class known to be in this directory exists in the map
+        // test that a class known to be in this directory exists in the map
         .containsKey(TypeDescriptors.fromClassName(MethodDescriptor.class.getName()));
   }
 
@@ -262,24 +293,26 @@ public class ArtifactLoaderTest {
   public void testNestedClassesNamedConsistenly() throws Exception {
     final Artifact artifact = loadTestClassesAsArtifact();
 
-    final DeclaredClass theClass = getDeclaredClass(artifact,
-        "com/spotify/missinglink/nested/ClassWithNestedClass");
+    final DeclaredClass theClass =
+        getDeclaredClass(artifact, "com/spotify/missinglink/nested/ClassWithNestedClass");
 
-    final MethodDescriptor fooMethodDescriptor = theClass.methods().keySet().stream()
-        .filter(descriptor -> descriptor.name().equals("foo"))
-        .findFirst()
-        .orElseThrow(() -> new RuntimeException("foo method missing?"));
+    final MethodDescriptor fooMethodDescriptor =
+        theClass.methods().keySet().stream()
+            .filter(descriptor -> descriptor.name().equals("foo"))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("foo method missing?"));
 
     final DeclaredMethod fooMethod = theClass.methods().get(fooMethodDescriptor);
 
-    String nestedClassName = fooMethod.methodCalls().stream()
-        .map(CalledMethod::owner)
-        .map(TypeDescriptor::toString)
-        .filter(name -> name.contains("NestedClass"))
-        .findFirst()
-        .orElseThrow(() -> new RuntimeException("call to NestedClass.bar missing?"));
+    String nestedClassName =
+        fooMethod.methodCalls().stream()
+            .map(CalledMethod::owner)
+            .map(TypeDescriptor::toString)
+            .filter(name -> name.contains("NestedClass"))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("call to NestedClass.bar missing?"));
 
-    //make sure that the classMap contains an entry for the nestedClassName
+    // make sure that the classMap contains an entry for the nestedClassName
     assertThat(artifact.classes()).containsKey(TypeDescriptors.fromClassName(nestedClassName));
   }
 
@@ -293,5 +326,4 @@ public class ArtifactLoaderTest {
   private Artifact loadTestClassesAsArtifact() throws IOException {
     return loader.load(FilePathHelper.getPath("target/test-classes"));
   }
-
 }

@@ -35,24 +35,24 @@
  */
 package com.spotify.missinglink.datamodel;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 
 public class MethodDescriptorsTest {
 
   @Test
   public void testMethodDescriptionParser() {
     MethodDescriptor desc1 = MethodDescriptors.fromDesc("([I[[Lfoo/Bar;Z)V", "baz");
-    MethodDescriptor desc2 = new MethodDescriptorBuilder()
-        .returnType(TypeDescriptors.fromRaw("V"))
-        .parameterTypes(
-            TypeDescriptors.fromRaw("[I"),
-            TypeDescriptors.fromRaw("[[Lfoo/Bar;"),
-            TypeDescriptors.fromRaw("Z")
-        )
-        .name("baz")
-        .build();
+    MethodDescriptor desc2 =
+        new MethodDescriptorBuilder()
+            .returnType(TypeDescriptors.fromRaw("V"))
+            .parameterTypes(
+                TypeDescriptors.fromRaw("[I"),
+                TypeDescriptors.fromRaw("[[Lfoo/Bar;"),
+                TypeDescriptors.fromRaw("Z"))
+            .name("baz")
+            .build();
     assertEquals("Method descriptors should be identical", desc1, desc2);
   }
 
