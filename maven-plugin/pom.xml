@@ -15,6 +15,10 @@
     <maven.api.version>3.3.3</maven.api.version>
   </properties>
 
+  <prerequisites>
+    <maven>3.0</maven>
+  </prerequisites>
+
   <dependencies>
     <dependency>
       <groupId>com.spotify</groupId>
