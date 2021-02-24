@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Spotify AB
+ * Copyright (c) 2015-2019 Spotify AB
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,6 +26,8 @@ import com.spotify.missinglink.ArtifactLoader;
 import com.spotify.missinglink.Conflict;
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.ConflictChecker;
+import com.spotify.missinglink.ConflictFilter;
+import com.spotify.missinglink.EmptyConflictFilter;
 import com.spotify.missinglink.Java9ModuleLoader;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
@@ -50,6 +52,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+import com.spotify.missinglink.dependencies.Resolver;
 import org.apache.maven.model.Exclusion;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -147,6 +151,11 @@ public class CheckMojo extends AbstractMojo {
   @Parameter(property = "misslink.bootClasspath")
   protected String bootClasspath;
 
+  /**
+   * Optional: enable experimental dependency graph analysis.
+   */
+  @Parameter(property = "misslink.usedependencygraph", defaultValue = "false")
+  protected boolean useDependencyGraph;
 
   // TODO 6/1/15 mbrown -- how to hook into the Plexus container for proper DI lookups and the conventional maven plugin way of how to set up things like this
   protected ArtifactLoader artifactLoader = new ArtifactLoader();
@@ -324,15 +333,17 @@ public class CheckMojo extends AbstractMojo {
     stopwatch.stop();
     getLog().debug("constructing runtime artifacts took: " + asMillis(stopwatch) + " ms");
 
-    // also need to load JDK classes from the bootstrap classpath
-    final String bootstrapClasspath = bootClassPathToUse();
-
-    stopwatch.reset().start();
-
-    final List<Artifact> bootstrapArtifacts = loadBootstrapArtifacts(bootstrapClasspath);
-
-    stopwatch.stop();
-    getLog().debug("constructing bootstrap artifacts took: " + asMillis(stopwatch) + " ms");
+    final List<Artifact> bootstrapArtifacts;
+    if (!useDependencyGraph) {
+      // also need to load JDK classes from the bootstrap classpath
+      final String bootstrapClasspath = bootClassPathToUse();
+      stopwatch.reset().start();
+      bootstrapArtifacts = loadBootstrapArtifacts(bootstrapClasspath);
+      stopwatch.stop();
+      getLog().debug("constructing bootstrap artifacts took: " + asMillis(stopwatch) + " ms");
+    } else {
+      bootstrapArtifacts = Collections.emptyList();
+    }
 
     final ImmutableList<Artifact> allArtifacts = ImmutableList.<Artifact>builder()
         .addAll(runtimeProjectArtifacts)
@@ -360,7 +371,15 @@ public class CheckMojo extends AbstractMojo {
       getLog().debug("    " + artifact.name().name());
     }
 
-    final Collection<Conflict> conflicts = conflictChecker.check(
+    ConflictFilter conflictFilter;
+    if (useDependencyGraph) {
+      Resolver resolver = Resolver.createFromPomfile(project.getFile());
+      conflictFilter = new ExpectedClasses(resolver, projectDeps);
+    } else {
+      conflictFilter = EmptyConflictFilter.INSTANCE;
+    }
+
+    final Collection<Conflict> conflicts = conflictChecker.check(conflictFilter,
         projectArtifact, runtimeArtifactsAfterExclusions, allArtifacts);
 
     stopwatch.stop();

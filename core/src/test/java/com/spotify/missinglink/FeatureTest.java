@@ -54,6 +54,7 @@ import org.junit.Test;
 public class FeatureTest {
 
   private final ConflictChecker conflictChecker = new ConflictChecker();
+  private final ConflictFilter conflictFilter = EmptyConflictFilter.INSTANCE;
 
   @Test
   public void testSimpleConflict() throws Exception {
@@ -84,7 +85,7 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-        .check(root, classpath, classpath))
+        .check(conflictFilter, root, classpath, classpath))
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
@@ -121,7 +122,7 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-        .check(root, classpath, classpath))
+        .check(conflictFilter, root, classpath, classpath))
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
@@ -156,7 +157,7 @@ public class FeatureTest {
         .build();
 
     assertThat(conflictChecker
-        .check(root, classpath, classpath))
+        .check(conflictFilter, root, classpath, classpath))
         .isEqualTo(Collections.singletonList(expectedConflict));
   }
 
@@ -178,7 +179,7 @@ public class FeatureTest {
 
     final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
 
-    assertThat(conflictChecker.check(artifact,
+    assertThat(conflictChecker.check(conflictFilter, artifact,
         Collections.singletonList(artifact),
         Collections.singletonList(artifact)
     )).isEmpty();
@@ -204,7 +205,7 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, subClass, mainClass);
 
     assertThat(conflictChecker
-        .check(artifact,
+        .check(conflictFilter, artifact,
             Collections.singletonList(artifact),
             Collections.singletonList(artifact)
         )).isEmpty();
@@ -225,7 +226,7 @@ public class FeatureTest {
 
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
-    assertThat(conflictChecker.check(artifact,
+    assertThat(conflictChecker.check(conflictFilter, artifact,
         Collections.singletonList(artifact),
         Collections.singletonList(artifact)
     )).isEmpty();
@@ -255,7 +256,7 @@ public class FeatureTest {
         .build();
 
     assertEquals(Collections.singletonList(expectedConflict),
-        conflictChecker.check(artifact,
+        conflictChecker.check(conflictFilter, artifact,
             Collections.singletonList(artifact),
             Collections.singletonList(artifact)
         ));
@@ -287,7 +288,7 @@ public class FeatureTest {
         .build();
 
     assertEquals(Collections.singletonList(expectedConflict),
-        conflictChecker.check(artifact,
+        conflictChecker.check(conflictFilter, artifact,
             Collections.singletonList(artifact),
             Collections.singletonList(artifact)
         ));
@@ -312,7 +313,7 @@ public class FeatureTest {
     final Artifact artifact = newArtifact("art", superClass, mainClass);
 
     assertEquals(Collections.emptyList(),
-        conflictChecker.check(artifact,
+        conflictChecker.check(conflictFilter, artifact,
             Collections.singletonList(artifact),
             Collections.singletonList(artifact)
         ));
@@ -347,7 +348,7 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(artifact);
 
-    assertThat(conflictChecker.check(artifact,
+    assertThat(conflictChecker.check(conflictFilter, artifact,
         Collections.singletonList(artifact),
         allArtifacts)).isEmpty();
   }
@@ -371,7 +372,7 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(art);
 
-    assertThat(conflictChecker.check(art,
+    assertThat(conflictChecker.check(conflictFilter, art,
         Collections.singletonList(art),
         allArtifacts)).isEmpty();
   }
@@ -383,7 +384,7 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(art);
 
-    assertThat(conflictChecker.check(art,
+    assertThat(conflictChecker.check(conflictFilter, art,
         Collections.singletonList(art),
         allArtifacts)).isEmpty();
   }
@@ -430,7 +431,7 @@ public class FeatureTest {
         .existsIn(ConflictChecker.UNKNOWN_ARTIFACT_NAME)
         .build();
 
-    assertThat(conflictChecker.check(artifact,
+    assertThat(conflictChecker.check(conflictFilter, artifact,
         Collections.singletonList(artifact),
         allArtifacts))
 
@@ -464,7 +465,7 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(artifact);
 
-    assertThat(conflictChecker.check(artifact,
+    assertThat(conflictChecker.check(conflictFilter, artifact,
         Collections.singletonList(artifact),
         allArtifacts))
         .isEmpty();
@@ -501,7 +502,7 @@ public class FeatureTest {
     List<Artifact> allArtifacts = new ArrayList<>(ClassLoadingUtil.bootstrapArtifacts());
     allArtifacts.add(artifact);
 
-    assertThat(conflictChecker.check(artifact,
+    assertThat(conflictChecker.check(conflictFilter, artifact,
         Collections.singletonList(artifact),
         allArtifacts))
         .isEmpty();

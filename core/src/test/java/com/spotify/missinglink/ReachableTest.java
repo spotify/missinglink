@@ -41,13 +41,15 @@ import org.junit.Test;
 
 public class ReachableTest {
 
+  private final ConflictChecker conflictChecker = new ConflictChecker();
+
   @Test
   public void testUnreachable() {
     DeclaredClass root = newClass("my/Root").build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world =
         classMap(root, newClass("other/Unknown").build());
-    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<TypeDescriptor> reachable = conflictChecker.reachableFrom(myClasses, world);
     assertEquals(Collections.singleton(root.className()), reachable);
   }
 
@@ -65,7 +67,7 @@ public class ReachableTest {
         .build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
-    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<TypeDescriptor> reachable = conflictChecker.reachableFrom(myClasses, world);
     Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
         root.className(), remote.className()
     ));
@@ -81,7 +83,7 @@ public class ReachableTest {
         .build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
-    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<TypeDescriptor> reachable = conflictChecker.reachableFrom(myClasses, world);
     Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
         root.className(), remote.className()
     ));
@@ -97,7 +99,7 @@ public class ReachableTest {
         .build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
-    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<TypeDescriptor> reachable = conflictChecker.reachableFrom(myClasses, world);
     Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
         root.className(), remote.className()
     ));
@@ -119,7 +121,7 @@ public class ReachableTest {
         .build();
     Set<DeclaredClass> myClasses = Collections.singleton(root);
     Map<ClassTypeDescriptor, DeclaredClass> world = classMap(root, remote);
-    Set<TypeDescriptor> reachable = ConflictChecker.reachableFrom(myClasses, world);
+    Set<TypeDescriptor> reachable = conflictChecker.reachableFrom(myClasses, world);
     Set<ClassTypeDescriptor> expected = new HashSet<>(Arrays.asList(
         root.className(), remote.className()
     ));

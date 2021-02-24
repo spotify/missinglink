@@ -24,6 +24,7 @@ import com.spotify.missinglink.Conflict;
 import com.spotify.missinglink.Conflict.ConflictCategory;
 import com.spotify.missinglink.ConflictBuilder;
 import com.spotify.missinglink.ConflictChecker;
+import com.spotify.missinglink.ConflictFilter;
 import com.spotify.missinglink.datamodel.Artifact;
 import com.spotify.missinglink.datamodel.ArtifactBuilder;
 import com.spotify.missinglink.datamodel.ArtifactName;
@@ -120,7 +121,7 @@ public class CheckMojoTest {
   }
 
   private void setMockConflictResults(ImmutableList<Conflict> results) {
-    when(conflictChecker.check(any(Artifact.class),
+    when(conflictChecker.check(any(ConflictFilter.class), any(Artifact.class),
             anyListOf(Artifact.class),
             anyListOf(Artifact.class))
     ).thenReturn(results);
@@ -231,7 +232,7 @@ public class CheckMojoTest {
    */
   @Test
   public void testBadValuesForIncludeCategories() throws Exception {
-    when(conflictChecker.check(any(Artifact.class),
+    when(conflictChecker.check(any(ConflictFilter.class), any(Artifact.class),
             anyListOf(Artifact.class),
             anyListOf(Artifact.class))
     ).thenThrow(new RuntimeException("Mojo should not get as far as checking conflicts if the "
@@ -270,7 +271,7 @@ public class CheckMojoTest {
     ArgumentCaptor<ImmutableList> toCheck = ArgumentCaptor.forClass(ImmutableList.class);
 
     verify(conflictChecker).check(
-        any(Artifact.class),
+            any(ConflictFilter.class), any(Artifact.class),
         toCheck.capture(),
         anyListOf(Artifact.class)
     );

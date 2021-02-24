@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Spotify AB
+ * Copyright (c) 2015-2019 Spotify AB
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -32,6 +32,7 @@ import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -95,6 +96,8 @@ public class ConflictChecker {
   public static final ArtifactName UNKNOWN_ARTIFACT_NAME = new ArtifactName("<unknown>");
 
   /**
+   *
+   * @param conflictFilter
    * @param projectArtifact  the main artifact of the project we're verifying
    *                         (this is considered the entry point for reachability)
    * @param artifactsToCheck all artifacts that are on the runtime classpath
@@ -102,7 +105,7 @@ public class ConflictChecker {
    *                         artifacts)
    * @return a list of conflicts
    */
-  public List<Conflict> check(Artifact projectArtifact,
+  public List<Conflict> check(ConflictFilter conflictFilter, Artifact projectArtifact,
                               List<Artifact> artifactsToCheck,
                               List<Artifact> allArtifacts) {
 
@@ -126,8 +129,10 @@ public class ConflictChecker {
         }
 
         for (DeclaredMethod method : clazz.methods().values()) {
-          conflicts.addAll(checkForBrokenMethodCalls(state, artifact, clazz, method));
-          conflicts.addAll(checkForBrokenFieldAccess(state, artifact, clazz, method));
+          conflicts.addAll(
+                  checkForBrokenMethodCalls(state, artifact, clazz, method, conflictFilter));
+          conflicts.addAll(
+                  checkForBrokenFieldAccess(state, artifact, clazz, method, conflictFilter));
         }
       }
     }
@@ -154,7 +159,8 @@ public class ConflictChecker {
   private List<Conflict> checkForBrokenMethodCalls(CheckerState state,
                                                    Artifact artifact,
                                                    DeclaredClass clazz,
-                                                   DeclaredMethod method) {
+                                                   DeclaredMethod method,
+                                                   ConflictFilter conflictFilter) {
     List<Conflict> conflicts = new ArrayList<>();
 
     for (CalledMethod calledMethod : method.methodCalls()) {
@@ -166,7 +172,7 @@ public class ConflictChecker {
             .caughtExceptions()
             .stream()
             .anyMatch(c -> c.getClassName().equals("java.lang.NoClassDefFoundError"));
-        if (!catchesNoClassDef) {
+        if (!catchesNoClassDef && conflictFilter.filterMissingClass(owningClass.getClassName())) {
           conflicts.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
               "Class not found: " + owningClass,
               dependency(clazz, method, calledMethod),
@@ -195,7 +201,8 @@ public class ConflictChecker {
 
   private List<Conflict> checkForBrokenFieldAccess(CheckerState state, Artifact artifact,
                                                    DeclaredClass clazz,
-                                                   DeclaredMethod method) {
+                                                   DeclaredMethod method,
+                                                   ConflictFilter conflictFilter) {
 
     List<Conflict> conflicts = new ArrayList<>();
 
@@ -209,12 +216,14 @@ public class ConflictChecker {
           .build();
 
       if (calledClass == null) {
-        conflicts.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
-            "Class not found: " + owningClass,
-            dependency(clazz, method, field),
-            artifact.name(),
-            state.sourceMappings().get(owningClass)
-        ));
+        if (conflictFilter.filterMissingClass(owningClass.getClassName())) {
+          conflicts.add(conflict(ConflictCategory.CLASS_NOT_FOUND,
+                  "Class not found: " + owningClass,
+                  dependency(clazz, method, field),
+                  artifact.name(),
+                  state.sourceMappings().get(owningClass)
+          ));
+        }
       } else if (missingField(declaredField, calledClass, state.knownClasses())) {
         conflicts.add(conflict(ConflictCategory.FIELD_NOT_FOUND,
             "Field not found: " + field.name(),
@@ -231,7 +240,7 @@ public class ConflictChecker {
     return conflicts;
   }
 
-  static Set<TypeDescriptor> reachableFrom(
+  Set<TypeDescriptor> reachableFrom(
       Collection<DeclaredClass> values,
       Map<ClassTypeDescriptor, DeclaredClass> knownClasses) {
 
@@ -369,5 +378,4 @@ public class ConflictChecker {
 
     return true;
   }
-
 }
