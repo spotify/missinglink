@@ -1,3 +1,23 @@
+/*-
+ * -\-\-
+ * missinglink-core
+ * --
+ * Copyright (C) 2016 - 2021 Spotify AB
+ * --
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
+ */
+
 /*
  * Copyright (c) 2015 Spotify AB
  *
@@ -41,73 +61,96 @@ public class ConflictCheckerTest {
 
   @Before
   public void setUp() throws Exception {
-    final MethodDescriptor cloneDescriptor = new MethodDescriptorBuilder()
-        .name("clone")
-        .returnType(TypeDescriptors.fromClassName("java/lang/Object"))
-        .build();
+    final MethodDescriptor cloneDescriptor =
+        new MethodDescriptorBuilder()
+            .name("clone")
+            .returnType(TypeDescriptors.fromClassName("java/lang/Object"))
+            .build();
 
-    rt = new ArtifactBuilder()
-        .name(new ArtifactName("rt"))
-        .classes(Collections.singletonMap(
-            TypeDescriptors.fromClassName("java/lang/Object"), new DeclaredClassBuilder()
-                .className(TypeDescriptors.fromClassName("java/lang/Object"))
-                .methods(Collections.singletonMap(
-                    cloneDescriptor,
-                    new DeclaredMethodBuilder()
-                        .descriptor(cloneDescriptor)
+    rt =
+        new ArtifactBuilder()
+            .name(new ArtifactName("rt"))
+            .classes(
+                Collections.singletonMap(
+                    TypeDescriptors.fromClassName("java/lang/Object"),
+                    new DeclaredClassBuilder()
+                        .className(TypeDescriptors.fromClassName("java/lang/Object"))
+                        .methods(
+                            Collections.singletonMap(
+                                cloneDescriptor,
+                                new DeclaredMethodBuilder().descriptor(cloneDescriptor).build()))
+                        // TODO: maybe add more methods here
                         .build()))
-                    // TODO: maybe add more methods here
-                .build()))
-        .build();
+            .build();
 
-    projectArtifact = new ArtifactBuilder()
-        .name(new ArtifactName("foo"))
-        .classes(Collections.singletonMap(
-            TypeDescriptors.fromClassName("com/spotify/ClassName"),
-            Simple.newClass("com/spotify/ClassName")
-                .parents(Collections.singleton(TypeDescriptors.fromClassName("java/lang/Object")))
-                .methods(Simple.methodMap(
-                    Simple.newMethod(false, Simple.OBJECT, "something")
-                        .methodCalls(Collections.singleton(new CalledMethodBuilder()
-                            .owner(TypeDescriptors.fromClassName(
-                                "java/lang/Object"))
-                            .descriptor(cloneDescriptor)
-                            .build()))
+    projectArtifact =
+        new ArtifactBuilder()
+            .name(new ArtifactName("foo"))
+            .classes(
+                Collections.singletonMap(
+                    TypeDescriptors.fromClassName("com/spotify/ClassName"),
+                    Simple.newClass("com/spotify/ClassName")
+                        .parents(
+                            Collections.singleton(
+                                TypeDescriptors.fromClassName("java/lang/Object")))
+                        .methods(
+                            Simple.methodMap(
+                                Simple.newMethod(false, Simple.OBJECT, "something")
+                                    .methodCalls(
+                                        Collections.singleton(
+                                            new CalledMethodBuilder()
+                                                .owner(
+                                                    TypeDescriptors.fromClassName(
+                                                        "java/lang/Object"))
+                                                .descriptor(cloneDescriptor)
+                                                .build()))
+                                    .build()))
                         .build()))
-                .build()))
-        .build();
+            .build();
 
     ClassTypeDescriptor libClass1 = TypeDescriptors.fromClassName("org/library/ClassName");
-    MethodDescriptor brokenMethodDescriptor = new MethodDescriptorBuilder()
-        .name("broken")
-        .returnType(TypeDescriptors.fromClassName("java/lang/Object"))
-        .build();
+    MethodDescriptor brokenMethodDescriptor =
+        new MethodDescriptorBuilder()
+            .name("broken")
+            .returnType(TypeDescriptors.fromClassName("java/lang/Object"))
+            .build();
 
-    libraryArtifact = new ArtifactBuilder()
-        .name(new ArtifactName("lib"))
-        .classes(Collections.singletonMap(
-            libClass1, new DeclaredClassBuilder()
-                .className(libClass1)
-                .parents(Collections.singleton(TypeDescriptors.fromClassName("java/lang/Object")))
-                .methods(Simple.methodMap(
-                    Simple.newMethod(false, Simple.OBJECT, "broken")
-                        .methodCalls(Collections.singleton(new CalledMethodBuilder()
-                            .owner(TypeDescriptors.fromClassName("java/lang/Object"))
-                            .descriptor(brokenMethodDescriptor)
-                            .build()))
+    libraryArtifact =
+        new ArtifactBuilder()
+            .name(new ArtifactName("lib"))
+            .classes(
+                Collections.singletonMap(
+                    libClass1,
+                    new DeclaredClassBuilder()
+                        .className(libClass1)
+                        .parents(
+                            Collections.singleton(
+                                TypeDescriptors.fromClassName("java/lang/Object")))
+                        .methods(
+                            Simple.methodMap(
+                                Simple.newMethod(false, Simple.OBJECT, "broken")
+                                    .methodCalls(
+                                        Collections.singleton(
+                                            new CalledMethodBuilder()
+                                                .owner(
+                                                    TypeDescriptors.fromClassName(
+                                                        "java/lang/Object"))
+                                                .descriptor(brokenMethodDescriptor)
+                                                .build()))
+                                    .build()))
                         .build()))
-                .build()))
-        .build();
+            .build();
   }
 
   @Test
   public void shouldSupportInvocationsOnArrayTypes() throws Exception {
     ConflictChecker checker = new ConflictChecker();
 
-    final List<Conflict> conflicts = checker.check(projectArtifact,
-        Arrays.asList(projectArtifact, rt),
-        Arrays.asList(projectArtifact, rt)
-    );
+    final List<Conflict> conflicts =
+        checker.check(
+            projectArtifact,
+            Arrays.asList(projectArtifact, rt),
+            Arrays.asList(projectArtifact, rt));
     assertThat(conflicts).isEmpty();
   }
 

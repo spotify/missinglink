@@ -28,8 +28,8 @@ Optional:
     </profile>
   </profiles>
 
-Activate the 'release' profile when releasing:
+then to release:
 
-$ mvn -Prelease release:clean release:prepare
-$ mvn -Prelease release:perform
+$ mvn release:clean release:prepare
+$ mvn release:perform
 
