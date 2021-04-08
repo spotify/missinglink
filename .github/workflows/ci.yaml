@@ -33,7 +33,6 @@ jobs:
           key: ${{ runner.os }}-java-${{ matrix.java_version }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-java-${{ matrix.java_version }}-m2
       - name: Build with Maven
-        # TODO: use 'verify' to run ITs (https://github.com/spotify/missinglink/issues/130)
-        run: mvn --batch-mode --update-snapshots fmt:check package
+        run: mvn --batch-mode --update-snapshots fmt:check verify
       - name: Codecov
         uses: codecov/codecov-action@v1

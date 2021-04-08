@@ -1,16 +1,19 @@
-import org.junit.Rule;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class ReturnTypeChangeTest {
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void shouldThrowError() throws Exception {
-    thrown.expect(NoSuchMethodError.class);
-    thrown.expectMessage(")Ljava/lang/String;");
+    Throwable ex = Assert.assertThrows(NoSuchMethodError.class,
+        () -> ReturnTypeChange.main(new String[0]));
 
-    ReturnTypeChange.main(new String[0]);
+    // the message for NoSuchMethodError seems to have changed after Java 8
+    String message = System.getProperty("java.vm.specification.version").startsWith("1.8")
+                     ? "SpecificReturnType.aMethod(Ljava/lang/String;)Ljava/lang/String;"
+                     : "'java.lang.String SpecificReturnType.aMethod(java.lang.String)'";
+
+    Assert.assertEquals("Exception message: " + ex.getMessage(),
+        ex.getMessage(), message);
   }
 }

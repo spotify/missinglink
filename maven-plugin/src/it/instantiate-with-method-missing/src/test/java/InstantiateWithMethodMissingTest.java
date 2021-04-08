@@ -1,16 +1,12 @@
-import org.junit.Rule;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class InstantiateWithMethodMissingTest {
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void shouldThrowError() throws Exception {
-    thrown.expect(AbstractMethodError.class);
-    thrown.expectMessage("anotherMethod");
-
-    InstantiateWithMethodMissing.main(new String[0]);
+    Throwable ex = Assert.assertThrows(AbstractMethodError.class,
+        () -> InstantiateWithMethodMissing.main(new String[0]));
+    Assert.assertTrue(ex.getMessage().contains("anotherMethod"));
   }
 }
