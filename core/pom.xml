@@ -52,7 +52,7 @@
             <path>
               <groupId>io.norberg</groupId>
               <artifactId>auto-matter</artifactId>
-              <version>0.15.3</version>
+              <version>0.16.0</version>
             </path>
           </annotationProcessorPaths>
         </configuration>
