@@ -36,6 +36,7 @@
 package com.spotify.missinglink.maven;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
@@ -78,7 +79,6 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
 /**
@@ -102,8 +102,6 @@ public class CheckMojoTest {
   @Rule public MojoRule rule = new MojoRule();
 
   @Rule public TestResources resources = new TestResources();
-
-  @Rule public ExpectedException exception = ExpectedException.none();
 
   private final ArtifactLoader artifactLoader = mock(ArtifactLoader.class);
   private final ConflictChecker conflictChecker = mock(ConflictChecker.class);
@@ -234,10 +232,11 @@ public class CheckMojoTest {
         mockConflicts(
             ConflictCategory.CLASS_NOT_FOUND, ConflictCategory.METHOD_SIGNATURE_NOT_FOUND));
 
-    exception.expect(MojoFailureException.class);
-    exception.expectMessage("conflicts found");
+    CheckMojo mojo = getMojo("fail-on-warning");
 
-    getMojo("fail-on-warning").execute();
+    MojoFailureException ex = assertThrows(MojoFailureException.class, mojo::execute);
+
+    assertThat(ex.getMessage()).contains("conflicts found");
   }
 
   /**
@@ -252,10 +251,11 @@ public class CheckMojoTest {
                 "Mojo should not get as far as checking conflicts if the "
                     + "configuration is bad!"));
 
-    exception.expect(MojoExecutionException.class);
-    exception.expectMessage("Invalid value(s) for 'includeCategories'");
+    CheckMojo mojo = getMojo("include-categories-bad-values");
 
-    getMojo("include-categories-bad-values").execute();
+    MojoExecutionException ex = assertThrows(MojoExecutionException.class, mojo::execute);
+
+    assertThat(ex.getMessage()).contains("Invalid value(s) for 'includeCategories'");
   }
 
   /**

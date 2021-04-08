@@ -1,16 +1,12 @@
-import org.junit.Rule;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class MethodRemovedTest {
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void shouldThrowError() throws Exception {
-    thrown.expect(NoSuchMethodError.class);
-    thrown.expectMessage("A.methodTwo");
-
-    MethodRemoved.main(new String[0]);
+    Throwable ex = Assert.assertThrows(NoSuchMethodError.class,
+        () -> MethodRemoved.main(new String[0]));
+    Assert.assertTrue(ex.getMessage().contains("A.methodTwo"));
   }
 }
