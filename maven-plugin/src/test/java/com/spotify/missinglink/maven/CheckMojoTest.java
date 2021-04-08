@@ -36,14 +36,14 @@
 package com.spotify.missinglink.maven;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -67,7 +67,6 @@ import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptorBuilder;
 import com.spotify.missinglink.datamodel.TypeDescriptors;
 import java.io.File;
-import java.util.List;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -135,9 +134,7 @@ public class CheckMojoTest {
   }
 
   private void setMockConflictResults(ImmutableList<Conflict> results) {
-    when(conflictChecker.check(
-            any(Artifact.class), anyListOf(Artifact.class), anyListOf(Artifact.class)))
-        .thenReturn(results);
+    when(conflictChecker.check(any(Artifact.class), anyList(), anyList())).thenReturn(results);
   }
 
   private CheckMojo getMojo(String dirName) throws Exception {
@@ -254,8 +251,7 @@ public class CheckMojoTest {
    */
   @Test
   public void testBadValuesForIncludeCategories() throws Exception {
-    when(conflictChecker.check(
-            any(Artifact.class), anyListOf(Artifact.class), anyListOf(Artifact.class)))
+    when(conflictChecker.check(any(Artifact.class), anyList(), anyList()))
         .thenThrow(
             new RuntimeException(
                 "Mojo should not get as far as checking conflicts if the "
@@ -293,8 +289,7 @@ public class CheckMojoTest {
 
     ArgumentCaptor<ImmutableList> toCheck = ArgumentCaptor.forClass(ImmutableList.class);
 
-    verify(conflictChecker)
-        .check(any(Artifact.class), toCheck.capture(), anyListOf(Artifact.class));
+    verify(conflictChecker).check(any(Artifact.class), toCheck.capture(), anyList());
 
     assertThat(toCheck.getValue()).isEmpty();
   }
@@ -435,23 +430,6 @@ public class CheckMojoTest {
       @Override
       public void describeTo(Description description) {
         description.appendText("artifact with id '" + artifactId + "'");
-      }
-    };
-  }
-
-  private Matcher<List<Artifact>> listWithProvidedArtifact() {
-    return new TypeSafeMatcher<List<Artifact>>() {
-      @Override
-      protected boolean matchesSafely(List<Artifact> item) {
-        return item.stream()
-            .filter(artifact -> "boobaz".equals(artifact.name().name()))
-            .findFirst()
-            .isPresent();
-      }
-
-      @Override
-      public void describeTo(Description description) {
-        throw new UnsupportedOperationException();
       }
     };
   }
