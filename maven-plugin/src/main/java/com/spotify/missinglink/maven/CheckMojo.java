@@ -38,6 +38,7 @@ package com.spotify.missinglink.maven;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -529,12 +530,12 @@ public class CheckMojo extends AbstractMojo {
     return lineNumber != 0 ? ":" + lineNumber : "";
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   private Artifact toArtifact(String outputDirectory) {
     return new ArtifactBuilder()
         .name(new ArtifactName("project"))
         .classes(
-            Files.fileTreeTraverser()
-                .breadthFirstTraversal(new File(outputDirectory))
+            FluentIterable.from(Files.fileTraverser().breadthFirst(new File(outputDirectory)))
                 .filter(f -> f.getName().endsWith(".class"))
                 .transform(this::loadClass)
                 .uniqueIndex(DeclaredClass::className))

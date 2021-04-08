@@ -28,7 +28,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>23.0</version>
+      <version>25.1-jre</version>
     </dependency>
 
     <!-- maven-plugin-annotations seems to be version differently than Maven API stuff  -->
