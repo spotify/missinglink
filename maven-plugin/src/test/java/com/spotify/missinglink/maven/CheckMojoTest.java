@@ -80,8 +80,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A note on the maven plugin testing harness:
@@ -100,8 +98,6 @@ import org.slf4j.LoggerFactory;
  * Mojo are set based on the POM XML file.
  */
 public class CheckMojoTest {
-
-  private static final Logger log = LoggerFactory.getLogger(CheckMojoTest.class);
 
   @Rule public MojoRule rule = new MojoRule();
 
@@ -139,7 +135,6 @@ public class CheckMojoTest {
 
   private CheckMojo getMojo(String dirName) throws Exception {
     final File basedir = resources.getBasedir(dirName);
-    log.debug("Constructing Mojo against test basedir {}", basedir);
     final CheckMojo mojo = (CheckMojo) rule.lookupConfiguredMojo(basedir, "check");
     mojo.artifactLoader = artifactLoader;
     mojo.conflictChecker = conflictChecker;
