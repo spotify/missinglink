@@ -12,7 +12,7 @@
   <packaging>maven-plugin</packaging>
 
   <properties>
-    <maven.api.version>3.3.3</maven.api.version>
+    <maven.api.version>3.8.1</maven.api.version>
   </properties>
 
   <prerequisites>
@@ -81,7 +81,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>1.10.8</version>
+      <version>3.9.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
