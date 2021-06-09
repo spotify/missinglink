@@ -1,3 +1,24 @@
+### 0.2.3
+
+Upgraded a number of dependencies:
+
+- asm-tree updated to 9.1
+- auto-matter-annotation updated to 0.16.0
+- Guava updated to 30.1.1-jre
+- maven-plugin-api updated to 3.8.1
+- maven-artifact updated to 3.8.1
+- maven-compat updated to 3.8.1
+- maven-core updated to 3.8.1
+- maven-plugin-plugin updated to 3.6.1
+
+Internal changes:
+
+- moved to Github Actions for CI
+- replaced Checkstyle with com.coveo:fmt-maven-plugin
+- jmh.version updated to 1.32
+- mockito-core updated to 3.11.0
+- junit updated to 4.13.2
+
 ### 0.2.2
 - Handle Multi-Release JARs
 - Use thread-safe caches to enable using Missinglink on multiple projects concurrently
