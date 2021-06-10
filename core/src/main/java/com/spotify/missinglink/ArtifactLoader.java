@@ -114,7 +114,8 @@ public class ArtifactLoader {
 
     // We have to figure out what JVM version we're running on.
     Integer currentJavaVersion;
-    String[] javaVersionElements = System.getProperty("java.version").split("\\.");
+    String[] javaVersionElements =
+        System.getProperty("java.version").replaceAll("\\-ea", "").split("\\.");
     if (javaVersionElements[0].equals("1")) {
       currentJavaVersion = Integer.parseInt(javaVersionElements[1]);
     } else {
