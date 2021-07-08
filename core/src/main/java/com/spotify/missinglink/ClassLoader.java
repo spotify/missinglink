@@ -80,7 +80,7 @@ public final class ClassLoader {
   // and thus define native methods that don't actually exist in the class file
   // This could be removed if we stop loading the full JDK
   private static final Set<String> BLACKLIST =
-      new HashSet<>(Arrays.asList("java/lang/invoke/MethodHandle"));
+      new HashSet<>(Arrays.asList("java/lang/invoke/MethodHandle", "java/lang/invoke/VarHandle"));
 
   private ClassLoader() {
     // prevent instantiation
