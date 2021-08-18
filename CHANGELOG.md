@@ -1,9 +1,13 @@
+### 0.2.5
+
+- Added `java.lang.invoke.VarHandle` to the list of classes with
+  `@HotSpotIntrinsicCandidate` annotated methods which are excluded from analysis.
+  Calls to `VarHandle` methods will no longer result in missinglink generating
+  false warnings about methods like `getAndSet` not existing.
+
 ### 0.2.4
 
-Added `java.lang.invoke.VarHandle` to the list of classes with
-`@HotSpotIntrinsicCandidate` annotated methods which are excluded from analysis.
-Calls to `VarHandle` methods will no longer result in missinglink generating
-false warnings about methods like `getAndSet` not existing.
+- Handle EA versions of Java
 
 ### 0.2.3
 
