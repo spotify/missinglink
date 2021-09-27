@@ -49,7 +49,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>30.1.1-jre</version>
+      <version>31.0-jre</version>
     </dependency>
 
     <!-- maven-plugin-annotations seems to be version differently than Maven API stuff  -->
