@@ -282,3 +282,14 @@ We thought that should be detectable in build time instead - so we built this to
 
 This software is released under the Apache License 2.0. More information in
 the file LICENSE distributed with this project.
+
+# Ownership
+
+The Weaver squad is currently owning this project internally.
+We are currently in the evaluating process of the ownership of this and other OSS Java libraries.
+The ownership takes into account **ONLY** security maintenance.
+
+This repo is also co-owned by other people:
+
+* [mattnworb](https://github.com/mattnworb)
+* [spkrka](https://github.com/spkrka)
