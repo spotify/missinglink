@@ -212,7 +212,7 @@ translate it to the new key value.
 
 ### Target only conflicts from certain packages
 
-Conversely, found conflicts can be filtered based on the package name of the class that has the
+Conversely, the plugin can be configured to _only_ report on conflicts in specific packages, based on the name of the class that has the
 conflict. There are separate configuration options for targeting conflicts on the "source" side of the conflict
 and the "destination" side of the conflict.
 
@@ -241,7 +241,7 @@ this can be disabled on an individual basis by adding
 `<filterSubpackages>false</filterSubpackages>` to the `<ignoreSourcePackage>`
 or `<ignoreDestinationPackage>` element.
 
-Note that `target*` options CANNOT be used in conjunction with `ignore*` options. You can only specify one or the other.
+**Note** that `target*` options CANNOT be used in conjunction with `ignore*` options. You can only specify one or the other.
 
 # Caveats and Limitations
 
