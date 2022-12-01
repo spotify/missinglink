@@ -214,7 +214,7 @@ Conversely, conflicts can be allowed based on the package name of the class that
 conflict. There are separate configuration options for allowing conflicts on
 the "source" side of the conflict and the "destination" side of the conflict.
 
-Packages on the source side can be allowe with `<allowSourcePackages>` and
+Packages on the source side can be allowed with `<allowSourcePackages>` and
 packages on the destination side can be ignored with
 `<allowDestinationPackages>`:
 
