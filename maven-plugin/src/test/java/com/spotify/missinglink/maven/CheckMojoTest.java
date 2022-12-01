@@ -361,7 +361,7 @@ public class CheckMojoTest {
 
   @Test
   public void testTargetSourcePackages() throws Exception {
-    final CheckMojo mojo = getMojo("allow-source-packages");
+    final CheckMojo mojo = getMojo("target-source-packages");
 
     // make sure that the XML config is deserializing into the Mojo as expected - will catch
     // errors in an easier fashion than build failures from .execute() below
@@ -412,7 +412,7 @@ public class CheckMojoTest {
                 callee,
                 "class com/foo/Bar not found")));
 
-    final CheckMojo mojo = getMojo("allow-destination-packages");
+    final CheckMojo mojo = getMojo("target-destination-packages");
 
     // make sure that the XML config is deserializing into the Mojo as expected - will catch
     // errors in an easier fashion than build failures from .execute() below

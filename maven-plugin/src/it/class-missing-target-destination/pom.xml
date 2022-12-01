@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.spotify.missinglink.tests</groupId>
-  <artifactId>class-missing-allow-destination</artifactId>
+  <artifactId>class-missing-target-destination</artifactId>
   <version>1-SNAPSHOT</version>
 
   <dependencies>
