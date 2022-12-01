@@ -32,11 +32,11 @@
         <artifactId>@project.artifactId@</artifactId>
         <version>@project.version@</version>
         <configuration>
-          <allowDestinationPackages>
-            <allowDestinationPackage>
+          <targetDestinationPackages>
+            <targetDestinationPackage>
               <package>com.spotify.missinglink.d</package>
-            </allowDestinationPackage>
-          </allowDestinationPackages>
+            </targetDestinationPackage>
+          </targetDestinationPackages>
         </configuration>
         <executions>
           <execution>

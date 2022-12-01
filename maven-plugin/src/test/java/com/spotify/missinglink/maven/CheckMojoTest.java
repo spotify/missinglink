@@ -360,12 +360,12 @@ public class CheckMojoTest {
   }
 
   @Test
-  public void testAllowSourcePackages() throws Exception {
+  public void testtargetSourcePackages() throws Exception {
     final CheckMojo mojo = getMojo("allow-source-packages");
 
     // make sure that the XML config is deserializing into the Mojo as expected - will catch
     // errors in an easier fashion than build failures from .execute() below
-    assertThat(mojo.allowSourcePackages)
+    assertThat(mojo.targetSourcePackages)
         .hasSize(1)
         .contains(new PackageFilter("com.foobar", false));
 
@@ -378,7 +378,7 @@ public class CheckMojoTest {
   }
 
   @Test
-  public void testAllowDestinationPackages() throws Exception {
+  public void testtargetDestinationPackages() throws Exception {
     final CalledMethod callee =
         new CalledMethodBuilder()
             .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
@@ -416,7 +416,7 @@ public class CheckMojoTest {
 
     // make sure that the XML config is deserializing into the Mojo as expected - will catch
     // errors in an easier fashion than build failures from .execute() below
-    assertThat(mojo.allowDestinationPackages)
+    assertThat(mojo.targetDestinationPackages)
         .hasSize(1)
         .contains(new PackageFilter("com.foobar", true));
 

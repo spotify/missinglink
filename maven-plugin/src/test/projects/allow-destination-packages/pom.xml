@@ -15,11 +15,11 @@
         <version>0.1.2-SNAPSHOT</version>
         <configuration>
           <failOnConflicts>true</failOnConflicts>
-          <allowDestinationPackages>
-            <allowDestinationPackage>
+          <targetDestinationPackages>
+            <targetDestinationPackage>
               <package>com.foobar</package>
-            </allowDestinationPackage>
-          </allowDestinationPackages>
+            </targetDestinationPackage>
+          </targetDestinationPackages>
         </configuration>
       </plugin>
     </plugins>

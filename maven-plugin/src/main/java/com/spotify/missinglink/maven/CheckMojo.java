@@ -148,7 +148,7 @@ public class CheckMojo extends AbstractMojo {
    *
    * <p>This parameter CANNOT be used in conjunction with ignoreSourcePackages. Only one can be set.
    */
-  @Parameter protected List<PackageFilter> allowSourcePackages = new ArrayList<>();
+  @Parameter protected List<PackageFilter> targetSourcePackages = new ArrayList<>();
 
   /**
    * Optional list of packages to ignore conflicts in where the destination/called-side of the
@@ -161,7 +161,7 @@ public class CheckMojo extends AbstractMojo {
    * <p>For example, if the package "javax.bar" is in ignoreDestinationPackages, then any conflict
    * found having to do with calling a method in a class in javax.bar is ignored.
    *
-   * <p>This parameter CANNOT be used in conjunction with allowDestinationPackages. Only one can be
+   * <p>This parameter CANNOT be used in conjunction with targetDestinationPackages. Only one can be
    * set.
    */
   @Parameter protected List<PackageFilter> ignoreDestinationPackages = new ArrayList<>();
@@ -173,7 +173,7 @@ public class CheckMojo extends AbstractMojo {
    * <p>This parameter CANNOT be used in conjunction with ignoreDestinationPackages. Only one can be
    * set.
    */
-  @Parameter protected List<PackageFilter> allowDestinationPackages = new ArrayList<>();
+  @Parameter protected List<PackageFilter> targetDestinationPackages = new ArrayList<>();
 
   /**
    * Optional: can be set to explicitly define the path to use for the bootclasspath containing the
@@ -217,15 +217,15 @@ public class CheckMojo extends AbstractMojo {
               + Joiner.on(", ").join(ConflictCategory.values()));
     }
 
-    if (!ignoreDestinationPackages.isEmpty() && !allowDestinationPackages.isEmpty()) {
+    if (!ignoreDestinationPackages.isEmpty() && !targetDestinationPackages.isEmpty()) {
       throw new MojoExecutionException(
-          "Either ignoreDestinationPackages or allowDestinationPackages can be set, "
+          "Either ignoreDestinationPackages or targetDestinationPackages can be set, "
               + "but not both.");
     }
 
-    if (!ignoreSourcePackages.isEmpty() && !allowSourcePackages.isEmpty()) {
+    if (!ignoreSourcePackages.isEmpty() && !targetSourcePackages.isEmpty()) {
       throw new MojoExecutionException(
-          "Either ignoreSourcePackages or allowSourcePackages can be set, " + "but not both.");
+          "Either ignoreSourcePackages or targetSourcePackages can be set, " + "but not both.");
     }
 
     Collection<Conflict> conflicts = loadArtifactsAndCheckConflicts();
@@ -302,11 +302,11 @@ public class CheckMojo extends AbstractMojo {
                       + " conflicts found in ignored source packages. "
                       + "Run plugin again without the 'ignoreSourcePackages' parameter to see "
                       + "all conflicts that were found.");
-    } else if (!allowSourcePackages.isEmpty()) {
-      getLog().debug("Allowing source packages: " + Joiner.on(", ").join(allowSourcePackages));
+    } else if (!targetSourcePackages.isEmpty()) {
+      getLog().debug("Allowing source packages: " + Joiner.on(", ").join(targetSourcePackages));
 
       final Predicate<Conflict> predicate =
-          conflict -> packageIsFiltered(allowSourcePackages, conflict.dependency().fromClass());
+          conflict -> packageIsFiltered(targetSourcePackages, conflict.dependency().fromClass());
 
       conflicts =
           filterConflictsBy(
@@ -315,7 +315,7 @@ public class CheckMojo extends AbstractMojo {
               num ->
                   num
                       + " conflicts found in allowed source packages. "
-                      + "Run plugin again without the 'allowSourcePackages' parameter to see "
+                      + "Run plugin again without the 'targetSourcePackages' parameter to see "
                       + "all conflicts that were found.");
     }
 
@@ -337,14 +337,14 @@ public class CheckMojo extends AbstractMojo {
                       + " conflicts found in ignored destination packages. "
                       + "Run plugin again without the 'ignoreDestinationPackages' parameter to see "
                       + "all conflicts that were found.");
-    } else if (!allowDestinationPackages.isEmpty()) {
+    } else if (!targetDestinationPackages.isEmpty()) {
       getLog()
           .debug(
-              "Allowing destination packages: " + Joiner.on(", ").join(allowDestinationPackages));
+              "Allowing destination packages: " + Joiner.on(", ").join(targetDestinationPackages));
 
       final Predicate<Conflict> predicate =
           conflict ->
-              packageIsFiltered(allowDestinationPackages, conflict.dependency().targetClass());
+              packageIsFiltered(targetDestinationPackages, conflict.dependency().targetClass());
 
       conflicts =
           filterConflictsBy(
@@ -353,7 +353,7 @@ public class CheckMojo extends AbstractMojo {
               num ->
                   num
                       + " conflicts found in allowed destination packages. "
-                      + "Run plugin again without the 'allowDestinationPackages' parameter to see "
+                      + "Run plugin again without the 'targetDestinationPackages' parameter to see "
                       + "all conflicts that were found.");
     }
 

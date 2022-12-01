@@ -208,30 +208,29 @@ this can be disabled on an individual basis by adding
 `<filterSubpackages>false</filterSubpackages>` to the `<ignoreSourcePackage>`
 or `<ignoreDestinationPackage>` element.
 
-### Allow only conflicts from certain packages
+### Target only conflicts from certain packages
 
-Conversely, conflicts can be allowed based on the package name of the class that has the
-conflict. There are separate configuration options for allowing conflicts on
-the "source" side of the conflict and the "destination" side of the conflict.
+Conversely, found conflicts can be filtered based on the package name of the class that has the
+conflict. There are separate configuration options for targeting conflicts on the "source" side of the conflict
+and the "destination" side of the conflict.
 
-Packages on the source side can be allowed with `<allowSourcePackages>` and
-packages on the destination side can be ignored with
-`<allowDestinationPackages>`:
+Packages on the source side can be targeted with `<targetSourcePackages>` and
+packages on the destination side can be targeted with `<targetDestinationPackages>`:
 
 ```xml
 <configuration>
-  <!-- ignore conflicts with groovy.lang on the caller side -->
-  <allowSourcePackages>
-    <allowSourcePackage>
+  <!-- Only target conflicts coming from groovy.lang source package -->
+  <targetSourcePackages>
+    <targetSourcePackage>
       <package>groovy.lang</package>
-    </allowSourcePackage>
-  </allowSourcePackages>
-  <!-- ignore conflicts with com.foo on the callee side -->
-  <allowDestinationPackages>
-    <allowDestinationPackage>
+    </targetSourcePackage>
+  </targetSourcePackages>
+  <!-- Only target conflicts coming from com.foo package on the callee side -->
+  <targetDestinationPackages>
+    <targetDestinationPackage>
       <package>com.foo</package>
-    </allowDestinationPackage>
-  </allowDestinationPackages>
+    </targetDestinationPackage>
+  </targetDestinationPackages>
 </configuration>
 ```
 

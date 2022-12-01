@@ -15,12 +15,12 @@
         <version>0.1.2-SNAPSHOT</version>
         <configuration>
           <failOnConflicts>true</failOnConflicts>
-          <allowSourcePackages>
-            <allowSourcePackage>
+          <targetSourcePackages>
+            <targetSourcePackage>
               <package>com.foobar</package>
               <filterSubpackages>false</filterSubpackages>
-            </allowSourcePackage>
-          </allowSourcePackages>
+            </targetSourcePackage>
+          </targetSourcePackages>
         </configuration>
       </plugin>
     </plugins>
