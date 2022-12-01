@@ -18,7 +18,7 @@
           <ignoreSourcePackages>
             <ignoreSourcePackages>
               <package>org.codehaus.janino</package>
-              <filterSubpackages>false</filterSubpackages>
+              <ignoreSubpackages>false</ignoreSubpackages>
             </ignoreSourcePackages>
             <ignoreSourcePackages>
               <package>groovy.lang</package>

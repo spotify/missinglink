@@ -77,6 +77,10 @@ public class PackageFilter {
     this.filterSubpackages = filterSubpackages;
   }
 
+  public void setIgnoreSubpackages(boolean ignoreSubpackages) {
+    this.filterSubpackages = ignoreSubpackages;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
