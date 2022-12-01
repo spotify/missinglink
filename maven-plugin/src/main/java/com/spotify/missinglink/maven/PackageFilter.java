@@ -42,22 +42,22 @@ import com.google.common.base.Preconditions;
 /**
  * Package names to be ignored when reporting conflicts. A package name is a String like
  * "javax.servlet" (not a regular expression). By default, subpackages of the specified package are
- * also ignored - to disable this behavior, set ignoreSubpackages to false.
+ * also ignored - to disable this behavior, set filterSubpackages to false.
  */
-public class IgnoredPackage {
+public class PackageFilter {
 
   // Plexus seems to require classes to be referenced in the Maven project model to have no-arg
   // constructors and getters/setters.
 
   private String name;
-  private boolean ignoreSubpackages = true;
+  private boolean filterSubpackages = true;
 
-  public IgnoredPackage() {}
+  public PackageFilter() {}
 
-  public IgnoredPackage(String name, boolean ignoreSubpackages) {
+  public PackageFilter(String name, boolean filterSubpackages) {
     this.name = checkNotNull(name);
     Preconditions.checkArgument(!name.isEmpty(), "name cannot be empty");
-    this.ignoreSubpackages = ignoreSubpackages;
+    this.filterSubpackages = filterSubpackages;
   }
 
   public String getPackage() {
@@ -69,12 +69,12 @@ public class IgnoredPackage {
     this.name = name;
   }
 
-  public boolean isIgnoreSubpackages() {
-    return ignoreSubpackages;
+  public boolean isFilterSubpackages() {
+    return filterSubpackages;
   }
 
-  public void setIgnoreSubpackages(boolean ignoreSubpackages) {
-    this.ignoreSubpackages = ignoreSubpackages;
+  public void setFilterSubpackages(boolean filterSubpackages) {
+    this.filterSubpackages = filterSubpackages;
   }
 
   @Override
@@ -86,9 +86,9 @@ public class IgnoredPackage {
       return false;
     }
 
-    IgnoredPackage that = (IgnoredPackage) o;
+    PackageFilter that = (PackageFilter) o;
 
-    if (ignoreSubpackages != that.ignoreSubpackages) {
+    if (filterSubpackages != that.filterSubpackages) {
       return false;
     }
     return name.equals(that.name);
@@ -97,7 +97,7 @@ public class IgnoredPackage {
   @Override
   public int hashCode() {
     int result = name.hashCode();
-    result = 31 * result + (ignoreSubpackages ? 1 : 0);
+    result = 31 * result + (filterSubpackages ? 1 : 0);
     return result;
   }
 
@@ -107,8 +107,8 @@ public class IgnoredPackage {
         + "name='"
         + name
         + '\''
-        + ", ignoreSubpackages="
-        + ignoreSubpackages
+        + ", filterSubpackages="
+        + filterSubpackages
         + '}';
   }
 }

@@ -302,8 +302,8 @@ public class CheckMojoTest {
     assertThat(mojo.ignoreSourcePackages)
         .hasSize(2)
         .contains(
-            new IgnoredPackage("groovy.lang", true),
-            new IgnoredPackage("org.codehaus.janino", false));
+            new PackageFilter("groovy.lang", true),
+            new PackageFilter("org.codehaus.janino", false));
 
     setMockConflictResults(
         mockConflicts(
@@ -354,7 +354,71 @@ public class CheckMojoTest {
     // errors in an easier fashion than build failures from .execute() below
     assertThat(mojo.ignoreDestinationPackages)
         .hasSize(1)
-        .contains(new IgnoredPackage("com.foo", true));
+        .contains(new PackageFilter("com.foo", true));
+
+    mojo.execute();
+  }
+
+  @Test
+  public void testAllowSourcePackages() throws Exception {
+    final CheckMojo mojo = getMojo("allow-source-packages");
+
+    // make sure that the XML config is deserializing into the Mojo as expected - will catch
+    // errors in an easier fashion than build failures from .execute() below
+    assertThat(mojo.allowSourcePackages)
+        .hasSize(1)
+        .contains(new PackageFilter("com.foobar", false));
+
+    setMockConflictResults(
+        mockConflicts(
+            TypeDescriptors.fromClassName("groovy.lang.foo.Bar"),
+            ConflictCategory.CLASS_NOT_FOUND));
+
+    mojo.execute();
+  }
+
+  @Test
+  public void testAllowDestinationPackages() throws Exception {
+    final CalledMethod callee =
+        new CalledMethodBuilder()
+            .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
+            .descriptor(
+                new MethodDescriptorBuilder()
+                    .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+                    .name("bat")
+                    .parameterTypes(ImmutableList.of())
+                    .build())
+            .build();
+
+    final DeclaredMethod caller =
+        new DeclaredMethodBuilder()
+            .methodCalls(ImmutableSet.of())
+            .fieldAccesses(ImmutableSet.of())
+            .descriptor(
+                new MethodDescriptorBuilder()
+                    .returnType(TypeDescriptors.fromRaw("Ljava/lang/String;"))
+                    .name("bat")
+                    .parameterTypes(ImmutableList.of(TypeDescriptors.fromRaw("I")))
+                    .build())
+            .build();
+
+    // a conflict from com/Whatever => com/foo/Bar.bat where the latter class cannot be found
+    setMockConflictResults(
+        ImmutableList.of(
+            conflict(
+                ConflictCategory.CLASS_NOT_FOUND,
+                TypeDescriptors.fromClassName("com/Whatever"),
+                caller,
+                callee,
+                "class com/foo/Bar not found")));
+
+    final CheckMojo mojo = getMojo("allow-destination-packages");
+
+    // make sure that the XML config is deserializing into the Mojo as expected - will catch
+    // errors in an easier fashion than build failures from .execute() below
+    assertThat(mojo.allowDestinationPackages)
+        .hasSize(1)
+        .contains(new PackageFilter("com.foobar", true));
 
     mojo.execute();
   }

@@ -205,8 +205,42 @@ packages on the destination side can be ignored with
 
 By default, all subpackages of the specified packages are also ignored, but
 this can be disabled on an individual basis by adding
-`<ignoreSubpackages>false</ignoreSubpackages>` to the `<ignoreSourcePackage>`
+`<filterSubpackages>false</filterSubpackages>` to the `<ignoreSourcePackage>`
 or `<ignoreDestinationPackage>` element.
+
+### Allow only conflicts from certain packages
+
+Conversely, conflicts can be allowed based on the package name of the class that has the
+conflict. There are separate configuration options for allowing conflicts on
+the "source" side of the conflict and the "destination" side of the conflict.
+
+Packages on the source side can be allowe with `<allowSourcePackages>` and
+packages on the destination side can be ignored with
+`<allowDestinationPackages>`:
+
+```xml
+<configuration>
+  <!-- ignore conflicts with groovy.lang on the caller side -->
+  <allowSourcePackages>
+    <allowSourcePackage>
+      <package>groovy.lang</package>
+    </allowSourcePackage>
+  </allowSourcePackages>
+  <!-- ignore conflicts with com.foo on the callee side -->
+  <allowDestinationPackages>
+    <allowDestinationPackage>
+      <package>com.foo</package>
+    </allowDestinationPackage>
+  </allowDestinationPackages>
+</configuration>
+```
+
+By default, all subpackages of the specified packages are also ignored, but
+this can be disabled on an individual basis by adding
+`<filterSubpackages>false</filterSubpackages>` to the `<ignoreSourcePackage>`
+or `<ignoreDestinationPackage>` element.
+
+Note that `allow*` options CANNOT be used in conjunction with `ignore*` options. You can only specify one or the other.
 
 # Caveats and Limitations
 

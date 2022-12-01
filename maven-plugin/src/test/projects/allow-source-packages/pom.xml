@@ -15,15 +15,12 @@
         <version>0.1.2-SNAPSHOT</version>
         <configuration>
           <failOnConflicts>true</failOnConflicts>
-          <ignoreSourcePackages>
-            <ignoreSourcePackages>
-              <package>org.codehaus.janino</package>
+          <allowSourcePackages>
+            <allowSourcePackage>
+              <package>com.foobar</package>
               <filterSubpackages>false</filterSubpackages>
-            </ignoreSourcePackages>
-            <ignoreSourcePackages>
-              <package>groovy.lang</package>
-            </ignoreSourcePackages>
-          </ignoreSourcePackages>
+            </allowSourcePackage>
+          </allowSourcePackages>
         </configuration>
       </plugin>
     </plugins>
