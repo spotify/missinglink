@@ -1,3 +1,5 @@
+package com.spotify.missinglink;
+
 import org.junit.Assert;
 import org.junit.Test;
 

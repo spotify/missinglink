@@ -32,11 +32,11 @@
         <artifactId>@project.artifactId@</artifactId>
         <version>@project.version@</version>
         <configuration>
-          <allowSourcePackages>
-            <allowSourcePackage>
-              <package>C</package> <!-- Filter out B package errors -->
-            </allowSourcePackage>
-          </allowSourcePackages>
+          <allowDestinationPackages>
+            <allowDestinationPackage>
+              <package>com.spotify.missinglink.d</package>
+            </allowDestinationPackage>
+          </allowDestinationPackages>
         </configuration>
         <executions>
           <execution>
