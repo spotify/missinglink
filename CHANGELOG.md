@@ -1,3 +1,7 @@
+### 0.2.6
+- Added `targetSourcePackages` and `targetDestinationPackages` configuration options
+- Renamed `ignoreSubpackages` configuration option to `filterSubpackages`
+
 ### 0.2.5
 
 - Added `java.lang.invoke.VarHandle` to the list of classes with

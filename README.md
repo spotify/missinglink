@@ -206,7 +206,9 @@ packages on the destination side can be ignored with
 By default, all subpackages of the specified packages are also ignored, but
 this can be disabled on an individual basis by adding
 `<filterSubpackages>false</filterSubpackages>` to the `<ignoreSourcePackage>`
-or `<ignoreDestinationPackage>` element.
+or `<ignoreDestinationPackage>` element. **Note**: In previous releases (<=0.2.5), this setting was named
+`ignoreSubpackages`. Setting `ignoreSubpackages` in your pom.xml is still supported; the plugin will
+translate it to the new key value.
 
 ### Target only conflicts from certain packages
 
