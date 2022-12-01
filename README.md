@@ -239,7 +239,7 @@ this can be disabled on an individual basis by adding
 `<filterSubpackages>false</filterSubpackages>` to the `<ignoreSourcePackage>`
 or `<ignoreDestinationPackage>` element.
 
-Note that `allow*` options CANNOT be used in conjunction with `ignore*` options. You can only specify one or the other.
+Note that `target*` options CANNOT be used in conjunction with `ignore*` options. You can only specify one or the other.
 
 # Caveats and Limitations
 
