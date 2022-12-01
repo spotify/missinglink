@@ -143,8 +143,8 @@ public class CheckMojo extends AbstractMojo {
   @Parameter protected List<PackageFilter> ignoreSourcePackages = new ArrayList<>();
 
   /**
-   * Optional list of source packages to target in conflict searches. Any conflicts
-   * originating in packages outside of this list will be ignored.
+   * Optional list of source packages to target in conflict searches. Any conflicts originating in
+   * packages outside of this list will be ignored.
    *
    * <p>This parameter CANNOT be used in conjunction with ignoreSourcePackages. Only one can be set.
    */
@@ -167,8 +167,8 @@ public class CheckMojo extends AbstractMojo {
   @Parameter protected List<PackageFilter> ignoreDestinationPackages = new ArrayList<>();
 
   /**
-   * Optional list of destination packages to target in conflict searches. Any conflicts
-   * originating in packages outside of this list will be ignored.
+   * Optional list of destination packages to target in conflict searches. Any conflicts originating
+   * in packages outside of this list will be ignored.
    *
    * <p>This parameter CANNOT be used in conjunction with ignoreDestinationPackages. Only one can be
    * set.
@@ -303,7 +303,10 @@ public class CheckMojo extends AbstractMojo {
                       + "Run plugin again without the 'ignoreSourcePackages' parameter to see "
                       + "all conflicts that were found.");
     } else if (!targetSourcePackages.isEmpty()) {
-      getLog().debug("Checking for conflicts in source packages: " + Joiner.on(", ").join(targetSourcePackages));
+      getLog()
+          .debug(
+              "Checking for conflicts in source packages: "
+                  + Joiner.on(", ").join(targetSourcePackages));
 
       final Predicate<Conflict> predicate =
           conflict -> packageIsFiltered(targetSourcePackages, conflict.dependency().fromClass());
@@ -340,7 +343,8 @@ public class CheckMojo extends AbstractMojo {
     } else if (!targetDestinationPackages.isEmpty()) {
       getLog()
           .debug(
-              "Checking for conflicts in destination packages: " + Joiner.on(", ").join(targetDestinationPackages));
+              "Checking for conflicts in destination packages: "
+                  + Joiner.on(", ").join(targetDestinationPackages));
 
       final Predicate<Conflict> predicate =
           conflict ->
