@@ -360,7 +360,7 @@ public class CheckMojoTest {
   }
 
   @Test
-  public void testtargetSourcePackages() throws Exception {
+  public void testTargetSourcePackages() throws Exception {
     final CheckMojo mojo = getMojo("allow-source-packages");
 
     // make sure that the XML config is deserializing into the Mojo as expected - will catch
@@ -378,7 +378,7 @@ public class CheckMojoTest {
   }
 
   @Test
-  public void testtargetDestinationPackages() throws Exception {
+  public void testTargetDestinationPackages() throws Exception {
     final CalledMethod callee =
         new CalledMethodBuilder()
             .owner(TypeDescriptors.fromClassName("com/foo/Bar"))
