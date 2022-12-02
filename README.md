@@ -205,8 +205,43 @@ packages on the destination side can be ignored with
 
 By default, all subpackages of the specified packages are also ignored, but
 this can be disabled on an individual basis by adding
-`<ignoreSubpackages>false</ignoreSubpackages>` to the `<ignoreSourcePackage>`
+`<filterSubpackages>false</filterSubpackages>` to the `<ignoreSourcePackage>`
+or `<ignoreDestinationPackage>` element. **Note**: In previous releases (<=0.2.5), this setting was named
+`ignoreSubpackages`. Setting `ignoreSubpackages` in your pom.xml is still supported; the plugin will
+translate it to the new key value.
+
+### Target only conflicts from certain packages
+
+Conversely, the plugin can be configured to _only_ report on conflicts in specific packages, based on the name of the class that has the
+conflict. There are separate configuration options for targeting conflicts on the "source" side of the conflict
+and the "destination" side of the conflict.
+
+Packages on the source side can be targeted with `<targetSourcePackages>` and
+packages on the destination side can be targeted with `<targetDestinationPackages>`:
+
+```xml
+<configuration>
+  <!-- Only target conflicts coming from groovy.lang source package -->
+  <targetSourcePackages>
+    <targetSourcePackage>
+      <package>groovy.lang</package>
+    </targetSourcePackage>
+  </targetSourcePackages>
+  <!-- Only target conflicts coming from com.foo package on the callee side -->
+  <targetDestinationPackages>
+    <targetDestinationPackage>
+      <package>com.foo</package>
+    </targetDestinationPackage>
+  </targetDestinationPackages>
+</configuration>
+```
+
+By default, all subpackages of the specified packages are also ignored, but
+this can be disabled on an individual basis by adding
+`<filterSubpackages>false</filterSubpackages>` to the `<ignoreSourcePackage>`
 or `<ignoreDestinationPackage>` element.
+
+**Note** that `target*` options CANNOT be used in conjunction with `ignore*` options. You can only specify one or the other.
 
 # Caveats and Limitations
 

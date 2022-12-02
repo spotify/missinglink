@@ -140,7 +140,15 @@ public class CheckMojo extends AbstractMojo {
    * #excludeDependencies} but operates at a package name level instead of a groupId/artifactId
    * level.
    */
-  @Parameter protected List<IgnoredPackage> ignoreSourcePackages = new ArrayList<>();
+  @Parameter protected List<PackageFilter> ignoreSourcePackages = new ArrayList<>();
+
+  /**
+   * Optional list of source packages to target in conflict searches. Any conflicts originating in
+   * packages outside of this list will be ignored.
+   *
+   * <p>This parameter CANNOT be used in conjunction with ignoreSourcePackages. Only one can be set.
+   */
+  @Parameter protected List<PackageFilter> targetSourcePackages = new ArrayList<>();
 
   /**
    * Optional list of packages to ignore conflicts in where the destination/called-side of the
@@ -152,8 +160,20 @@ public class CheckMojo extends AbstractMojo {
    *
    * <p>For example, if the package "javax.bar" is in ignoreDestinationPackages, then any conflict
    * found having to do with calling a method in a class in javax.bar is ignored.
+   *
+   * <p>This parameter CANNOT be used in conjunction with targetDestinationPackages. Only one can be
+   * set.
    */
-  @Parameter protected List<IgnoredPackage> ignoreDestinationPackages = new ArrayList<>();
+  @Parameter protected List<PackageFilter> ignoreDestinationPackages = new ArrayList<>();
+
+  /**
+   * Optional list of destination packages to target in conflict searches. Any conflicts originating
+   * in packages outside of this list will be ignored.
+   *
+   * <p>This parameter CANNOT be used in conjunction with ignoreDestinationPackages. Only one can be
+   * set.
+   */
+  @Parameter protected List<PackageFilter> targetDestinationPackages = new ArrayList<>();
 
   /**
    * Optional: can be set to explicitly define the path to use for the bootclasspath containing the
@@ -195,6 +215,17 @@ public class CheckMojo extends AbstractMojo {
               + ". "
               + "Valid choices are: "
               + Joiner.on(", ").join(ConflictCategory.values()));
+    }
+
+    if (!ignoreDestinationPackages.isEmpty() && !targetDestinationPackages.isEmpty()) {
+      throw new MojoExecutionException(
+          "Either ignoreDestinationPackages or targetDestinationPackages can be set, "
+              + "but not both.");
+    }
+
+    if (!ignoreSourcePackages.isEmpty() && !targetSourcePackages.isEmpty()) {
+      throw new MojoExecutionException(
+          "Either ignoreSourcePackages or targetSourcePackages can be set, " + "but not both.");
     }
 
     Collection<Conflict> conflicts = loadArtifactsAndCheckConflicts();
@@ -260,7 +291,7 @@ public class CheckMojo extends AbstractMojo {
       getLog().debug("Ignoring source packages: " + Joiner.on(", ").join(ignoreSourcePackages));
 
       final Predicate<Conflict> predicate =
-          conflict -> !packageIsIgnored(ignoreSourcePackages, conflict.dependency().fromClass());
+          conflict -> !packageIsFiltered(ignoreSourcePackages, conflict.dependency().fromClass());
 
       conflicts =
           filterConflictsBy(
@@ -271,6 +302,24 @@ public class CheckMojo extends AbstractMojo {
                       + " conflicts found in ignored source packages. "
                       + "Run plugin again without the 'ignoreSourcePackages' parameter to see "
                       + "all conflicts that were found.");
+    } else if (!targetSourcePackages.isEmpty()) {
+      getLog()
+          .debug(
+              "Checking for conflicts in source packages: "
+                  + Joiner.on(", ").join(targetSourcePackages));
+
+      final Predicate<Conflict> predicate =
+          conflict -> packageIsFiltered(targetSourcePackages, conflict.dependency().fromClass());
+
+      conflicts =
+          filterConflictsBy(
+              conflicts,
+              predicate,
+              num ->
+                  num
+                      + " conflicts found in targeted source packages. "
+                      + "Run plugin again without the 'targetSourcePackages' parameter to see "
+                      + "all conflicts that were found.");
     }
 
     if (!ignoreDestinationPackages.isEmpty()) {
@@ -280,7 +329,7 @@ public class CheckMojo extends AbstractMojo {
 
       final Predicate<Conflict> predicate =
           conflict ->
-              !packageIsIgnored(ignoreDestinationPackages, conflict.dependency().targetClass());
+              !packageIsFiltered(ignoreDestinationPackages, conflict.dependency().targetClass());
 
       conflicts =
           filterConflictsBy(
@@ -290,6 +339,25 @@ public class CheckMojo extends AbstractMojo {
                   num
                       + " conflicts found in ignored destination packages. "
                       + "Run plugin again without the 'ignoreDestinationPackages' parameter to see "
+                      + "all conflicts that were found.");
+    } else if (!targetDestinationPackages.isEmpty()) {
+      getLog()
+          .debug(
+              "Checking for conflicts in destination packages: "
+                  + Joiner.on(", ").join(targetDestinationPackages));
+
+      final Predicate<Conflict> predicate =
+          conflict ->
+              packageIsFiltered(targetDestinationPackages, conflict.dependency().targetClass());
+
+      conflicts =
+          filterConflictsBy(
+              conflicts,
+              predicate,
+              num ->
+                  num
+                      + " conflicts found in allowed targeted packages. "
+                      + "Run plugin again without the 'targetDestinationPackages' parameter to see "
                       + "all conflicts that were found.");
     }
 
@@ -327,19 +395,18 @@ public class CheckMojo extends AbstractMojo {
    * destination-side) is ignored based on the collection of IgnoredPackages. Reusable logic between
    * ignoring source/destination packages.
    */
-  private boolean packageIsIgnored(
-      Collection<IgnoredPackage> ignoredPackages, ClassTypeDescriptor classTypeDescriptor) {
-
+  private boolean packageIsFiltered(
+      Collection<PackageFilter> packageFilters, ClassTypeDescriptor classTypeDescriptor) {
     final String className = classTypeDescriptor.getClassName().replace('/', '.');
     // this might be missing some corner-cases on naming rules:
     final String conflictPackageName = className.substring(0, className.lastIndexOf('.'));
 
-    return ignoredPackages.stream()
+    return packageFilters.stream()
         .anyMatch(
             p -> {
               final String ignoredPackageName = p.getPackage();
               return conflictPackageName.equals(ignoredPackageName)
-                  || (p.isIgnoreSubpackages()
+                  || (p.isFilterSubpackages()
                       && conflictPackageName.startsWith(ignoredPackageName + "."));
             });
   }
