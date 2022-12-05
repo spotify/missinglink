@@ -15,7 +15,7 @@
     <!-- Do not run findbugs on the benchmarks module as it will flag a lot of stuff
     in the JMH generated sources -->
     <findbugs.skip>true</findbugs.skip>
-    <jmh.version>1.35</jmh.version>
+    <jmh.version>1.36</jmh.version>
     <uberjar.name>benchmarks</uberjar.name>
   </properties>
 
