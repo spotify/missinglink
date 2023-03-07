@@ -277,7 +277,7 @@ public class CheckMojo extends AbstractMojo {
       conflicts =
           filterConflictsBy(
               conflicts,
-              categoriesToInclude::contains,
+              c -> categoriesToInclude.contains(c.category()),
               num ->
                   num
                       + " conflicts removed based on includeCategories="
