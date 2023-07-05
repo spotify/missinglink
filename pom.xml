@@ -74,7 +74,7 @@
   </modules>
 
   <properties>
-    <auto-matter.version>0.26.1</auto-matter.version>
+    <auto-matter.version>0.26.2</auto-matter.version>
     <!-- cobertura format needs to be xml for coveralls integration, but allow it to be specified
     as a property so it can be overridden to use html for anyone who wants to generate cobertura
     themselves from command-line -->
