@@ -1,4 +1,7 @@
 .idea
 **/*.iml
 **/target
+release.properties
+*.releaseBackup
+benchmarks/dependency-reduced-pom.xml
 
