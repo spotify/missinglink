@@ -17,6 +17,7 @@
     <findbugs.skip>true</findbugs.skip>
     <jmh.version>1.36</jmh.version>
     <uberjar.name>benchmarks</uberjar.name>
+    <unitTests.failIfNoTests>false</unitTests.failIfNoTests>
   </properties>
 
   <dependencies>

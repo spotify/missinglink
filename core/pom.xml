@@ -46,8 +46,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
-        <configuration>
+        <configuration combine.children="append">
           <annotationProcessorPaths>
             <path>
               <groupId>io.norberg</groupId>
@@ -59,5 +58,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>
