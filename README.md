@@ -1,6 +1,6 @@
 # missing-link - a maven dependency problem finder
 
-[![Build Status](https://travis-ci.org/spotify/missinglink.svg?branch=master)](https://travis-ci.org/spotify/missinglink)
+[![Build Status](https://github.com/spotify/missinglink/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/spotify/missinglink/actions/workflows/ci.yaml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.spotify/missinglink-maven-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.spotify/missinglink-maven-plugin)
 [![Coverage Status](https://coveralls.io/repos/spotify/missinglink/badge.svg?branch=master)](https://coveralls.io/r/spotify/missinglink?branch=master)
 
