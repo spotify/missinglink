@@ -58,7 +58,8 @@ public class ClassLoadingUtil {
     List<File> files =
         Files.walk(outputDir.toPath())
             .map(Path::toFile)
-            .filter(file -> file.isFile() && file.getAbsolutePath().endsWith(name))
+            .filter(
+                file -> file.isFile() && file.getAbsolutePath().replace('\\', '/').endsWith(name))
             .collect(Collectors.toList());
     if (files.isEmpty()) {
       throw new IllegalStateException(
