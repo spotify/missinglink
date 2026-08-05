@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.spotify</groupId>
-    <artifactId>missinglink-parent</artifactId>
-    <version>0.2.12-SNAPSHOT</version>
+    <groupId>com.rapid7</groupId>
+    <artifactId>missinglink-parent-r7</artifactId>
+    <version>0.2.12-r7</version>
   </parent>
 
-  <artifactId>missinglink-core</artifactId>
+  <artifactId>missinglink-core-r7</artifactId>
   <packaging>jar</packaging>
 
   <dependencies>
@@ -20,7 +20,7 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
-      <version>9.7</version>
+      <version>9.9.1</version>
     </dependency>
     <dependency>
       <groupId>io.norberg</groupId>

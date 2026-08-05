@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.spotify</groupId>
-    <artifactId>missinglink-parent</artifactId>
-    <version>0.2.12-SNAPSHOT</version>
+    <groupId>com.rapid7</groupId>
+    <artifactId>missinglink-parent-r7</artifactId>
+    <version>0.2.12-r7</version>
   </parent>
 
-  <artifactId>missinglink-maven-plugin</artifactId>
+  <artifactId>missinglink-maven-plugin-r7</artifactId>
   <packaging>maven-plugin</packaging>
 
   <properties>
@@ -42,8 +42,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>missinglink-core</artifactId>
+      <groupId>com.rapid7</groupId>
+      <artifactId>missinglink-core-r7</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -120,6 +120,10 @@
         <artifactId>maven-plugin-plugin</artifactId>
         <version>3.15.0</version>
         <configuration>
+          <!-- Explicit prefix: the -r7 artifactId suffix defeats Maven's
+               automatic goalPrefix derivation. Keep "missinglink" so usage
+               (mvn missinglink:check) matches upstream. -->
+          <goalPrefix>missinglink</goalPrefix>
           <extractors>
             <extractor>java-annotations</extractor>
           </extractors>

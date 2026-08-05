@@ -10,8 +10,9 @@
     <version>17</version>
   </parent>
 
-  <artifactId>missinglink-parent</artifactId>
-  <version>0.2.12-SNAPSHOT</version>
+  <groupId>com.rapid7</groupId>
+  <artifactId>missinglink-parent-r7</artifactId>
+  <version>0.2.12-r7</version>
   <packaging>pom</packaging>
 
   <name>missinglink</name>

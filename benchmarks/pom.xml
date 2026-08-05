@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.spotify</groupId>
-    <artifactId>missinglink-parent</artifactId>
-    <version>0.2.12-SNAPSHOT</version>
+    <groupId>com.rapid7</groupId>
+    <artifactId>missinglink-parent-r7</artifactId>
+    <version>0.2.12-r7</version>
   </parent>
 
-  <artifactId>missinglink-benchmarks</artifactId>
+  <artifactId>missinglink-benchmarks-r7</artifactId>
   <packaging>jar</packaging>
 
   <properties>
@@ -22,8 +22,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>missinglink-core</artifactId>
+      <groupId>com.rapid7</groupId>
+      <artifactId>missinglink-core-r7</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
