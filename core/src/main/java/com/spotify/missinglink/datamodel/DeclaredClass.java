@@ -54,4 +54,15 @@ public interface DeclaredClass {
   Map<MethodDescriptor, DeclaredMethod> methods();
 
   Set<DeclaredField> fields();
+
+  // Rapid7 addition: class-level annotation types applied to this class (e.g.
+  // com/rapid7/platform/retrofit/annotation/RetrofitApi). Used to detect framework entry points
+  // whose real dispatch happens through runtime proxies/DI that static reachability cannot follow.
+  Set<ClassTypeDescriptor> annotations();
+
+  // Rapid7 addition: Class<?> literal values referenced by this class's annotations (e.g. the
+  // configuration class named in @RetrofitApi(PcmaClass3RetrofitConfiguration.class)). These are
+  // wiring targets the framework loads reflectively — seeding them makes their transitive call
+  // sites reachable so version-skew breaks behind the proxy boundary are caught.
+  Set<ClassTypeDescriptor> annotationClassReferences();
 }

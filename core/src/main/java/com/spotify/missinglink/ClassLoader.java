@@ -92,6 +92,11 @@ public final class ClassLoader {
     Set<ClassTypeDescriptor> parents = readParents(classNode);
     Set<DeclaredField> declaredFields = readDeclaredFields(classNode);
 
+    // Rapid7 addition: capture class-level annotations and any Class<?> literal values they carry.
+    final Set<ClassTypeDescriptor> annotations = new HashSet<>();
+    final Set<ClassTypeDescriptor> annotationClassReferences = new HashSet<>();
+    readClassAnnotations(classNode, annotations, annotationClassReferences);
+
     Map<MethodDescriptor, DeclaredMethod> declaredMethods = new HashMap<>();
     Set<ClassTypeDescriptor> loadedClasses = new HashSet<>();
 
@@ -105,7 +110,67 @@ public final class ClassLoader {
         .parents(parents)
         .loadedClasses(loadedClasses)
         .fields(declaredFields)
+        .annotations(annotations)
+        .annotationClassReferences(annotationClassReferences)
         .build();
+  }
+
+  /**
+   * Rapid7 addition: collect class-level annotation types (into {@code annotations}) and every
+   * {@code Class<?>} literal appearing anywhere in those annotations' values, including nested
+   * annotation values and array values (into {@code annotationClassReferences}). ASM represents a
+   * class-literal annotation value as an {@link org.objectweb.asm.Type}.
+   */
+  private static void readClassAnnotations(
+      ClassNode classNode,
+      Set<ClassTypeDescriptor> annotations,
+      Set<ClassTypeDescriptor> annotationClassReferences) {
+    final List<org.objectweb.asm.tree.AnnotationNode> all = new ArrayList<>();
+    if (classNode.visibleAnnotations != null) {
+      all.addAll(classNode.visibleAnnotations);
+    }
+    if (classNode.invisibleAnnotations != null) {
+      all.addAll(classNode.invisibleAnnotations);
+    }
+    for (org.objectweb.asm.tree.AnnotationNode annotation : all) {
+      if (annotation.desc != null) {
+        annotations.add(
+            TypeDescriptors.fromClassName(Type.getType(annotation.desc).getInternalName()));
+      }
+      collectClassValues(annotation.values, annotationClassReferences);
+    }
+  }
+
+  /**
+   * Rapid7 addition: walk an ASM annotation value list ({@code [name, value, name, value, ...]}),
+   * recording any {@link Type} class-literal (of OBJECT or ARRAY sort) and recursing into nested
+   * annotations and lists.
+   */
+  private static void collectClassValues(List<Object> values, Set<ClassTypeDescriptor> out) {
+    if (values == null) {
+      return;
+    }
+    for (final Object value : values) {
+      collectClassValue(value, out);
+    }
+  }
+
+  private static void collectClassValue(Object value, Set<ClassTypeDescriptor> out) {
+    if (value instanceof Type) {
+      Type type = (Type) value;
+      if (type.getSort() == Type.ARRAY) {
+        type = type.getElementType();
+      }
+      if (type.getSort() == Type.OBJECT) {
+        out.add(TypeDescriptors.fromClassName(type.getInternalName()));
+      }
+    } else if (value instanceof org.objectweb.asm.tree.AnnotationNode) {
+      collectClassValues(((org.objectweb.asm.tree.AnnotationNode) value).values, out);
+    } else if (value instanceof List) {
+      for (final Object element : (List<?>) value) {
+        collectClassValue(element, out);
+      }
+    }
   }
 
   private static ClassNode readClassNode(InputStream in) throws IOException {

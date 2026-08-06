@@ -52,6 +52,7 @@ import com.spotify.missinglink.datamodel.FieldDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDependencyBuilder;
 import com.spotify.missinglink.datamodel.MethodDescriptor;
 import com.spotify.missinglink.datamodel.TypeDescriptor;
+import com.spotify.missinglink.datamodel.TypeDescriptors;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -110,6 +111,66 @@ public class ConflictChecker {
   public static final ArtifactName UNKNOWN_ARTIFACT_NAME = new ArtifactName("<unknown>");
 
   /**
+   * Rapid7 addition: whether to log "Cannot find parent ..." warnings. These fire whenever a called
+   * class's superclass is not on the analyzed classpath (e.g. third-party parents the project does
+   * not ship) and are almost always noise — they can flood the build log with thousands of lines.
+   * Defaults to false (suppressed). Enable for debugging via {@link #ConflictChecker(boolean)}.
+   */
+  private final boolean logUnresolvedParents;
+
+  /**
+   * Rapid7 addition: when true, seed reachability analysis with ALL classes across the artifacts to
+   * check (whole-classpath / internal-consistency mode) instead of only the classes reachable from
+   * the project's own classes. This catches version-skew breaks in library call sites that the
+   * project's own code never reaches. Defaults to false (upstream reachability-seeded behavior).
+   */
+  private final boolean wholeClasspath;
+
+  /**
+   * Rapid7 addition: fully-qualified names (internal form, e.g. {@code
+   * com/rapid7/platform/retrofit/annotation/RetrofitApi}) of class-level annotations that mark a
+   * framework entry point. When a project class carries one of these, the {@code Class<?>} values
+   * referenced by its annotations (e.g. the configuration class named in
+   * {@code @RetrofitApi(FooConfig.class)}) are added to the reachability seed set. This closes the
+   * blind spot where the real call path runs through a runtime-generated proxy / DI wiring that has
+   * no static bytecode edge from the project's own classes. Empty = no framework seeding (upstream
+   * behavior).
+   */
+  private final Set<ClassTypeDescriptor> frameworkAnnotations;
+
+  /** Upstream-compatible constructor; suppresses unresolved-parent warnings. */
+  public ConflictChecker() {
+    this(false);
+  }
+
+  public ConflictChecker(boolean logUnresolvedParents) {
+    this(logUnresolvedParents, false);
+  }
+
+  public ConflictChecker(boolean logUnresolvedParents, boolean wholeClasspath) {
+    this(logUnresolvedParents, wholeClasspath, java.util.Collections.emptySet());
+  }
+
+  /**
+   * Rapid7 addition.
+   *
+   * @param frameworkAnnotations annotation FQNs (dot form, e.g. {@code
+   *     com.rapid7.platform.retrofit.annotation.RetrofitApi}) whose Class-literal values should be
+   *     seeded; converted to internal form here.
+   */
+  public ConflictChecker(
+      boolean logUnresolvedParents,
+      boolean wholeClasspath,
+      Collection<String> frameworkAnnotations) {
+    this.logUnresolvedParents = logUnresolvedParents;
+    this.wholeClasspath = wholeClasspath;
+    this.frameworkAnnotations =
+        frameworkAnnotations.stream()
+            .map(name -> TypeDescriptors.fromClassName(name.replace('.', '/')))
+            .collect(java.util.stream.Collectors.toSet());
+  }
+
+  /**
    * @param projectArtifact the main artifact of the project we're verifying (this is considered the
    *     entry point for reachability)
    * @param artifactsToCheck all artifacts that are on the runtime classpath
@@ -125,8 +186,25 @@ public class ConflictChecker {
     CheckerState state = stateBuilder.build();
 
     // brute-force reachability analysis
-    Set<TypeDescriptor> reachableClasses =
-        reachableFrom(projectArtifact.classes().values(), state.knownClasses());
+    // Rapid7: in whole-classpath mode, seed from every class across artifactsToCheck so that
+    // library-internal call sites are analyzed even when the project's own classes never reach
+    // them.
+    final Collection<DeclaredClass> seed;
+    if (wholeClasspath) {
+      seed =
+          artifactsToCheck.stream()
+              .flatMap(a -> a.classes().values().stream())
+              .collect(java.util.stream.Collectors.toList());
+    } else {
+      // Reachability mode: seed from the project's own classes, augmented (when framework
+      // annotations are configured) with the Class<?> wiring targets those annotations name.
+      final List<DeclaredClass> reachabilitySeed =
+          new ArrayList<>(projectArtifact.classes().values());
+      reachabilitySeed.addAll(
+          frameworkSeeds(projectArtifact.classes().values(), state.knownClasses()));
+      seed = reachabilitySeed;
+    }
+    Set<TypeDescriptor> reachableClasses = reachableFrom(seed, state.knownClasses());
 
     final List<Conflict> conflicts = new ArrayList<>();
 
@@ -240,6 +318,37 @@ public class ConflictChecker {
     }
 
     return conflicts;
+  }
+
+  /**
+   * Rapid7 addition: for each supplied class that carries one of the configured framework
+   * annotations, resolve the {@code Class<?>} values named by that class's annotations and return
+   * the corresponding {@link DeclaredClass}es (when present on the classpath). Seeding these makes
+   * their transitive call sites reachable, so version-skew breaks that only surface behind a
+   * runtime proxy / DI boundary (no static edge from the project's own code) are caught in
+   * reachability mode. Returns empty when no framework annotations are configured.
+   */
+  private Collection<DeclaredClass> frameworkSeeds(
+      Collection<DeclaredClass> projectClasses,
+      Map<ClassTypeDescriptor, DeclaredClass> knownClasses) {
+    if (frameworkAnnotations.isEmpty()) {
+      return java.util.Collections.emptyList();
+    }
+    final Set<DeclaredClass> seeds = new HashSet<>();
+    for (final DeclaredClass clazz : projectClasses) {
+      final boolean isFrameworkEntryPoint =
+          clazz.annotations().stream().anyMatch(frameworkAnnotations::contains);
+      if (!isFrameworkEntryPoint) {
+        continue;
+      }
+      for (final ClassTypeDescriptor ref : clazz.annotationClassReferences()) {
+        final DeclaredClass referenced = knownClasses.get(ref);
+        if (referenced != null) {
+          seeds.add(referenced);
+        }
+      }
+    }
+    return seeds;
   }
 
   static Set<TypeDescriptor> reachableFrom(
@@ -376,8 +485,10 @@ public class ConflictChecker {
       final DeclaredClass declaredClass = classMap.get(parentClass);
       // TODO 6/2/15 mbrown -- treat properly, by flagging as a different type of Conflict
       if (declaredClass == null) {
-        System.out.printf(
-            "Warning: Cannot find parent %s of class %s%n", parentClass, calledClass.className());
+        if (logUnresolvedParents) {
+          System.out.printf(
+              "Warning: Cannot find parent %s of class %s%n", parentClass, calledClass.className());
+        }
       } else if (!missingField(field, declaredClass, classMap)) {
         return false;
       }

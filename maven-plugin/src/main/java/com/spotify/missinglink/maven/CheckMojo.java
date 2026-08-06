@@ -71,15 +71,23 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Exclusion;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
+import org.apache.maven.shared.dependency.graph.DependencyNode;
 
 @Mojo(
     name = "check",
@@ -89,6 +97,12 @@ public class CheckMojo extends AbstractMojo {
 
   @Parameter(defaultValue = "${project}", readonly = true, required = true)
   protected MavenProject project;
+
+  @Parameter(defaultValue = "${session}", readonly = true, required = true)
+  protected MavenSession session;
+
+  /** Rapid7 addition: used to attribute a conflict's caller back to a direct dependency. */
+  @Component protected DependencyGraphBuilder dependencyGraphBuilder;
 
   @Parameter(property = "missinglink.skip")
   protected boolean skip = false;
@@ -106,6 +120,52 @@ public class CheckMojo extends AbstractMojo {
    */
   @Parameter(property = "verbose", defaultValue = "false")
   protected boolean verbose;
+
+  /**
+   * Rapid7 addition: opt-in whole-classpath / internal-consistency mode. When {@code true}, seed
+   * reachability from ALL classes on the checked classpath instead of only the classes reachable
+   * from the project's own classes (plus framework-seeded proxy targets). Every call site on the
+   * classpath is verified, including library code the project never reaches — which also surfaces
+   * latent version skew in dependencies the module does not itself exercise (e.g. lib-only {@code
+   * DynamicDurationProperty}/{@code PayloadBackup}-style breaks), so expect more findings that are
+   * not actionable from this module.
+   *
+   * <p>Defaults to {@code false}: the default is framework-aware reachability (see {@link
+   * #frameworkAnnotations}), which checks exactly what this module reaches — including the runtime
+   * proxy / DI hops that plain static reachability cannot follow — without whole-classpath's
+   * lib-only noise. Enable this only when you specifically want to audit the whole classpath's
+   * internal consistency rather than this module's own linkage safety.
+   */
+  @Parameter(property = "missinglink.wholeClasspath", defaultValue = "false")
+  protected boolean wholeClasspath;
+
+  /**
+   * Rapid7 addition: fully-qualified names of class-level annotations that mark a framework entry
+   * point whose real dispatch happens through a runtime-generated proxy or DI wiring (e.g. Retrofit
+   * dynamic proxies). When a project class carries one of these annotations, the {@code Class<?>}
+   * values named by that class's annotations (such as the configuration class in
+   * {@code @RetrofitApi(FooConfig.class)}) are added to the reachability seed set, so version-skew
+   * breaks behind the proxy boundary are caught. This is intrinsic to the default reachability path
+   * — it patches static reachability's blind spot for reflection/DI-mediated dispatch, which is why
+   * framework-aware reachability (not whole-classpath) is the default. Ignored when {@code
+   * wholeClasspath} is {@code true}, since that mode already seeds everything.
+   *
+   * <p>Defaults to Rapid7's Retrofit annotations. Configure via {@code
+   * -Dmissinglink.frameworkAnnotations=a.b.C,d.e.F} or the {@code <frameworkAnnotations>} element.
+   */
+  @Parameter(property = "missinglink.frameworkAnnotations")
+  protected List<String> frameworkAnnotations = new ArrayList<>();
+
+  /**
+   * Rapid7 addition: default framework annotations applied when {@link #frameworkAnnotations} is
+   * left unconfigured. Kept separate from the field initializer because Maven's component
+   * configurator overwrites a {@code List} field's initializer with an empty list when the
+   * corresponding element is absent from the plugin {@code <configuration>}.
+   */
+  private static final List<String> DEFAULT_FRAMEWORK_ANNOTATIONS =
+      Arrays.asList(
+          "com.rapid7.platform.retrofit.annotation.RetrofitApi",
+          "com.rapid7.platform.retrofit.annotation.EnableRetrofitApi");
 
   /**
    * Limit the conflict output to only the specified categories. If not set, uses all categories of
@@ -189,6 +249,8 @@ public class CheckMojo extends AbstractMojo {
   // TODO 6/1/15 mbrown -- how to hook into the Plexus container for proper DI lookups and the
   // conventional maven plugin way of how to set up things like this
   protected ArtifactLoader artifactLoader = new ArtifactLoader();
+  // conflictChecker is initialized in execute() so it can honor the verbose flag (Rapid7: gates
+  // the noisy "Cannot find parent ..." warnings).
   protected ConflictChecker conflictChecker = new ConflictChecker();
 
   public void execute() throws MojoExecutionException, MojoFailureException {
@@ -201,6 +263,12 @@ public class CheckMojo extends AbstractMojo {
     // when verbose flag is set, log detailed messages to info log. otherwise log to debug. This is
     // so that verbose output from this plugin can be seen easily without having to specify mvn -X.
     final Consumer<String> log = verbose ? msg -> getLog().info(msg) : msg -> getLog().debug(msg);
+    // Rapid7: only emit the noisy "Cannot find parent ..." warnings when verbose is set.
+    final List<String> effectiveFrameworkAnnotations =
+        (frameworkAnnotations == null || frameworkAnnotations.isEmpty())
+            ? DEFAULT_FRAMEWORK_ANNOTATIONS
+            : frameworkAnnotations;
+    conflictChecker = new ConflictChecker(verbose, wholeClasspath, effectiveFrameworkAnnotations);
     logDependencies(log);
 
     final Set<ConflictCategory> categoriesToInclude;
@@ -399,7 +467,10 @@ public class CheckMojo extends AbstractMojo {
       Collection<PackageFilter> packageFilters, ClassTypeDescriptor classTypeDescriptor) {
     final String className = classTypeDescriptor.getClassName().replace('/', '.');
     // this might be missing some corner-cases on naming rules:
-    final String conflictPackageName = className.substring(0, className.lastIndexOf('.'));
+    // Rapid7 fix: a class in the default (unnamed) package has no '.', so lastIndexOf returns -1;
+    // guard against substring(0, -1) throwing. Its package name is the empty string.
+    final int lastDot = className.lastIndexOf('.');
+    final String conflictPackageName = lastDot < 0 ? "" : className.substring(0, lastDot);
 
     return packageFilters.stream()
         .anyMatch(
@@ -536,7 +607,26 @@ public class CheckMojo extends AbstractMojo {
     return stopwatch.elapsed(TimeUnit.MILLISECONDS);
   }
 
+  /**
+   * Rapid7 addition: build the resolved dependency graph so conflicts can be attributed back to the
+   * direct dependency that drags in the offending caller artifact. Returns null (and logs) on
+   * failure so attribution degrades gracefully rather than breaking the check.
+   */
+  private DependencyPathFinder buildPathFinder() {
+    try {
+      final ProjectBuildingRequest req =
+          new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
+      req.setProject(project);
+      final DependencyNode root = dependencyGraphBuilder.buildDependencyGraph(req, null);
+      return new DependencyPathFinder(root);
+    } catch (Exception e) {
+      getLog().warn("Could not build dependency graph for conflict attribution: " + e.getMessage());
+      return null;
+    }
+  }
+
   private void outputConflicts(Collection<Conflict> conflicts) {
+    final DependencyPathFinder pathFinder = buildPathFinder();
     Map<ConflictCategory, String> descriptions = new EnumMap<>(ConflictCategory.class);
     descriptions.put(ConflictCategory.CLASS_NOT_FOUND, "Class being called not found");
     descriptions.put(ConflictCategory.METHOD_SIGNATURE_NOT_FOUND, "Method being called not found");
@@ -559,6 +649,7 @@ public class CheckMojo extends AbstractMojo {
           byArtifact.forEach(
               (artifactName, conflictsInArtifact) -> {
                 getLog().warn("  In artifact: " + artifactName.name());
+                printAttribution(pathFinder, artifactName, conflictsInArtifact);
 
                 // next group by class containing the conflict
                 final Map<ClassTypeDescriptor, List<Conflict>> byClassName =
@@ -591,6 +682,121 @@ public class CheckMojo extends AbstractMojo {
                     });
               });
         });
+  }
+
+  /**
+   * Rapid7 addition (provider-side attribution): for each conflict, identify the *called* artifact
+   * (the one missing the symbol), the version it resolved to on the classpath, which DIRECT
+   * dependency forced that version, and — best-effort — the version the caller was originally
+   * compiled against. This surfaces the version skew that actually caused the break, so the fix
+   * (reconcile the called artifact's version) is attributable to a declared dependency without a
+   * manual `mvn dependency:tree -Dverbose` cross-reference.
+   *
+   * <p>The caller artifact name ("In artifact:") is a "groupId:artifactId:version" string.
+   */
+  private void printAttribution(
+      DependencyPathFinder pathFinder, ArtifactName callerName, List<Conflict> conflicts) {
+    if (pathFinder == null) {
+      return;
+    }
+    // The called artifact is the same for all conflicts grouped here only when existsIn matches;
+    // collect the distinct providers so multi-provider cases are shown honestly.
+    final Set<String> providers = new java.util.LinkedHashSet<>();
+    for (Conflict c : conflicts) {
+      if (c.existsIn() != ConflictChecker.UNKNOWN_ARTIFACT_NAME) {
+        providers.add(c.existsIn().name());
+      }
+    }
+    if (providers.isEmpty()) {
+      return;
+    }
+
+    final String[] callerParts = callerName.name().split(":");
+
+    for (String provider : providers) {
+      final String[] p = provider.split(":");
+      if (p.length < 3) {
+        continue;
+      }
+      final String provGroup = p[0];
+      final String provArtifact = p[1];
+      final String provVersion = p[2];
+      final String builtAgainst =
+          callerParts.length >= 3
+              ? callerCompiledAgainstVersion(
+                  callerParts[0], callerParts[1], callerParts[2], provArtifact)
+              : null;
+      getLog().warn("    Called artifact: " + provGroup + ":" + provArtifact);
+      final Set<String> directDeps = pathFinder.directDependenciesFor(provGroup, provArtifact);
+      if (directDeps.size() == 1) {
+        getLog()
+            .warn(
+                "      resolved to: "
+                    + provVersion
+                    + "  (direct dependency "
+                    + directDeps.iterator().next()
+                    + ")");
+      } else if (!directDeps.isEmpty()) {
+        getLog()
+            .warn(
+                "      resolved to: " + provVersion + "  (direct dependencies " + directDeps + ")");
+      } else {
+        // provider is transitive-only; show the paths so the responsible direct dep is visible
+        getLog().warn("      resolved to: " + provVersion + "  (transitive; see paths below)");
+      }
+      if (builtAgainst != null && !builtAgainst.equals(provVersion)) {
+        getLog()
+            .warn(
+                "      caller "
+                    + callerParts[1]
+                    + " was compiled against: "
+                    + builtAgainst
+                    + "  (version skew)");
+      }
+      for (String path : pathFinder.pathsFor(provGroup, provArtifact)) {
+        getLog().warn("      via: " + path);
+      }
+    }
+  }
+
+  /**
+   * Best-effort: read the caller artifact's own POM (sibling of its resolved jar in the local repo)
+   * and return the version it declares for {@code targetGroupId:targetArtifactId}, i.e. the version
+   * the caller was compiled against. Returns null if the POM can't be found/parsed or the
+   * dependency is declared via a property or BOM (unresolved here) rather than a literal version.
+   */
+  private String callerCompiledAgainstVersion(
+      String callerGroup, String callerArtifact, String callerVersion, String targetArtifactId) {
+    try {
+      for (org.apache.maven.artifact.Artifact a : project.getArtifacts()) {
+        if (callerGroup.equals(a.getGroupId())
+            && callerArtifact.equals(a.getArtifactId())
+            && a.getFile() != null) {
+          final File jar = a.getFile();
+          final File pom =
+              new File(jar.getParentFile(), callerArtifact + "-" + callerVersion + ".pom");
+          if (!pom.isFile()) {
+            return null;
+          }
+          final Model model;
+          try (FileInputStream in = new FileInputStream(pom)) {
+            model = new MavenXpp3Reader().read(in);
+          }
+          if (model.getDependencies() == null) {
+            return null;
+          }
+          return model.getDependencies().stream()
+              .filter(d -> d.getVersion() != null && !d.getVersion().contains("${"))
+              .filter(d -> targetArtifactId.equals(d.getArtifactId()))
+              .map(org.apache.maven.model.Dependency::getVersion)
+              .findFirst()
+              .orElse(null);
+        }
+      }
+    } catch (Exception e) {
+      getLog().debug("could not determine caller's compiled-against version: " + e.getMessage());
+    }
+    return null;
   }
 
   private String optionalLineNumber(int lineNumber) {
