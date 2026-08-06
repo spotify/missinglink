@@ -140,6 +140,16 @@ public class CheckMojo extends AbstractMojo {
   protected boolean wholeClasspath;
 
   /**
+   * Rapid7 addition: load and ASM-parse dependency artifacts in parallel. Parsing each jar is
+   * independent and CPU-bound, and dominates the wall-clock cost of a run (all classes on the
+   * classpath are parsed once, even on a green build). Parallelizing it across cores cuts that cost
+   * substantially. Defaults to {@code true}; set to {@code false} to force sequential loading (e.g.
+   * to isolate a parsing failure to a specific artifact).
+   */
+  @Parameter(property = "missinglink.parallelLoad", defaultValue = "true")
+  protected boolean parallelLoad;
+
+  /**
    * Rapid7 addition: fully-qualified names of class-level annotations that mark a framework entry
    * point whose real dispatch happens through a runtime-generated proxy or DI wiring (e.g. Retrofit
    * dynamic proxies). When a project class carries one of these annotations, the {@code Class<?>}
@@ -824,8 +834,11 @@ public class CheckMojo extends AbstractMojo {
   }
 
   private ImmutableList<Artifact> constructArtifacts(Iterable<String> entries) {
+    // Rapid7: load in parallel. Each artifact is parsed independently (ArtifactLoader/ClassLoader
+    // are stateless per call; the only shared state is the ConcurrentHashMap in TypeDescriptors),
+    // so this is embarrassingly parallel and CPU-bound — the dominant cost of a green build.
     final List<Artifact> list =
-        StreamSupport.stream(entries.spliterator(), false)
+        StreamSupport.stream(entries.spliterator(), parallelLoad)
             // don't inspect paths that don't exist.
             // some bootclasspath entries, like sunrsasign.jar, are reported even if they
             // don't exist on disk - ¯\_(ツ)_/¯
@@ -856,8 +869,9 @@ public class CheckMojo extends AbstractMojo {
   private ImmutableList<Artifact> constructArtifacts(
       List<org.apache.maven.artifact.Artifact> mavenDeps) {
 
+    // Rapid7: parallel load — see the sibling constructArtifacts(Iterable<String>) for rationale.
     final List<Artifact> list =
-        mavenDeps.stream()
+        (parallelLoad ? mavenDeps.parallelStream() : mavenDeps.stream())
             .filter(this::filterValidClasspathEntries)
             .map(this::mavenDepToArtifact)
             .collect(Collectors.toList());
